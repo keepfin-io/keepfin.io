@@ -1,0 +1,30 @@
+services:
+  keepnode:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=keepnode
+      - DB_SSL_MODE=disable
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=keepnode
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

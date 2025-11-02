@@ -1,0 +1,21 @@
+# Stage 1: Build environment with Air for hot-reloading
+FROM golang:1.25-alpine
+
+WORKDIR /app
+
+# Install Air for live reloading
+RUN go install github.com/air-verse/air@latest
+
+# Copy go module files
+COPY go.mod go.sum ./
+# Download dependencies
+RUN go mod download
+
+# Copy the rest of the application source code
+COPY . .
+
+# Expose the application port
+EXPOSE 3000
+
+# Run Air to watch for file changes and restart the server
+CMD ["air"]

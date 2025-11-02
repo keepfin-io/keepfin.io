@@ -1,6 +1,10 @@
-.PHONY: hot
+.PHONY: hot down
 
 hot:
-	@echo "Starting Go and Svelte servers..."
-	@cd web && npm run dev & \
-	air
+	@echo "Starting development environment with Docker Compose..."
+	@echo "Running Docker Compose..."
+	@docker compose -p keepnode -f docker-compose.hot.yml up --build
+
+down:
+	@echo "Stopping development environment..."
+	@docker compose -p keepnode -f docker-compose.hot.yml down
