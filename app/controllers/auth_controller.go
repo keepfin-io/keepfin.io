@@ -79,7 +79,7 @@ func UserSignUp(c *fiber.Ctx) error {
 	}
 
 	// Create a new user with validated data.
-	if err := queries.UserQueries{DB: db}.CreateUser(user); err != nil {
+	if err := (&queries.UserQueries{DB: db}).CreateUser(user); err != nil {
 		// Return status 500 and error message.
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,
@@ -132,7 +132,7 @@ func UserSignIn(c *fiber.Ctx) error {
 	}
 
 	// Get user by email.
-	user, err := queries.UserQueries{DB: db}.GetUserByEmail(signIn.Email)
+	user, err := (&queries.UserQueries{DB: db}).GetUserByEmail(signIn.Email)
 	if err != nil {
 		// Return, if user not found.
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -149,13 +149,21 @@ func UserSignIn(c *fiber.Ctx) error {
 		})
 	}
 
-	// Delete password hash from response.
+	// JWT token üret
+	token, err := utils.GenerateJWT(user.ID.String(), user.Email)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   "Token oluşturulamadı",
+		})
+	}
+
 	user.PasswordHash = ""
 
-	// Return status 200 OK.
 	return c.JSON(fiber.Map{
 		"error": false,
 		"msg":   "User signed in successfully",
 		"user":  user,
+		"token": token,
 	})
 }

@@ -1,4 +1,10 @@
-.PHONY: hot down
+
+.PHONY: hot down build
+build:
+	@echo "Building Svelte frontend..."
+	cd web && npm install && npm run build
+	@echo "Building Go backend..."
+	go build -o bin/keepnode .
 
 hot:
 	@echo "Starting development environment with Docker Compose..."
