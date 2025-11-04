@@ -1,24 +1,12 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
-  <InputGroupIcon />
-  <div style="margin-top: 2rem;">
-    <ShadcnButton>Shadcn Vue Button</ShadcnButton>
+  <div class="min-h-screen bg-gray-50">
+    <router-view />
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-import InputGroupIcon from './pages/InputGroupIcon.vue'
-import ShadcnButton from './components/ui/Button.vue'
-
 export default {
-  name: 'App',
-  components: {
-    HelloWorld,
-    InputGroupIcon,
-    ShadcnButton
-  }
+  name: 'App'
 }
 </script>
 
