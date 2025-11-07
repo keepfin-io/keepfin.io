@@ -1,16 +1,23 @@
 package controllers
 
 import (
-	"time"
-
 	"keepnode/app/models"
-	"keepnode/app/queries"
-	"keepnode/pkg/utils"
-	"keepnode/platform/database"
+	"keepnode/app/services"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
+
+// AuthController handles authentication-related requests
+type AuthController struct {
+	userService *services.UserService
+}
+
+// NewAuthController creates a new AuthController instance
+func NewAuthController(userService *services.UserService) *AuthController {
+	return &AuthController{
+		userService: userService,
+	}
+}
 
 // UserSignUp method to create a new user.
 // @Description Create a new user.
@@ -22,85 +29,36 @@ import (
 // @Param password body string true "Password"
 // @Success 200 {object} models.User
 // @Router /api/v1/user/sign/up [post]
-func UserSignUp(c *fiber.Ctx) error {
-	// Create a new user auth struct.
+func (ctrl *AuthController) UserSignUp(c *fiber.Ctx) error {
+	// Parse request body
 	signUp := &models.UserSignUp{}
-
-	// Checking received data from JSON body.
 	if err := c.BodyParser(signUp); err != nil {
-		// Return status 400 and error message.
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": true,
-			"msg":   err.Error(),
+			"msg":   "Invalid request body",
 		})
 	}
 
-	// Create database connection.
-	db, err := database.OpenDBConnection()
+	// Call service layer
+	user, err := ctrl.userService.SignUp(signUp)
 	if err != nil {
-		// Return status 500 and database connection error.
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": true,
 			"msg":   err.Error(),
 		})
 	}
 
-	// Create a new validator for a User model.
-	validate := utils.NewValidator()
-
-	// Validate sign up fields.
-	if err := validate.Struct(signUp); err != nil {
-		// Return, if some fields are not valid.
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   utils.ValidatorErrors(err),
-		})
-	}
-
-	// Create a new user struct.
-	user := &models.User{}
-
-	// Set initialized default data for user:
-	user.ID = uuid.New()
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
-	user.Email = signUp.Email
-	user.PasswordHash = utils.GeneratePassword(signUp.Password)
-	user.UserStatus = 1 // 0 == blocked, 1 == active
-	user.UserRole = "user"
-
-	// Validate user fields.
-	if err := validate.Struct(user); err != nil {
-		// Return, if some fields are not valid.
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   utils.ValidatorErrors(err),
-		})
-	}
-
-	// Create a new user with validated data.
-	if err := (&queries.UserQueries{DB: db}).CreateUser(user); err != nil {
-		// Return status 500 and error message.
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
-		})
-	}
-
-	// Delete password hash from JSON response.
-	user.PasswordHash = ""
-
-	// Return status 200 OK.
-	return c.JSON(fiber.Map{
+	// Return success response
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"error": false,
 		"msg":   "User created successfully",
 		"user":  user,
 	})
 }
 
-// UserSignIn method to auth user and return access and refresh tokens.
-// @Description Auth user and return access and refresh token.
-// @Summary auth user and return access and refresh token
+// UserSignIn method to auth user and return access token.
+// @Description Auth user and return access token.
+// @Summary auth user and return access token
 // @Tags User
 // @Accept json
 // @Produce json
@@ -108,58 +66,26 @@ func UserSignUp(c *fiber.Ctx) error {
 // @Param password body string true "Password"
 // @Success 200 {string} status "ok"
 // @Router /api/v1/user/sign/in [post]
-func UserSignIn(c *fiber.Ctx) error {
-	// Create a new user auth struct.
+func (ctrl *AuthController) UserSignIn(c *fiber.Ctx) error {
+	// Parse request body
 	signIn := &models.UserSignIn{}
-
-	// Checking received data from JSON body.
 	if err := c.BodyParser(signIn); err != nil {
-		// Return status 400 and error message.
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   "Invalid request body",
+		})
+	}
+
+	// Call service layer
+	user, token, err := ctrl.userService.SignIn(signIn)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": true,
 			"msg":   err.Error(),
 		})
 	}
 
-	// Create database connection.
-	db, err := database.OpenDBConnection()
-	if err != nil {
-		// Return status 500 and database connection error.
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
-		})
-	}
-
-	// Get user by email.
-	user, err := (&queries.UserQueries{DB: db}).GetUserByEmail(signIn.Email)
-	if err != nil {
-		// Return, if user not found.
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": true,
-			"msg":   "User with the given email is not found",
-		})
-	}
-
-	// Compare given user password with stored in found user.
-	if !utils.ComparePasswords(user.PasswordHash, signIn.Password) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   "Wrong user email address or password",
-		})
-	}
-
-	// JWT token üret
-	token, err := utils.GenerateJWT(user.ID.String(), user.Email)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": true,
-			"msg":   "Token oluşturulamadı",
-		})
-	}
-
-	user.PasswordHash = ""
-
+	// Return success response
 	return c.JSON(fiber.Map{
 		"error": false,
 		"msg":   "User signed in successfully",

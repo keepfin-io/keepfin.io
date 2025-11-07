@@ -97,6 +97,12 @@
 <script>
 export default {
   name: "Sidebar",
+  provide() {
+    return {
+      isCollapsed: () => this.isCollapsed,
+      isMobile: () => this.isMobile
+    };
+  },
   data() {
     return {
       isCollapsed: false,

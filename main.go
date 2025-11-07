@@ -16,21 +16,28 @@ import (
 )
 
 func main() {
-	app := fiber.New()
+	// Initialize database connection (singleton)
+	if err := database.Init(); err != nil {
+		log.Fatalf("Database initialization error: %v", err)
+	}
+	log.Println("Database initialized successfully")
+
+	// Run migrations
+	db := database.GetDB()
+	if err := database.AutoMigrate(db); err != nil {
+		log.Fatalf("Migration error: %v", err)
+	}
+	log.Println("Migrations completed successfully")
+
+	// Create Fiber app
+	app := fiber.New(fiber.Config{
+		AppName: "KeepNode API",
+	})
 
 	// Recovery middleware
 	app.Use(recover.New())
 
-	db, err := database.OpenDBConnection()
-	if err != nil {
-		log.Fatalf("Database connection error: %v", err)
-	}
-
-	err = database.AutoMigrate(db)
-	if err != nil {
-		log.Fatalf("Migration error: %v", err)
-	}
-
+	// Register routes
 	routes.Register(app)
 
 	// Graceful shutdown
@@ -40,15 +47,25 @@ func main() {
 		}
 	}()
 
+	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	log.Println("Shutting down server...")
+
+	// Shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	if err := app.ShutdownWithContext(ctx); err != nil {
 		log.Fatalf("Graceful shutdown failed: %v", err)
 	}
+
+	// Close database connection
+	if err := database.Close(); err != nil {
+		log.Printf("Failed to close database connection: %v", err)
+	}
+
 	log.Println("Server gracefully stopped")
 }

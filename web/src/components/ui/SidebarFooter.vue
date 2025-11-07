@@ -1,12 +1,24 @@
 <template>
-  <div class="sidebar-footer-inner">
+  <div class="sidebar-footer-inner" :class="{ 'is-collapsed': collapsed }">
     <slot></slot>
   </div>
 </template>
 
 <script>
 export default {
-  name: "SidebarFooter"
+  name: "SidebarFooter",
+  inject: {
+    isCollapsed: { default: () => () => false },
+    isMobile: { default: () => () => false }
+  },
+  computed: {
+    collapsed() {
+      return this.isCollapsed();
+    },
+    mobile() {
+      return this.isMobile();
+    }
+  }
 };
 </script>
 
@@ -15,7 +27,7 @@ export default {
   padding: 1rem;
 }
 
-.collapsed .sidebar-footer-inner {
+.sidebar-footer-inner.is-collapsed {
   padding: 0.5rem;
 }
 </style>

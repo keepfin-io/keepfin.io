@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/go-playground/validator/v10"
 )
 
@@ -23,4 +26,17 @@ func ValidatorErrors(err error) map[string]string {
 	}
 
 	return fields
+}
+
+// ValidatorErrorsString converts validation errors to a JSON string
+func ValidatorErrorsString(err error) string {
+	fields := ValidatorErrors(err)
+
+	// Convert map to JSON string
+	jsonBytes, jsonErr := json.Marshal(fields)
+	if jsonErr != nil {
+		return fmt.Sprintf("validation error: %v", err)
+	}
+
+	return string(jsonBytes)
 }

@@ -118,12 +118,13 @@ export default {
   transition: transform 0.2s;
 }
 
-.collapsed .user-text,
-.collapsed .chevron-icon {
+/* Collapsed state için */
+.is-collapsed .user-text,
+.is-collapsed .chevron-icon {
   display: none;
 }
 
-.collapsed .user-button {
+.is-collapsed .user-button {
   justify-content: center;
   padding: 0.625rem;
 }
