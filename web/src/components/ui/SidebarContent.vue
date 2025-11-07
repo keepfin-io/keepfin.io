@@ -1,22 +1,44 @@
 <template>
-  <nav class="flex-1 p-4">
-    <ul class="space-y-2">
+  <nav class="sidebar-nav">
+    <ul class="space-y-1">
       <li>
-        <router-link to="/" class="flex items-center gap-2 px-4 py-2 w-full text-left rounded hover:bg-gray-100">
-          <span class="material-icons">dashboard</span>
-          <span>Dashboard</span>
+        <router-link
+          to="/"
+          class="sidebar-link group"
+          active-class="active"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span class="sidebar-text">Dashboard</span>
         </router-link>
       </li>
       <li>
-        <router-link to="/projects" class="flex items-center gap-2 px-4 py-2 w-full text-left rounded hover:bg-gray-100">
-          <span class="material-icons">folder</span>
-          <span>Projects</span>
+        <router-link
+          to="/projects"
+          class="sidebar-link group"
+          active-class="active"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="sidebar-text">Projects</span>
         </router-link>
       </li>
       <li>
-        <router-link to="/settings" class="flex items-center gap-2 px-4 py-2 w-full text-left rounded hover:bg-gray-100">
-          <span class="material-icons">settings</span>
-          <span>Settings</span>
+        <router-link
+          to="/settings"
+          class="sidebar-link group"
+          active-class="active"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v6m0 6v6m5.196-15.196l-4.243 4.243m-2.828 2.828l-4.243 4.243m15.314 0l-4.243-4.243m-2.828-2.828l-4.243-4.243"></path>
+          </svg>
+          <span class="sidebar-text">Settings</span>
         </router-link>
       </li>
     </ul>
@@ -28,3 +50,54 @@ export default {
   name: "SidebarContent"
 };
 </script>
+
+<style scoped>
+.sidebar-nav {
+  width: 100%;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  width: 100%;
+  text-align: left;
+  border-radius: 0.5rem;
+  color: #4b5563;
+  transition: all 0.2s;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.sidebar-link:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.sidebar-link.active {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.sidebar-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s;
+}
+
+/* Collapsed state - hide text */
+.collapsed .sidebar-text {
+  opacity: 0;
+  width: 0;
+  display: none;
+}
+
+/* Collapsed state - center icons */
+.collapsed .sidebar-link {
+  justify-content: center;
+  padding: 0.625rem;
+}
+</style>

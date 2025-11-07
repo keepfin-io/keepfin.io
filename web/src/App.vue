@@ -12,24 +12,44 @@
         </template>
         <template #footer>
           <SidebarFooter>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <DropdownMenu>
-                  <template #trigger>
-                    <button class="flex items-center gap-2 w-full px-4 py-2 rounded hover:bg-gray-100">
-                      <span class="material-icons">person</span>
-                      <span>Username</span>
-                      <span class="material-icons ml-auto">expand_more</span>
-                    </button>
-                  </template>
-                  <template #content>
-                    <button class="block w-full text-left px-4 py-2 hover:bg-gray-100">Account</button>
-                    <button class="block w-full text-left px-4 py-2 hover:bg-gray-100">Billing</button>
-                    <button class="block w-full text-left px-4 py-2 hover:bg-gray-100">Sign out</button>
-                  </template>
-                </DropdownMenu>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <DropdownMenu>
+              <template #trigger>
+                <button class="user-button">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <span class="user-text">Username</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+              </template>
+              <template #content>
+                <button class="dropdown-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  Account
+                </button>
+                <button class="dropdown-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                  </svg>
+                  Billing
+                </button>
+                <button class="dropdown-item text-red-600 hover:bg-red-50">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  Sign out
+                </button>
+              </template>
+            </DropdownMenu>
           </SidebarFooter>
         </template>
       </Sidebar>
@@ -45,8 +65,6 @@ import Sidebar from './components/ui/Sidebar.vue'
 import SidebarHeader from './components/ui/SidebarHeader.vue'
 import SidebarContent from './components/ui/SidebarContent.vue'
 import SidebarFooter from './components/ui/SidebarFooter.vue'
-import SidebarMenu from './components/ui/SidebarMenu.vue'
-import SidebarMenuItem from './components/ui/SidebarMenuItem.vue'
 import DropdownMenu from './components/ui/DropdownMenu.vue'
 
 export default {
@@ -56,8 +74,6 @@ export default {
     SidebarHeader,
     SidebarContent,
     SidebarFooter,
-    SidebarMenu,
-    SidebarMenuItem,
     DropdownMenu
   },
   computed: {
@@ -68,3 +84,66 @@ export default {
   }
 }
 </script>
+
+<style>
+.user-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #4b5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.user-button:hover {
+  background: #f3f4f6;
+}
+
+.user-text {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron-icon {
+  transition: transform 0.2s;
+}
+
+.collapsed .user-text,
+.collapsed .chevron-icon {
+  display: none;
+}
+
+.collapsed .user-button {
+  justify-content: center;
+  padding: 0.625rem;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+</style>

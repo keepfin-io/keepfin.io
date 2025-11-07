@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 border-t mt-auto">
+  <div class="sidebar-footer-inner">
     <slot></slot>
   </div>
 </template>
@@ -9,3 +9,13 @@ export default {
   name: "SidebarFooter"
 };
 </script>
+
+<style scoped>
+.sidebar-footer-inner {
+  padding: 1rem;
+}
+
+.collapsed .sidebar-footer-inner {
+  padding: 0.5rem;
+}
+</style>

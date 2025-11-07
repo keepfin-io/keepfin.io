@@ -22,6 +22,7 @@ func OpenDBConnection() (*gorm.DB, error) {
 			return time.Now().UTC()
 		},
 	})
+
 	if err != nil {
 		return nil, err
 	}
