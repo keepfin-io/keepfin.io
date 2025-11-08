@@ -40,7 +40,7 @@
                   </svg>
                   Billing
                 </button>
-                <button class="dropdown-item text-red-600 hover:bg-red-50">
+                <button @click="handleLogout" class="dropdown-item text-red-600 hover:bg-red-50">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                     <polyline points="16 17 21 12 16 7"></polyline>
@@ -66,6 +66,7 @@ import SidebarHeader from './components/ui/SidebarHeader.vue'
 import SidebarContent from './components/ui/SidebarContent.vue'
 import SidebarFooter from './components/ui/SidebarFooter.vue'
 import DropdownMenu from './components/ui/DropdownMenu.vue'
+import { useAuth } from './composables/useAuth'
 
 export default {
   name: 'App',
@@ -76,10 +77,23 @@ export default {
     SidebarFooter,
     DropdownMenu
   },
+  setup() {
+    const { logout, init } = useAuth()
+
+    // Initialize auth check on app mount
+    init()
+
+    return { logout }
+  },
   computed: {
     isAuthPage() {
       const authPages = ['/login', '/register'];
       return authPages.includes(this.$route.path);
+    }
+  },
+  methods: {
+    async handleLogout() {
+      await this.logout()
     }
   }
 }

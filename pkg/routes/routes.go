@@ -22,8 +22,9 @@ func Register(app *fiber.App) {
 	app.Post("/api/v1/user/signup", authController.UserSignUp)
 	app.Post("/api/v1/user/signin", authController.UserSignIn)
 
-	// Protected routes example
+	// Protected routes
 	api := app.Group("/api/v1")
 	api.Use(middleware.JWT())
-	// api.Get("/user/profile", authController.UserProfile) // örnek korumalı route
+	api.Get("/user/me", authController.GetCurrentUser)
+	api.Post("/user/signout", authController.UserSignOut)
 }

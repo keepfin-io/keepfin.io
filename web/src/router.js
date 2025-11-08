@@ -5,13 +5,37 @@ import Dashboard from './pages/Dashboard.vue'
 import Projects from './pages/Projects.vue'
 import Settings from './pages/Settings.vue'
 
-
 const routes = [
-  { path: '/login', component: Login },
-  { path: '/register', component: Register },
-  { path: '/', component: Dashboard },
-  { path: '/projects', component: Projects },
-  { path: '/settings', component: Settings }
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login,
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: Register,
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/',
+    name: 'Dashboard',
+    component: Dashboard,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/projects',
+    name: 'Projects',
+    component: Projects,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
+    meta: { requiresAuth: true }
+  }
 ]
 
 const router = createRouter({
@@ -19,6 +43,26 @@ const router = createRouter({
   routes
 })
 
-// Auth guard removed for now
+// Route guard
+router.beforeEach((to, from, next) => {
+  // Check if user is authenticated by checking if user data exists
+  // Since we're using HTTP-only cookies, we can't directly check the cookie
+  // We'll rely on the API to validate authentication
+  const userDataString = sessionStorage.getItem('keepnode_user')
+  const isAuthenticated = !!userDataString
+
+  // If route requires authentication and user is not authenticated
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login')
+  }
+  // If route requires guest (login/register) and user is authenticated
+  else if (to.meta.requiresGuest && isAuthenticated) {
+    next('/')
+  }
+  // Otherwise, proceed
+  else {
+    next()
+  }
+})
 
 export default router
