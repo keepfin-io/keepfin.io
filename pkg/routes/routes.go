@@ -19,8 +19,8 @@ func Register(app *fiber.App) {
 	authController := controllers.NewAuthController(userService)
 
 	// Public routes
-	app.Post("/api/v1/user/sign/up", authController.UserSignUp)
-	app.Post("/api/v1/user/sign/in", authController.UserSignIn)
+	app.Post("/api/v1/user/signup", authController.UserSignUp)
+	app.Post("/api/v1/user/signin", authController.UserSignIn)
 
 	// Protected routes example
 	api := app.Group("/api/v1")

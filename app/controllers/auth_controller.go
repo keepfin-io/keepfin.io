@@ -34,8 +34,8 @@ func (ctrl *AuthController) UserSignUp(c *fiber.Ctx) error {
 	signUp := &models.UserSignUp{}
 	if err := c.BodyParser(signUp); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   "Invalid request body",
+			"error":   true,
+			"message": "Invalid request body",
 		})
 	}
 
@@ -43,16 +43,16 @@ func (ctrl *AuthController) UserSignUp(c *fiber.Ctx) error {
 	user, err := ctrl.userService.SignUp(signUp)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error":   true,
+			"message": err.Error(),
 		})
 	}
 
 	// Return success response
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"error": false,
-		"msg":   "User created successfully",
-		"user":  user,
+		"error":   false,
+		"message": "User created successfully",
+		"user":    user,
 	})
 }
 
@@ -71,8 +71,8 @@ func (ctrl *AuthController) UserSignIn(c *fiber.Ctx) error {
 	signIn := &models.UserSignIn{}
 	if err := c.BodyParser(signIn); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": true,
-			"msg":   "Invalid request body",
+			"error":   true,
+			"message": "Invalid request body",
 		})
 	}
 
@@ -80,16 +80,16 @@ func (ctrl *AuthController) UserSignIn(c *fiber.Ctx) error {
 	user, token, err := ctrl.userService.SignIn(signIn)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": true,
-			"msg":   err.Error(),
+			"error":   true,
+			"message": err.Error(),
 		})
 	}
 
 	// Return success response
 	return c.JSON(fiber.Map{
-		"error": false,
-		"msg":   "User signed in successfully",
-		"user":  user,
-		"token": token,
+		"error":   false,
+		"message": "User signed in successfully",
+		"user":    user,
+		"token":   token,
 	})
 }
