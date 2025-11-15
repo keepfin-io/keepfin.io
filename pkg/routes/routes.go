@@ -32,6 +32,7 @@ func Register(app *fiber.App) {
 
 	// Account routes
 	api.Post("/accounts/create", accountController.CreateAccount)
+	api.Get("/accounts", accountController.GetUserAccounts)
 	api.Get("/accounts/:id", accountController.GetAccount)
 	api.Put("/accounts/:id", accountController.UpdateAccount)
 	api.Delete("/accounts/:id", accountController.DeleteAccount)

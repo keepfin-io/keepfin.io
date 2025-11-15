@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func JWT() fiber.Handler {
@@ -40,8 +42,34 @@ func JWT() fiber.Handler {
 			})
 		}
 
-		// Store user info in context for later use
+		// Extract user_id from claims
+		claims, ok := parsedToken.Claims.(jwt.MapClaims)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": true,
+				"msg":   "Invalid token claims",
+			})
+		}
+
+		userIDStr, ok := claims["user_id"].(string)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": true,
+				"msg":   "Invalid user ID in token",
+			})
+		}
+
+		userID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": true,
+				"msg":   "Invalid user ID format",
+			})
+		}
+
+		// Store user info and user_id in context for later use
 		c.Locals("user", parsedToken)
+		c.Locals("user_id", userID)
 
 		return c.Next()
 	}

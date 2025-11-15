@@ -5,7 +5,6 @@ import (
 	"keepnode/app/services"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -137,46 +136,12 @@ func (ctrl *AuthController) UserSignOut(c *fiber.Ctx) error {
 // @Success 200 {object} models.User
 // @Router /api/v1/user/me [get]
 func (ctrl *AuthController) GetCurrentUser(c *fiber.Ctx) error {
-	// Get user info from context (set by JWT middleware)
-	userLocal := c.Locals("user")
-	if userLocal == nil {
+	// Get user ID from context (set by JWT middleware)
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
-		})
-	}
-
-	// Parse token to get claims
-	token, ok := userLocal.(*jwt.Token)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid token",
-		})
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid token claims",
-		})
-	}
-
-	userIDStr, ok := claims["user_id"].(string)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid user ID in token",
-		})
-	}
-
-	// Parse UUID from string
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid user ID format",
 		})
 	}
 
