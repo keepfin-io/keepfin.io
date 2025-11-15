@@ -14,9 +14,11 @@ func Register(app *fiber.App) {
 	// Initialize services
 	db := database.GetDB()
 	userService := services.NewUserService(db)
+	accountService := services.NewAccountService(db)
 
 	// Initialize controllers
 	authController := controllers.NewAuthController(userService)
+	accountController := controllers.NewAccountController(accountService)
 
 	// Public routes
 	app.Post("/api/v1/user/signup", authController.UserSignUp)
@@ -27,4 +29,11 @@ func Register(app *fiber.App) {
 	api.Use(middleware.JWT())
 	api.Get("/user/me", authController.GetCurrentUser)
 	api.Post("/user/signout", authController.UserSignOut)
+
+	// Account routes
+	api.Post("/accounts/create", accountController.CreateAccount)
+	api.Get("/accounts/:id", accountController.GetAccount)
+	api.Put("/accounts/:id", accountController.UpdateAccount)
+	api.Delete("/accounts/:id", accountController.DeleteAccount)
+
 }
