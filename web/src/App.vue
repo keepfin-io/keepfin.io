@@ -21,7 +21,10 @@
                     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
-                  <span class="user-text">{{ user?.email || 'User' }}</span>
+                  <div class="user-info">
+                    <span class="user-text">{{ user?.email || 'User' }}</span>
+                    <span class="build-version">v2025.12.27</span>
+                  </div>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="chevron-icon">
@@ -127,20 +130,36 @@ export default {
   background: #f3f4f6;
 }
 
-.user-text {
+.user-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   text-align: left;
+}
+
+.user-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.build-version {
+  font-size: 0.625rem;
+  color: #9ca3af;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin-top: 0.125rem;
 }
 
 .chevron-icon {
   transition: transform 0.2s;
+  flex-shrink: 0;
 }
 
 /* Collapsed state için */
-.is-collapsed .user-text,
+.is-collapsed .user-info,
 .is-collapsed .chevron-icon {
   display: none;
 }
