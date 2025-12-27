@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { authAPI } from '../services/api'
+import { authAPI } from '../services/authApi'
 
 // Load user from sessionStorage on init
 const storedUser = sessionStorage.getItem('keepnode_user')
