@@ -19,6 +19,37 @@
             </button>
         </div>
 
+        <!-- Inline Notification -->
+        <div v-if="notification" class="inline-notification" :class="[`notification-${notification.variant}`]">
+            <div class="notification-icon">
+                <!-- Success Icon -->
+                <svg v-if="notification.variant === 'success'" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <!-- Error Icon -->
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+            </div>
+            <div class="notification-content">
+                <p class="notification-title">{{ notification.title }}</p>
+                <p v-if="notification.description" class="notification-description">{{ notification.description }}</p>
+            </div>
+            <button @click="clearNotification" class="notification-close">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
         <!-- Error State -->
         <div v-if="!loading && error" class="error-container">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
@@ -289,6 +320,8 @@ export default {
             saving: false,
             deleting: false,
             formError: null,
+            notification: null,
+            notificationTimer: null,
             form: {
                 account_name: '',
                 currency: '',
@@ -356,13 +389,16 @@ export default {
             try {
                 if (this.editingAccount) {
                     await accountAPI.updateAccount(this.editingAccount.id, this.form)
+                    this.showNotification('success', 'Account updated', `${this.form.account_name} has been updated successfully.`)
                 } else {
                     await accountAPI.createAccount(this.form)
+                    this.showNotification('success', 'Account created', `${this.form.account_name} has been created successfully.`)
                 }
                 this.closeModal()
                 await this.fetchAccounts()
             } catch (err) {
                 this.formError = err.message || 'Failed to save account'
+                this.showNotification('error', 'Error', this.formError)
             } finally {
                 this.saving = false
             }
@@ -381,14 +417,38 @@ export default {
         async deleteAccount() {
             if (!this.accountToDelete) return
             this.deleting = true
+            const accountName = this.accountToDelete.account_name
             try {
                 await accountAPI.deleteAccount(this.accountToDelete.id)
                 this.cancelDelete()
                 await this.fetchAccounts()
+                this.showNotification('success', 'Account deleted', `${accountName} has been deleted.`)
             } catch (err) {
                 this.formError = err.message || 'Failed to delete account'
+                this.showNotification('error', 'Error', this.formError)
             } finally {
                 this.deleting = false
+            }
+        },
+
+        showNotification(variant, title, description = '') {
+            // Clear existing timer
+            if (this.notificationTimer) {
+                clearTimeout(this.notificationTimer)
+            }
+            // Set notification
+            this.notification = { variant, title, description }
+            // Auto-clear after 5 seconds
+            this.notificationTimer = setTimeout(() => {
+                this.clearNotification()
+            }, 5000)
+        },
+
+        clearNotification() {
+            this.notification = null
+            if (this.notificationTimer) {
+                clearTimeout(this.notificationTimer)
+                this.notificationTimer = null
             }
         },
 
@@ -446,6 +506,81 @@ export default {
     color: #6b7280;
     margin: 0.25rem 0 0 0;
     font-size: 0.875rem;
+}
+
+/* Inline Notification */
+.inline-notification {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid;
+    margin-bottom: 1.5rem;
+}
+
+.notification-success {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+    color: #166534;
+}
+
+.notification-success .notification-icon {
+    color: #22c55e;
+}
+
+.notification-error {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+.notification-error .notification-icon {
+    color: #ef4444;
+}
+
+.notification-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.125rem;
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.notification-description {
+    font-size: 0.8125rem;
+    margin: 0.25rem 0 0 0;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.notification-close {
+    flex-shrink: 0;
+    padding: 0.25rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all 0.2s;
+    color: inherit;
+}
+
+.notification-close:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.05);
 }
 
 /* Buttons */
