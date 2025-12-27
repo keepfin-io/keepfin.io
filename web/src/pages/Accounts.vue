@@ -36,20 +36,26 @@
 
         <!-- Empty State -->
         <div v-else-if="accounts.length === 0" class="empty-state">
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                <line x1="2" y1="10" x2="22" y2="10"></line>
-            </svg>
-            <h3>No accounts yet</h3>
-            <p>Create your first account to start tracking your finances</p>
-            <button @click="openCreateModal" class="btn-primary">
+            <div class="empty-state-illustration">
+                <div class="illustration-bg"></div>
+                <div class="illustration-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                </div>
+            </div>
+            <h3 class="empty-state-title">No accounts yet</h3>
+            <p class="empty-state-description">Start managing your finances by adding your first account.<br>Track
+                balances across multiple currencies and platforms.</p>
+            <button @click="openCreateModal" class="btn-primary btn-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                Create Account
+                Create Your First Account
             </button>
         </div>
 
@@ -529,28 +535,94 @@ export default {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 4rem;
+    padding: 4rem 2rem;
     text-align: center;
-    background: #f9fafb;
-    border-radius: 1rem;
-    border: 2px dashed #e5e7eb;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 1.5rem;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
 }
 
-.empty-state svg {
-    color: #9ca3af;
+.empty-state::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.empty-state-illustration {
+    position: relative;
     margin-bottom: 1.5rem;
 }
 
-.empty-state h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #374151;
-    margin: 0 0 0.5rem 0;
+.illustration-bg {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse-soft 3s ease-in-out infinite;
 }
 
-.empty-state p {
-    color: #6b7280;
-    margin: 0 0 1.5rem 0;
+.illustration-icon {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.4);
+    transform: rotate(-6deg);
+    transition: transform 0.3s ease;
+}
+
+.empty-state:hover .illustration-icon {
+    transform: rotate(0deg) scale(1.05);
+}
+
+@keyframes pulse-soft {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.7;
+    }
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.75rem 0;
+}
+
+.empty-state-description {
+    color: #64748b;
+    margin: 0 0 2rem 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 400px;
+}
+
+.btn-lg {
+    padding: 0.875rem 1.75rem;
+    font-size: 1rem;
 }
 
 /* Accounts Grid */
@@ -703,7 +775,7 @@ export default {
     background: white;
     border-radius: 1rem;
     width: 100%;
-    max-width: 480px;
+    max-width: 560px;
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
