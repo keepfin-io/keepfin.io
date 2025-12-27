@@ -59,52 +59,111 @@
             </button>
         </div>
 
-        <!-- Accounts Grid -->
-        <div v-else class="accounts-grid">
-            <div v-for="account in accounts" :key="account.id" class="account-card">
-                <div class="card-header">
-                    <div class="account-icon" :style="{ background: getAccountColor(account.platform) }">
-                        {{ getAccountInitial(account.account_name) }}
-                    </div>
-                    <div class="account-info">
-                        <h3 class="account-name">{{ account.account_name }}</h3>
-                        <span class="account-platform">{{ account.platform || 'General' }}</span>
-                    </div>
-                    <div class="card-actions">
-                        <button @click="openEditModal(account)" class="btn-icon" title="Edit">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                            </svg>
-                        </button>
-                        <button @click="confirmDelete(account)" class="btn-icon btn-danger" title="Delete">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path
-                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                </path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="balance-section">
-                        <span class="balance-label">Initial Balance</span>
-                        <span class="balance-amount" :class="{ 'negative': account.initial_balance < 0 }">
-                            {{ formatCurrency(account.initial_balance, account.currency) }}
-                        </span>
-                    </div>
-                    <div class="currency-badge">{{ account.currency }}</div>
-                </div>
-                <div v-if="account.description" class="card-footer">
-                    <p class="account-description">{{ account.description }}</p>
-                </div>
-                <div v-if="account.is_excluded" class="excluded-badge">
-                    Excluded from totals
-                </div>
+        <!-- Accounts Table -->
+        <div v-else class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="th-account">Account</th>
+                        <th class="th-platform">Platform</th>
+                        <th class="th-currency">Currency</th>
+                        <th class="th-balance">Balance</th>
+                        <th class="th-status">Status</th>
+                        <th class="th-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="account in accounts" :key="account.id" class="table-row"
+                        :class="{ 'is-excluded': account.is_excluded }">
+                        <!-- Account -->
+                        <td class="td-account">
+                            <div class="account-cell">
+                                <div class="account-avatar" :style="{ background: getAccountColor(account.platform) }">
+                                    {{ getAccountInitial(account.account_name) }}
+                                </div>
+                                <div class="account-info">
+                                    <span class="account-name">{{ account.account_name }}</span>
+                                    <span v-if="account.description" class="account-description">{{
+                                        account.description }}</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Platform -->
+                        <td class="td-platform">
+                            <span class="platform-badge">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                                </svg>
+                                {{ account.platform || 'General' }}
+                            </span>
+                        </td>
+
+                        <!-- Currency -->
+                        <td class="td-currency">
+                            <span class="currency-badge">{{ account.currency }}</span>
+                        </td>
+
+                        <!-- Balance -->
+                        <td class="td-balance">
+                            <span class="balance-amount" :class="{ 'negative': account.initial_balance < 0 }">
+                                {{ formatCurrency(account.initial_balance, account.currency) }}
+                            </span>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="td-status">
+                            <span v-if="account.is_excluded" class="status-badge status-excluded">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                </svg>
+                                Excluded
+                            </span>
+                            <span v-else class="status-badge status-active">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Active
+                            </span>
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="td-actions">
+                            <div class="action-buttons">
+                                <button @click="openEditModal(account)" class="btn-action btn-edit" title="Edit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                    </svg>
+                                </button>
+                                <button @click="confirmDelete(account)" class="btn-action btn-delete" title="Delete">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path
+                                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Table Footer -->
+            <div class="table-footer">
+                <span class="table-count">{{ accounts.length }} account{{ accounts.length !== 1 ? 's' : '' }}</span>
             </div>
         </div>
 
@@ -625,137 +684,292 @@ export default {
     font-size: 1rem;
 }
 
-/* Accounts Grid */
-.accounts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
-}
-
-.account-card {
+/* Data Table */
+.table-container {
     background: white;
     border-radius: 1rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
     overflow: hidden;
-    transition: all 0.2s;
-    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.account-card:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.card-header {
+.data-table thead {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.data-table th {
+    padding: 0.875rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.data-table th.th-balance,
+.data-table th.th-actions {
+    text-align: right;
+}
+
+.data-table th.th-currency,
+.data-table th.th-status {
+    text-align: center;
+}
+
+.table-row {
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.15s ease;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.table-row:hover {
+    background: #f8fafc;
+}
+
+.table-row.is-excluded {
+    opacity: 0.7;
+    background: #fafafa;
+}
+
+.data-table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+/* Account Cell */
+.account-cell {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 1.25rem;
-    border-bottom: 1px solid #f3f4f6;
+    gap: 0.875rem;
 }
 
-.account-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+.account-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 700;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .account-info {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
     min-width: 0;
 }
 
 .account-name {
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 600;
-    color: #1f2937;
-    margin: 0;
+    color: #1e293b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.account-platform {
+.account-description {
     font-size: 0.75rem;
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
 }
 
-.card-actions {
-    display: flex;
-    gap: 0.25rem;
-}
-
-.card-body {
-    padding: 1.25rem;
-    display: flex;
-    justify-content: space-between;
+/* Platform Badge */
+.platform-badge {
+    display: inline-flex;
     align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background: #f1f5f9;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #475569;
 }
 
-.balance-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+.platform-badge svg {
+    opacity: 0.6;
 }
 
-.balance-label {
-    font-size: 0.75rem;
-    color: #6b7280;
-    text-transform: uppercase;
+/* Currency Badge */
+.td-currency {
+    text-align: center;
+}
+
+.currency-badge {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: white;
     letter-spacing: 0.05em;
+}
+
+/* Balance */
+.td-balance {
+    text-align: right;
 }
 
 .balance-amount {
-    font-size: 1.5rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #059669;
+    font-variant-numeric: tabular-nums;
 }
 
 .balance-amount.negative {
     color: #dc2626;
 }
 
-.currency-badge {
-    padding: 0.25rem 0.75rem;
-    background: #f3f4f6;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #6b7280;
+/* Status Badge */
+.td-status {
+    text-align: center;
 }
 
-.card-footer {
-    padding: 0 1.25rem 1.25rem;
-}
-
-.account-description {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin: 0;
-    line-height: 1.5;
-}
-
-.excluded-badge {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    padding: 0.125rem 0.5rem;
-    background: #fef3c7;
-    color: #92400e;
-    border-radius: 0.25rem;
-    font-size: 0.625rem;
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 20px;
+    font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.status-excluded {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+/* Action Buttons */
+.td-actions {
+    text-align: right;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.375rem;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-edit {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.btn-edit:hover {
+    background: #e0f2fe;
+    color: #0284c7;
+    transform: scale(1.05);
+}
+
+.btn-delete {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.btn-delete:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    transform: scale(1.05);
+}
+
+/* Table Footer */
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+.table-count {
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+/* Responsive Table */
+@media (max-width: 900px) {
+
+    .th-platform,
+    .td-platform,
+    .th-status,
+    .td-status {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+
+    .data-table th,
+    .data-table td {
+        padding: 0.75rem 0.625rem;
+    }
+
+    .account-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 0.875rem;
+    }
+
+    .account-name {
+        font-size: 0.875rem;
+    }
+
+    .account-description {
+        display: none;
+    }
+
+    .balance-amount {
+        font-size: 0.875rem;
+    }
+
+    .th-currency,
+    .td-currency {
+        display: none;
+    }
 }
 
 /* Modal */
