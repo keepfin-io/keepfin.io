@@ -80,17 +80,17 @@ func (s *AccountService) UpdateAccount(accountID uuid.UUID, userID uuid.UUID, up
 		return nil, err
 	}
 
-	// Validate update data
-	validate := utils.NewValidator()
-	if err := validate.Struct(updateData); err != nil {
-		return nil, errors.New(utils.ValidatorErrorsString(err))
-	}
-
-	// Preserve certain fields
+	// Preserve certain fields BEFORE validation
 	updateData.ID = existingAccount.ID
 	updateData.UserID = existingAccount.UserID
 	updateData.CreatedAt = existingAccount.CreatedAt
 	updateData.UpdatedAt = time.Now()
+
+	// Validate update data AFTER setting required fields
+	validate := utils.NewValidator()
+	if err := validate.Struct(updateData); err != nil {
+		return nil, errors.New(utils.ValidatorErrorsString(err))
+	}
 
 	// Update account in database
 	if err := (&queries.AccountQueries{DB: s.DB}).UpdateAccount(accountID, updateData); err != nil {

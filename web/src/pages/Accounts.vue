@@ -105,15 +105,10 @@
                         :class="{ 'is-excluded': account.is_excluded }">
                         <!-- Account -->
                         <td class="td-account">
-                            <div class="account-cell">
-                                <div class="account-avatar" :style="{ background: getAccountColor(account.platform) }">
-                                    {{ getAccountInitial(account.account_name) }}
-                                </div>
-                                <div class="account-info">
-                                    <span class="account-name">{{ account.account_name }}</span>
-                                    <span v-if="account.description" class="account-description">{{
-                                        account.description }}</span>
-                                </div>
+                            <div class="account-info">
+                                <span class="account-name">{{ account.account_name }}</span>
+                                <span v-if="account.description" class="account-description">{{
+                                    account.description }}</span>
                             </div>
                         </td>
 
@@ -275,6 +270,12 @@
             :message="`Are you sure you want to delete ${accountToDelete?.account_name}? This action cannot be undone.`"
             confirmText="Delete Account" cancelText="Cancel" loadingText="Deleting..." :loading="deleting"
             @confirm="deleteAccount" @cancel="cancelDelete" />
+
+        <!-- Update Confirmation Modal -->
+        <ConfirmModal :visible="showUpdateModal" variant="warning" title="Update Account"
+            :message="`Are you sure you want to update ${form.account_name}?`" confirmText="Update Account"
+            cancelText="Cancel" loadingText="Updating..." :loading="saving" @confirm="confirmUpdateAccount"
+            @cancel="cancelUpdate" />
     </main>
 </template>
 
@@ -311,6 +312,7 @@ export default {
             formError: null,
             notification: null,
             notificationTimer: null,
+            showUpdateModal: false,
             form: {
                 account_name: '',
                 currency: '',
@@ -373,6 +375,25 @@ export default {
         },
 
         async saveAccount() {
+            // If editing, show confirmation modal first
+            if (this.editingAccount) {
+                this.showUpdateModal = true
+                return
+            }
+            // For create, proceed directly
+            await this.performSave()
+        },
+
+        cancelUpdate() {
+            this.showUpdateModal = false
+        },
+
+        async confirmUpdateAccount() {
+            this.showUpdateModal = false
+            await this.performSave()
+        },
+
+        async performSave() {
             this.saving = true
             this.formError = null
             try {
@@ -854,27 +875,7 @@ export default {
     vertical-align: middle;
 }
 
-/* Account Cell */
-.account-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-}
-
-.account-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1rem;
-    font-weight: 700;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
+/* Account Info */
 .account-info {
     display: flex;
     flex-direction: column;
