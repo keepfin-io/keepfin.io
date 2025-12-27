@@ -1,4 +1,7 @@
 <template>
+    <!-- Loading Spinner -->
+    <FullPageSpinner :visible="loading" message="Loading profile..." />
+
     <main class="profile-page">
         <!-- Header -->
         <div class="page-header">
@@ -133,12 +136,21 @@
 
 <script>
 import { useAuth } from '@/composables/useAuth'
+import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
 
 export default {
     name: 'ProfilePage',
+    components: {
+        FullPageSpinner
+    },
     setup() {
-        const { user } = useAuth()
-        return { user }
+        const { user, isLoading } = useAuth()
+        return { user, isLoading }
+    },
+    computed: {
+        loading() {
+            return this.isLoading || !this.user
+        }
     },
     data() {
         return {
