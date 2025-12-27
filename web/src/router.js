@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard.vue'
 import Accounts from './pages/Accounts.vue'
 import Projects from './pages/Projects.vue'
 import Settings from './pages/Settings.vue'
+import Profile from './pages/Profile.vue'
 
 const routes = [
   {
@@ -41,6 +42,12 @@ const routes = [
     path: '/settings',
     name: 'Settings',
     component: Settings,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
     meta: { requiresAuth: true }
   }
 ]
