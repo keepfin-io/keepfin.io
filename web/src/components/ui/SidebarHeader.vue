@@ -2,7 +2,7 @@
   <div class="sidebar-header-content" :class="{ 'is-collapsed': collapsed }">
     <img src="/favicon.ico" alt="Logo" class="header-logo" />
     <transition name="fade-text">
-      <span v-if="!collapsed || mobile" class="header-text">KeepNode</span>
+      <span v-if="!collapsed || mobile" class="header-text">keepfin.io</span>
     </transition>
   </div>
 </template>
