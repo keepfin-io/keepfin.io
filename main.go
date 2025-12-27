@@ -31,7 +31,8 @@ func main() {
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
-		AppName: "KeepNode API",
+		AppName:        "KeepNode API",
+		ReadBufferSize: 16384, // 16KB - prevents 431 error for large headers/cookies
 	})
 
 	// CORS middleware
