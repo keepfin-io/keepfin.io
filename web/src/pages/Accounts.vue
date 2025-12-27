@@ -1,4 +1,7 @@
 <template>
+    <!-- Full Page Spinner -->
+    <FullPageSpinner :visible="loading || saving || deleting" :message="spinnerMessage" />
+
     <main class="accounts-page">
         <!-- Header -->
         <div class="page-header">
@@ -16,14 +19,8 @@
             </button>
         </div>
 
-        <!-- Loading State -->
-        <div v-if="loading" class="loading-container">
-            <div class="spinner"></div>
-            <p>Loading accounts...</p>
-        </div>
-
         <!-- Error State -->
-        <div v-else-if="error" class="error-container">
+        <div v-if="!loading && error" class="error-container">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -35,7 +32,7 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else-if="accounts.length === 0" class="empty-state">
+        <div v-if="!loading && !error && accounts.length === 0" class="empty-state">
             <div class="empty-state-illustration">
                 <div class="illustration-bg"></div>
                 <div class="illustration-icon">
@@ -60,7 +57,7 @@
         </div>
 
         <!-- Accounts Table -->
-        <div v-else class="table-container">
+        <div v-if="!loading && !error && accounts.length > 0" class="table-container">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -265,9 +262,21 @@
 
 <script>
 import { accountAPI } from '@/services/accountApi'
+import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
 
 export default {
     name: 'AccountsPage',
+    components: {
+        FullPageSpinner
+    },
+    computed: {
+        spinnerMessage() {
+            if (this.loading) return 'Loading accounts...'
+            if (this.saving) return 'Saving account...'
+            if (this.deleting) return 'Deleting account...'
+            return ''
+        }
+    },
     data() {
         return {
             accounts: [],
@@ -541,32 +550,6 @@ export default {
 .btn-close:hover {
     background: #f3f4f6;
     color: #1f2937;
-}
-
-/* Loading State */
-.loading-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem;
-    color: #6b7280;
-}
-
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #e5e7eb;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 /* Error State */
