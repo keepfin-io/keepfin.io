@@ -271,34 +271,23 @@
         </div>
 
         <!-- Delete Confirmation Modal -->
-        <div v-if="showDeleteModal" class="modal-overlay" @click.self="cancelDelete">
-            <div class="modal modal-delete">
-                <div class="modal-header">
-                    <h2>Delete Account</h2>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete <strong>{{ accountToDelete?.account_name }}</strong>?</p>
-                    <p class="delete-warning">This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button @click="cancelDelete" class="btn-secondary">Cancel</button>
-                    <button @click="deleteAccount" class="btn-danger" :disabled="deleting">
-                        {{ deleting ? 'Deleting...' : 'Delete Account' }}
-                    </button>
-                </div>
-            </div>
-        </div>
+        <ConfirmModal :visible="showDeleteModal" variant="danger" title="Delete Account"
+            :message="`Are you sure you want to delete ${accountToDelete?.account_name}? This action cannot be undone.`"
+            confirmText="Delete Account" cancelText="Cancel" loadingText="Deleting..." :loading="deleting"
+            @confirm="deleteAccount" @cancel="cancelDelete" />
     </main>
 </template>
 
 <script>
 import { accountAPI } from '@/services/accountApi'
 import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 
 export default {
     name: 'AccountsPage',
     components: {
-        FullPageSpinner
+        FullPageSpinner,
+        ConfirmModal
     },
     computed: {
         spinnerMessage() {
