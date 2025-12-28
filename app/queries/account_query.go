@@ -79,3 +79,12 @@ func (q *AccountQueries) DeleteAccount(accountID uuid.UUID) error {
 	// This query returns nothing.
 	return nil
 }
+
+// UpdateAccountStatus query for updating account status by given ID.
+func (q *AccountQueries) UpdateAccountStatus(accountID uuid.UUID, isActive bool) error {
+	err := q.DB.Model(&models.Account{}).Where("id = ?", accountID).Update("is_active", isActive).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

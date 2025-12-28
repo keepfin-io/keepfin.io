@@ -240,3 +240,49 @@ func (ctrl *AccountController) DeleteAccount(c *fiber.Ctx) error {
 		"message": "Account deleted successfully",
 	})
 }
+
+// ToggleAccountStatus method to toggle account active status.
+// @Description Toggle an account's active status.
+// @Summary toggle account status
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param id path string true "Account ID"
+// @Success 200 {object} models.Account
+// @Router /api/v1/accounts/{id}/toggle-status [patch]
+func (ctrl *AccountController) ToggleAccountStatus(c *fiber.Ctx) error {
+	// Get user ID from context (set by JWT middleware)
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   true,
+			"message": "User not authenticated",
+		})
+	}
+
+	// Get account ID from URL params
+	accountIDStr := c.Params("id")
+	accountID, err := uuid.Parse(accountIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "Invalid account ID format",
+		})
+	}
+
+	// Call service layer
+	account, err := ctrl.accountService.ToggleAccountStatus(accountID, userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": err.Error(),
+		})
+	}
+
+	// Return success response
+	return c.JSON(fiber.Map{
+		"error":   false,
+		"message": "Account status updated successfully",
+		"account": account,
+	})
+}

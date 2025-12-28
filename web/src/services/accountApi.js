@@ -27,6 +27,11 @@ export const accountAPI = {
     deleteAccount: (id) =>
         apiFetch(`/accounts/${id}`, {
             method: 'DELETE'
+        }),
+
+    toggleAccountStatus: (id) =>
+        apiFetch(`/accounts/${id}/toggle-status`, {
+            method: 'PATCH'
         })
 }
 

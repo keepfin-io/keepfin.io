@@ -116,3 +116,23 @@ func (s *AccountService) DeleteAccount(accountID uuid.UUID, userID uuid.UUID) er
 
 	return nil
 }
+
+// ToggleAccountStatus toggles the is_active status of an account
+func (s *AccountService) ToggleAccountStatus(accountID uuid.UUID, userID uuid.UUID) (*models.Account, error) {
+	// Check if account exists and user owns it
+	account, err := s.GetAccountByID(accountID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Toggle the status
+	newStatus := !account.IsActive
+
+	// Update in database
+	if err := (&queries.AccountQueries{DB: s.DB}).UpdateAccountStatus(accountID, newStatus); err != nil {
+		return nil, err
+	}
+
+	// Return updated account
+	return s.GetAccountByID(accountID, userID)
+}

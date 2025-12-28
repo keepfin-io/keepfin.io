@@ -36,5 +36,6 @@ func Register(app *fiber.App) {
 	api.Get("/accounts/:id", accountController.GetAccount)
 	api.Put("/accounts/:id", accountController.UpdateAccount)
 	api.Delete("/accounts/:id", accountController.DeleteAccount)
+	api.Patch("/accounts/:id/toggle-status", accountController.ToggleAccountStatus)
 
 }

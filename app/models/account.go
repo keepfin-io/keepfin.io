@@ -14,6 +14,7 @@ type Account struct {
 	InitialBalance float64   `gorm:"type:decimal(18,2);default:0" json:"initial_balance"`
 	Platform       string    `gorm:"type:varchar(100)" json:"platform" validate:"platform"`
 	Description    string    `gorm:"type:varchar(255)" json:"description,omitempty"`
+	IsActive       bool      `gorm:"default:true" json:"is_active"`
 	IsExcluded     bool      `gorm:"default:false" json:"is_excluded"`
 }
 

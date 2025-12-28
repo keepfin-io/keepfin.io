@@ -144,23 +144,13 @@
 
                         <!-- Status -->
                         <td class="td-status">
-                            <span v-if="account.is_excluded" class="status-badge status-excluded">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-                                </svg>
-                                Excluded
-                            </span>
-                            <span v-else class="status-badge status-active">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                                Active
-                            </span>
+                            <button @click="toggleAccountStatus(account)" class="status-toggle"
+                                :class="{ 'is-active': account.is_active, 'is-inactive': !account.is_active }">
+                                <span class="toggle-switch">
+                                    <span class="toggle-knob"></span>
+                                </span>
+                                <span class="status-text">{{ account.is_active ? 'Active' : 'Inactive' }}</span>
+                            </button>
                         </td>
 
                         <!-- Actions -->
@@ -440,6 +430,16 @@ export default {
                 this.showNotification('error', 'Error', this.formError)
             } finally {
                 this.saving = false
+            }
+        },
+
+        async toggleAccountStatus(account) {
+            try {
+                const response = await accountAPI.toggleAccountStatus(account.id)
+                account.is_active = response.account.is_active
+                this.showNotification('success', 'Status updated', `${account.account_name} is now ${account.is_active ? 'active' : 'inactive'}.`)
+            } catch (err) {
+                this.showNotification('error', 'Error', err.message || 'Failed to update status')
             }
         },
 
@@ -1042,31 +1042,73 @@ export default {
     color: #dc2626;
 }
 
-/* Status Badge */
+/* Status Toggle */
 .td-status {
     text-align: center;
 }
 
-.status-badge {
+.status-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.625rem;
-    border-radius: 20px;
-    font-size: 0.6875rem;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.status-toggle:hover {
+    background: #f1f5f9;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #cbd5e1;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.status-toggle.is-active .toggle-switch {
+    background: #22c55e;
+}
+
+.status-toggle.is-inactive .toggle-switch {
+    background: #94a3b8;
+}
+
+.toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.status-toggle.is-active .toggle-knob {
+    left: 18px;
+}
+
+.status-text {
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
 
-.status-active {
-    background: #dcfce7;
+.status-toggle.is-active .status-text {
     color: #16a34a;
 }
 
-.status-excluded {
-    background: #fef3c7;
-    color: #d97706;
+.status-toggle.is-inactive .status-text {
+    color: #64748b;
 }
 
 /* Action Buttons */
