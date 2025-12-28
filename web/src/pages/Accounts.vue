@@ -161,6 +161,15 @@
                         <!-- Actions -->
                         <td class="td-actions">
                             <div class="action-buttons">
+                                <router-link :to="`/accounts/${account.id}`" class="btn-action btn-view"
+                                    title="View Details">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </router-link>
                                 <button @click="openEditModal(account)" class="btn-action btn-edit" title="Edit">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -226,7 +235,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="initialBalance">Initial Balance</label>
+                            <label for="initialBalance">Cash Balance</label>
                             <input type="number" id="initialBalance" v-model.number="form.initial_balance" step="0.01"
                                 placeholder="0.00">
                         </div>
@@ -999,6 +1008,18 @@ export default {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.btn-view {
+    background: #f0f9ff;
+    color: #0284c7;
+}
+
+.btn-view:hover {
+    background: #e0f2fe;
+    color: #0369a1;
+    transform: scale(1.05);
 }
 
 .btn-edit {

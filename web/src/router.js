@@ -3,6 +3,7 @@ import Login from './pages/Login.vue'
 import Register from './pages/Register.vue'
 import Dashboard from './pages/Dashboard.vue'
 import Accounts from './pages/Accounts.vue'
+import AccountDetail from './pages/AccountDetail.vue'
 import Projects from './pages/Projects.vue'
 import Settings from './pages/Settings.vue'
 import Profile from './pages/Profile.vue'
@@ -30,6 +31,12 @@ const routes = [
     path: '/accounts',
     name: 'Accounts',
     component: Accounts,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/accounts/:id',
+    name: 'AccountDetail',
+    component: AccountDetail,
     meta: { requiresAuth: true }
   },
   {
