@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"time"
 
 	"keepnode/app/models"
 	"keepnode/app/queries"
@@ -38,9 +37,6 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 
 	// Create new user
 	user := &models.User{
-		ID:           uuid.New(),
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
 		Email:        signUp.Email,
 		PasswordHash: utils.GeneratePassword(signUp.Password),
 		UserStatus:   1, // 0 == blocked, 1 == active
