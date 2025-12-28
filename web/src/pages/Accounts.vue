@@ -291,6 +291,14 @@
             :message="`Are you sure you want to update ${form.account_name}?`" confirmText="Update Account"
             cancelText="Cancel" loadingText="Updating..." :loading="saving" @confirm="confirmUpdateAccount"
             @cancel="cancelUpdate" />
+
+        <!-- Status Toggle Confirmation Modal -->
+        <ConfirmModal :visible="showStatusModal" :variant="accountToToggle?.is_active ? 'warning' : 'info'"
+            :title="accountToToggle?.is_active ? 'Deactivate Account' : 'Activate Account'"
+            :message="`Are you sure you want to ${accountToToggle?.is_active ? 'deactivate' : 'activate'} ${accountToToggle?.account_name}?`"
+            :confirmText="accountToToggle?.is_active ? 'Deactivate' : 'Activate'" cancelText="Cancel"
+            :loadingText="accountToToggle?.is_active ? 'Deactivating...' : 'Activating...'" :loading="togglingStatus"
+            @confirm="confirmToggleStatus" @cancel="cancelToggleStatus" />
     </main>
 </template>
 
@@ -332,6 +340,9 @@ export default {
             notification: null,
             notificationTimer: null,
             showUpdateModal: false,
+            showStatusModal: false,
+            accountToToggle: null,
+            togglingStatus: false,
             form: {
                 account_name: '',
                 currency: '',
@@ -433,13 +444,29 @@ export default {
             }
         },
 
-        async toggleAccountStatus(account) {
+        toggleAccountStatus(account) {
+            this.accountToToggle = account
+            this.showStatusModal = true
+        },
+
+        cancelToggleStatus() {
+            this.showStatusModal = false
+            this.accountToToggle = null
+        },
+
+        async confirmToggleStatus() {
+            if (!this.accountToToggle) return
+            this.togglingStatus = true
             try {
-                const response = await accountAPI.toggleAccountStatus(account.id)
-                account.is_active = response.account.is_active
-                this.showNotification('success', 'Status updated', `${account.account_name} is now ${account.is_active ? 'active' : 'inactive'}.`)
+                const response = await accountAPI.toggleAccountStatus(this.accountToToggle.id)
+                this.accountToToggle.is_active = response.account.is_active
+                this.showNotification('success', 'Status updated', `${this.accountToToggle.account_name} is now ${this.accountToToggle.is_active ? 'active' : 'inactive'}.`)
+                this.showStatusModal = false
+                this.accountToToggle = null
             } catch (err) {
                 this.showNotification('error', 'Error', err.message || 'Failed to update status')
+            } finally {
+                this.togglingStatus = false
             }
         },
 
