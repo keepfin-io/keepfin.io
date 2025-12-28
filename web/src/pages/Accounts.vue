@@ -115,9 +115,11 @@
                         <!-- Platform -->
                         <td class="td-platform">
                             <span class="platform-badge">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
+                                <Favicon v-if="account.platform" :domain="getPlatformDomain(account.platform)"
+                                    :size="16" />
+                                <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
                                     <rect x="2" y="5" width="20" height="14" rx="2"></rect>
                                     <line x1="2" y1="10" x2="22" y2="10"></line>
                                 </svg>
@@ -127,7 +129,10 @@
 
                         <!-- Currency -->
                         <td class="td-currency">
-                            <span class="currency-badge">{{ account.currency }}</span>
+                            <span class="currency-badge">
+                                <span class="currency-flag">{{ getCurrencyFlag(account.currency) }}</span>
+                                {{ account.currency }}
+                            </span>
                         </td>
 
                         <!-- Balance -->
@@ -224,14 +229,26 @@
                             <label for="currency">Currency *</label>
                             <select id="currency" v-model="form.currency" required>
                                 <option value="">Select currency</option>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - British Pound</option>
-                                <option value="TRY">TRY - Turkish Lira</option>
-                                <option value="JPY">JPY - Japanese Yen</option>
-                                <option value="CAD">CAD - Canadian Dollar</option>
-                                <option value="AUD">AUD - Australian Dollar</option>
-                                <option value="CHF">CHF - Swiss Franc</option>
+                                <option value="USD">🇺🇸 USD - US Dollar</option>
+                                <option value="EUR">🇪🇺 EUR - Euro</option>
+                                <option value="GBP">🇬🇧 GBP - British Pound</option>
+                                <option value="TRY">🇹🇷 TRY - Turkish Lira</option>
+                                <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
+                                <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
+                                <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
+                                <option value="CHF">🇨🇭 CHF - Swiss Franc</option>
+                                <option value="CNY">🇨🇳 CNY - Chinese Yuan</option>
+                                <option value="INR">🇮🇳 INR - Indian Rupee</option>
+                                <option value="KRW">🇰🇷 KRW - South Korean Won</option>
+                                <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
+                                <option value="HKD">🇭🇰 HKD - Hong Kong Dollar</option>
+                                <option value="SEK">🇸🇪 SEK - Swedish Krona</option>
+                                <option value="NOK">🇳🇴 NOK - Norwegian Krone</option>
+                                <option value="DKK">🇩🇰 DKK - Danish Krone</option>
+                                <option value="PLN">🇵🇱 PLN - Polish Zloty</option>
+                                <option value="BRL">🇧🇷 BRL - Brazilian Real</option>
+                                <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
+                                <option value="RUB">🇷🇺 RUB - Russian Ruble</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -243,8 +260,7 @@
 
                     <div class="form-group">
                         <label for="platform">Platform</label>
-                        <input type="text" id="platform" v-model="form.platform" maxlength="100"
-                            placeholder="e.g., Bank of America, PayPal">
+                        <PlatformSelect v-model="form.platform" />
                     </div>
 
                     <div class="form-group">
@@ -292,12 +308,16 @@
 import { accountAPI } from '@/services/accountApi'
 import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
 import ConfirmModal from '@/components/ui/ConfirmModal.vue'
+import PlatformSelect from '@/components/ui/PlatformSelect.vue'
+import Favicon from '@/components/ui/Favicon.vue'
 
 export default {
     name: 'AccountsPage',
     components: {
         FullPageSpinner,
-        ConfirmModal
+        ConfirmModal,
+        PlatformSelect,
+        Favicon
     },
     computed: {
         spinnerMessage() {
@@ -476,6 +496,69 @@ export default {
                 style: 'currency',
                 currency: currency || 'USD'
             }).format(amount || 0)
+        },
+
+        getPlatformDomain(platform) {
+            const domains = {
+                'Bank of America': 'bankofamerica.com',
+                'Chase': 'chase.com',
+                'Wells Fargo': 'wellsfargo.com',
+                'Citibank': 'citibank.com',
+                'HSBC': 'hsbc.com',
+                'Barclays': 'barclays.co.uk',
+                'Deutsche Bank': 'db.com',
+                'ING': 'ing.com',
+                'N26': 'n26.com',
+                'Revolut': 'revolut.com',
+                'Interactive Brokers': 'interactivebrokers.com',
+                'Fidelity': 'fidelity.com',
+                'Charles Schwab': 'schwab.com',
+                'TD Ameritrade': 'tdameritrade.com',
+                'E*TRADE': 'etrade.com',
+                'Robinhood': 'robinhood.com',
+                'Webull': 'webull.com',
+                'Trading 212': 'trading212.com',
+                'eToro': 'etoro.com',
+                'Degiro': 'degiro.com',
+                'Coinbase': 'coinbase.com',
+                'Binance': 'binance.com',
+                'Kraken': 'kraken.com',
+                'Crypto.com': 'crypto.com',
+                'Gemini': 'gemini.com',
+                'Bybit': 'bybit.com',
+                'OKX': 'okx.com',
+                'PayPal': 'paypal.com',
+                'Wise': 'wise.com',
+                'Stripe': 'stripe.com',
+                'Venmo': 'venmo.com',
+                'Cash App': 'cash.app',
+                'Garanti BBVA': 'garantibbva.com.tr',
+                'İş Bankası': 'isbank.com.tr',
+                'Yapı Kredi': 'yapikredi.com.tr',
+                'Akbank': 'akbank.com',
+                'QNB Finansbank': 'qnbfinansbank.com',
+                'Ziraat Bankası': 'ziraatbank.com.tr',
+                'Midas': 'getmidas.com'
+            }
+            return domains[platform] || 'example.com'
+        },
+
+        getCurrencyFlag(currency) {
+            const flags = {
+                'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'TRY': '🇹🇷',
+                'JPY': '🇯🇵', 'CAD': '🇨🇦', 'AUD': '🇦🇺', 'CHF': '🇨🇭',
+                'CNY': '🇨🇳', 'INR': '🇮🇳', 'KRW': '🇰🇷', 'SGD': '🇸🇬',
+                'HKD': '🇭🇰', 'SEK': '🇸🇪', 'NOK': '🇳🇴', 'DKK': '🇩🇰',
+                'PLN': '🇵🇱', 'BRL': '🇧🇷', 'MXN': '🇲🇽', 'RUB': '🇷🇺',
+                'NZD': '🇳🇿', 'ZAR': '🇿🇦', 'THB': '🇹🇭', 'MYR': '🇲🇾',
+                'IDR': '🇮🇩', 'PHP': '🇵🇭', 'VND': '🇻🇳', 'CZK': '🇨🇿',
+                'HUF': '🇭🇺', 'RON': '🇷🇴', 'UAH': '🇺🇦', 'SAR': '🇸🇦',
+                'AED': '🇦🇪', 'QAR': '🇶🇦', 'KWD': '🇰🇼', 'ILS': '🇮🇱',
+                'EGP': '🇪🇬', 'ARS': '🇦🇷', 'CLP': '🇨🇱', 'COP': '🇨🇴',
+                'PEN': '🇵🇪', 'NGN': '🇳🇬', 'KES': '🇰🇪', 'MAD': '🇲🇦',
+                'BTC': '₿', 'ETH': 'Ξ'
+            }
+            return flags[currency] || '💰'
         },
 
         getAccountInitial(name) {

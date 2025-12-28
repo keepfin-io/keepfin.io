@@ -14,6 +14,7 @@ func NewValidator() *validator.Validate {
 	validate := validator.New()
 
 	validate.RegisterValidation("currency", models.ValidateCurrency)
+	validate.RegisterValidation("platform", models.ValidatePlatform)
 
 	return validate
 }
