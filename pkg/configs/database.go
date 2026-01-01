@@ -3,9 +3,9 @@ package configs
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
-// DatabaseConfig func to get database configuration.
 type DatabaseConfig struct {
 	Host     string
 	Port     string
@@ -13,21 +13,23 @@ type DatabaseConfig struct {
 	Password string
 	DBName   string
 	SSLMode  string
+	RawURL   string
 }
 
-// GetDatabaseConfig func to get database configuration from environment variables.
 func GetDatabaseConfig() DatabaseConfig {
+	rawURL := getEnv("DATABASE_URL", "")
+
 	return DatabaseConfig{
+		RawURL:   rawURL,
 		Host:     getEnv("DB_HOST", "localhost"),
 		Port:     getEnv("DB_PORT", "5432"),
-		Username: getEnv("DB_USERNAME", "postgres"),
+		Username: getEnvMultiple([]string{"DB_USER", "DB_USERNAME"}, "postgres"),
 		Password: getEnv("DB_PASSWORD", "postgres"),
 		DBName:   getEnv("DB_NAME", "keepnode"),
 		SSLMode:  getEnv("DB_SSL_MODE", "disable"),
 	}
 }
 
-// GetDatabaseDSN func to get database connection DSN for GORM.
 func GetDatabaseDSN() string {
 	config := GetDatabaseConfig()
 	return fmt.Sprintf(
@@ -41,10 +43,18 @@ func GetDatabaseDSN() string {
 	)
 }
 
-// getEnv func to get environment variable or default value.
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvMultiple(keys []string, defaultValue string) string {
+	for _, key := range keys {
+		if value, exists := os.LookupEnv(key); exists && value != "" {
+			return strings.TrimSpace(value)
+		}
 	}
 	return defaultValue
 }
