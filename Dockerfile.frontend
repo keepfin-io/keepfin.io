@@ -13,7 +13,7 @@ RUN npm ci --only=production=false
 COPY web/ .
 
 # Build argument for API URL (can be overridden at build time)
-ARG VUE_APP_API_URL=https://keepfin-api.tariksogukpinar.dev
+ARG VUE_APP_API_URL=https://keepfin-api.tariksogukpinar.dev/api/v1
 ENV VUE_APP_API_URL=$VUE_APP_API_URL
 
 # Build the application
