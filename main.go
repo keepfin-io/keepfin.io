@@ -35,9 +35,11 @@ func main() {
 		ReadBufferSize: 16384, // 16KB - prevents 431 error for large headers/cookies
 	})
 
+	allowedOrigin := "https://keepfin.tariksogukpinar.dev"
+
 	// CORS middleware
 	app.Use(func(c *fiber.Ctx) error {
-		c.Set("Access-Control-Allow-Origin", "http://localhost:8080")
+		c.Set("Access-Control-Allow-Origin", allowedOrigin)
 		c.Set("Access-Control-Allow-Credentials", "true")
 		c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
