@@ -15,20 +15,32 @@ func Register(app *fiber.App) {
 	db := database.GetDB()
 	userService := services.NewUserService(db)
 	accountService := services.NewAccountService(db)
+	marketService := services.NewMarketService()
+	holdingService := services.NewHoldingService(db, marketService)
 
 	// Initialize controllers
 	authController := controllers.NewAuthController(userService)
 	accountController := controllers.NewAccountController(accountService)
+	marketController := controllers.NewMarketController(marketService)
+	holdingController := controllers.NewHoldingController(holdingService, accountService)
 
-	// Public routes
+	// Public routes (no auth required)
 	app.Post("/api/v1/user/signup", authController.UserSignUp)
 	app.Post("/api/v1/user/signin", authController.UserSignIn)
 
-	// Protected routes
+	// Protected routes (JWT required)
 	api := app.Group("/api/v1")
 	api.Use(middleware.JWT())
+
+	// User routes
 	api.Get("/user/me", authController.GetCurrentUser)
 	api.Post("/user/signout", authController.UserSignOut)
+
+	// Market data routes
+	api.Get("/market/eod/:symbol", marketController.GetEODData)
+	api.Get("/market/live", marketController.GetMultipleLivePrices)
+	api.Get("/market/live/:symbol", marketController.GetLivePrice)
+	api.Get("/market/search", marketController.SearchAssets)
 
 	// Account routes
 	api.Post("/accounts/create", accountController.CreateAccount)
@@ -38,4 +50,9 @@ func Register(app *fiber.App) {
 	api.Delete("/accounts/:id", accountController.DeleteAccount)
 	api.Patch("/accounts/:id/toggle-status", accountController.ToggleAccountStatus)
 
+	// Holding routes
+	api.Post("/accounts/:id/holdings", holdingController.AddHolding)
+	api.Get("/accounts/:id/holdings", holdingController.GetHoldings)
+	api.Put("/accounts/:accountId/holdings/:id", holdingController.UpdateHolding)
+	api.Delete("/accounts/:accountId/holdings/:id", holdingController.DeleteHolding)
 }
