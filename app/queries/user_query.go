@@ -1,84 +1,76 @@
 package queries
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"keepnode/app/models"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// UserQueries struct for queries from User model.
 type UserQueries struct {
 	DB *gorm.DB
 }
 
-// GetUserByID query for getting one User by given ID.
-func (q *UserQueries) GetUserByID(id uuid.UUID) (models.User, error) {
-	// Define User variable.
-	user := models.User{}
+func (q *UserQueries) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
+	var user models.User
 
-	// Send query to database.
-	err := q.DB.Where("id = ?", id).First(&user).Error
+	err := q.DB.WithContext(ctx).Where(&models.User{ID: id}).First(&user).Error
+
 	if err != nil {
-		// Return empty object and error.
-		return user, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user not found (id: %s): %w", id, err)
+		}
+		return nil, fmt.Errorf("failed to get user by id: %w", err)
 	}
 
-	// Return query result.
-	return user, nil
+	return &user, nil
 }
 
-// GetUserByEmail query for getting one User by given Email.
-func (q *UserQueries) GetUserByEmail(email string) (models.User, error) {
-	// Define User variable.
-	user := models.User{}
+func (q *UserQueries) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	var user models.User
 
-	// Send query to database.
-	err := q.DB.Where("email = ?", email).First(&user).Error
+	err := q.DB.WithContext(ctx).Where(&models.User{Email: email}).First(&user).Error
+
 	if err != nil {
-		// Return empty object and error.
-		return user, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user not found (email: %s): %w", email, err)
+		}
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
 
-	// Return query result.
-	return user, nil
+	return &user, nil
 }
 
-// CreateUser query for creating a new user.
-func (q *UserQueries) CreateUser(u *models.User) error {
-	// Create user in database.
-	err := q.DB.Create(&u).Error
+func (q *UserQueries) CreateUser(ctx context.Context, user *models.User) error {
+	err := q.DB.WithContext(ctx).Create(&user).Error
 	if err != nil {
-		// Return only error.
-		return err
+		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// This query returns nothing.
 	return nil
 }
 
-// UpdateUser query for updating user by given ID.
-func (q *UserQueries) UpdateUser(id uuid.UUID, u *models.User) error {
-	// Update user in database.
-	err := q.DB.Model(&models.User{}).Where("id = ?", id).Updates(u).Error
+func (q *UserQueries) UpdateUser(ctx context.Context, id uuid.UUID, user *models.User) error {
+	err := q.DB.WithContext(ctx).Model(&models.User{}).Where("id = ?", id).Updates(user).Error
 	if err != nil {
-		// Return only error.
-		return err
+		return fmt.Errorf("failed to update user: %w", err)
 	}
 
-	// This query returns nothing.
 	return nil
 }
 
-// DeleteUser query for deleting user by given ID (soft delete).
-func (q *UserQueries) DeleteUser(id uuid.UUID) error {
-	// Soft delete user in database.
-	err := q.DB.Delete(&models.User{}, id).Error
+func (q *UserQueries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	err := q.DB.WithContext(ctx).Delete(&models.User{}, id).Error
 	if err != nil {
-		// Return only error.
-		return err
+		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
-	// This query returns nothing.
+	if q.DB.RowsAffected == 0 {
+		return fmt.Errorf("user not found (id: %s)", id)
+	}
+
 	return nil
 }

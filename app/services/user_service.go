@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 
 	"keepnode/app/models"
@@ -30,7 +31,7 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 	}
 
 	// Check if user already exists
-	existingUser, _ := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(signUp.Email)
+	existingUser, _ := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(context.Background(), signUp.Email)
 	if existingUser.ID != uuid.Nil {
 		return nil, errors.New("user with this email already exists")
 	}
@@ -53,7 +54,7 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 	}
 
 	// Save user to database
-	if err := (&queries.UserQueries{DB: s.DB}).CreateUser(user); err != nil {
+	if err := (&queries.UserQueries{DB: s.DB}).CreateUser(context.Background(), user); err != nil {
 		return nil, err
 	}
 
@@ -71,7 +72,7 @@ func (s *UserService) SignIn(signIn *models.UserSignIn) (*models.User, string, e
 	}
 
 	// Get user by email
-	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(signIn.Email)
+	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(context.Background(), signIn.Email)
 	if err != nil {
 		return nil, "", errors.New("user with the given email is not found")
 	}
@@ -95,12 +96,12 @@ func (s *UserService) SignIn(signIn *models.UserSignIn) (*models.User, string, e
 	// Remove password hash from response
 	user.PasswordHash = ""
 
-	return &user, token, nil
+	return user, token, nil
 }
 
 // GetUserByID retrieves a user by ID
-func (s *UserService) GetUserByID(id uuid.UUID) (*models.User, error) {
-	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(id)
+func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
+	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -108,12 +109,12 @@ func (s *UserService) GetUserByID(id uuid.UUID) (*models.User, error) {
 	// Remove password hash from response
 	user.PasswordHash = ""
 
-	return &user, nil
+	return user, nil
 }
 
 // GetUserByEmail retrieves a user by email
-func (s *UserService) GetUserByEmail(email string) (*models.User, error) {
-	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(email)
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -121,19 +122,19 @@ func (s *UserService) GetUserByEmail(email string) (*models.User, error) {
 	// Remove password hash from response
 	user.PasswordHash = ""
 
-	return &user, nil
+	return user, nil
 }
 
 // UpdateUser updates user information
-func (s *UserService) UpdateUser(id uuid.UUID, updateData *models.User) error {
+func (s *UserService) UpdateUser(ctx context.Context, id uuid.UUID, updateData *models.User) error {
 	// Check if user exists
-	_, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(id)
+	_, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
 	if err != nil {
 		return errors.New("user not found")
 	}
 
 	// Update user
-	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(id, updateData); err != nil {
+	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(ctx, id, updateData); err != nil {
 		return err
 	}
 
@@ -141,15 +142,15 @@ func (s *UserService) UpdateUser(id uuid.UUID, updateData *models.User) error {
 }
 
 // DeleteUser deletes a user (soft delete)
-func (s *UserService) DeleteUser(id uuid.UUID) error {
+func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	// Check if user exists
-	_, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(id)
+	_, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
 	if err != nil {
 		return errors.New("user not found")
 	}
 
 	// Delete user
-	if err := (&queries.UserQueries{DB: s.DB}).DeleteUser(id); err != nil {
+	if err := (&queries.UserQueries{DB: s.DB}).DeleteUser(ctx, id); err != nil {
 		return err
 	}
 
@@ -157,12 +158,12 @@ func (s *UserService) DeleteUser(id uuid.UUID) error {
 }
 
 // UpdateProfile updates user profile (language, theme, currency, locale)
-func (s *UserService) UpdateProfile(id uuid.UUID, req *models.UpdateProfileRequest) (*models.User, error) {
+func (s *UserService) UpdateProfile(ctx context.Context, id uuid.UUID, req *models.UpdateProfileRequest) (*models.User, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return nil, errors.New(utils.ValidatorErrorsString(err))
 	}
 
-	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(id)
+	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -180,10 +181,10 @@ func (s *UserService) UpdateProfile(id uuid.UUID, req *models.UpdateProfileReque
 		user.Locale = req.Locale
 	}
 
-	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(id, &user); err != nil {
+	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(ctx, id, user); err != nil {
 		return nil, err
 	}
 
 	user.PasswordHash = ""
-	return &user, nil
+	return user, nil
 }
