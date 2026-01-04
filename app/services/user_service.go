@@ -7,25 +7,25 @@ import (
 	"keepnode/app/queries"
 	"keepnode/pkg/utils"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// UserService handles user-related business logic
 type UserService struct {
-	DB *gorm.DB
+	DB       *gorm.DB
+	validate *validator.Validate
 }
 
-// NewUserService creates a new UserService instance
 func NewUserService(db *gorm.DB) *UserService {
-	return &UserService{DB: db}
+	return &UserService{
+		DB:       db,
+		validate: utils.NewValidator(),
+	}
 }
 
-// SignUp creates a new user account
 func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
-	// Validate sign up data
-	validate := utils.NewValidator()
-	if err := validate.Struct(signUp); err != nil {
+	if err := s.validate.Struct(signUp); err != nil {
 		return nil, errors.New(utils.ValidatorErrorsString(err))
 	}
 
@@ -39,12 +39,16 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 	user := &models.User{
 		Email:        signUp.Email,
 		PasswordHash: utils.GeneratePassword(signUp.Password),
-		UserStatus:   1, // 0 == blocked, 1 == active
+		UserStatus:   1,
 		UserRole:     "user",
+		Language:     models.LangEnglish,
+		Theme:        models.ThemeLight,
+		BaseCurrency: "USD",
+		Locale:       models.LocaleEnUS,
 	}
 
 	// Validate user data
-	if err := validate.Struct(user); err != nil {
+	if err := s.validate.Struct(user); err != nil {
 		return nil, errors.New(utils.ValidatorErrorsString(err))
 	}
 
@@ -62,8 +66,7 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 // SignIn authenticates a user and returns user data with JWT token
 func (s *UserService) SignIn(signIn *models.UserSignIn) (*models.User, string, error) {
 	// Validate sign in data
-	validate := utils.NewValidator()
-	if err := validate.Struct(signIn); err != nil {
+	if err := s.validate.Struct(signIn); err != nil {
 		return nil, "", errors.New(utils.ValidatorErrorsString(err))
 	}
 
@@ -151,4 +154,36 @@ func (s *UserService) DeleteUser(id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// UpdateProfile updates user profile (language, theme, currency, locale)
+func (s *UserService) UpdateProfile(id uuid.UUID, req *models.UpdateProfileRequest) (*models.User, error) {
+	if err := s.validate.Struct(req); err != nil {
+		return nil, errors.New(utils.ValidatorErrorsString(err))
+	}
+
+	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(id)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	if req.Language != "" {
+		user.Language = req.Language
+	}
+	if req.Theme != "" {
+		user.Theme = req.Theme
+	}
+	if req.BaseCurrency != "" {
+		user.BaseCurrency = req.BaseCurrency
+	}
+	if req.Locale != "" {
+		user.Locale = req.Locale
+	}
+
+	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(id, &user); err != nil {
+		return nil, err
+	}
+
+	user.PasswordHash = ""
+	return &user, nil
 }

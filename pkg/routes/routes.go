@@ -20,6 +20,7 @@ func Register(app *fiber.App) {
 
 	// Initialize controllers
 	authController := controllers.NewAuthController(userService)
+	userController := controllers.NewUserController(userService)
 	accountController := controllers.NewAccountController(accountService)
 	marketController := controllers.NewMarketController(marketService)
 	holdingController := controllers.NewHoldingController(holdingService, accountService)
@@ -32,9 +33,12 @@ func Register(app *fiber.App) {
 	api := app.Group("/api/v1")
 	api.Use(middleware.JWT())
 
-	// User routes
-	api.Get("/user/me", authController.GetCurrentUser)
+	// Auth routes
 	api.Post("/user/signout", authController.UserSignOut)
+
+	// User routes
+	api.Get("/user/me", userController.GetCurrentUser)
+	api.Put("/user/profile", userController.UpdateProfile)
 
 	// Market data routes
 	api.Get("/market/eod/:symbol", marketController.GetEODData)

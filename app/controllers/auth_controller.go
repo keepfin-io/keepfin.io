@@ -5,7 +5,6 @@ import (
 	"keepnode/app/services"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 // AuthController handles authentication-related requests
@@ -126,36 +125,5 @@ func (ctrl *AuthController) UserSignOut(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"error":   false,
 		"message": "User signed out successfully",
-	})
-}
-
-// GetCurrentUser method to get current authenticated user.
-// @Description Get current authenticated user from cookie.
-// @Summary get current user
-// @Tags User
-// @Success 200 {object} models.User
-// @Router /api/v1/user/me [get]
-func (ctrl *AuthController) GetCurrentUser(c *fiber.Ctx) error {
-	// Get user ID from context (set by JWT middleware)
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
-	// Get user from database
-	user, err := ctrl.userService.GetUserByID(userID)
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not found",
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"error": false,
-		"user":  user,
 	})
 }
