@@ -108,6 +108,37 @@
                     </option>
                 </select>
             </div>
+
+            <!-- Theme -->
+            <div class="preference-group">
+                <label class="preference-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    Theme
+                </label>
+                <p class="preference-hint">Choose your preferred appearance</p>
+                <div class="theme-toggle">
+                    <button @click="setTheme('light')" class="theme-btn" :class="{ 'is-active': theme === 'light' }">
+                        ☀️ Light
+                    </button>
+                    <button @click="setTheme('dark')" class="theme-btn" :class="{ 'is-active': theme === 'dark' }">
+                        🌙 Dark
+                    </button>
+                    <button @click="setTheme('system')" class="theme-btn" :class="{ 'is-active': theme === 'system' }">
+                        💻 System
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Emoji Picker Modal -->
@@ -159,6 +190,7 @@ export default {
             baseCurrency: localStorage.getItem('base_currency') || 'USD',
             language: localStorage.getItem('language') || 'en',
             locale: localStorage.getItem('locale') || 'en-US',
+            theme: localStorage.getItem('theme') || 'system',
             emojiList: [
                 '😊', '😎', '🤩', '😇', '🥳', '😄', '🤗', '😏',
                 '🧑‍💻', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🎨', '👩‍🎨', '🧑‍🚀', '👨‍🚀',
@@ -202,6 +234,9 @@ export default {
             ]
         }
     },
+    mounted() {
+        this.applyTheme()
+    },
     methods: {
         selectEmoji(emoji) {
             this.selectedEmoji = emoji
@@ -216,6 +251,18 @@ export default {
         },
         saveLocale() {
             localStorage.setItem('locale', this.locale)
+        },
+        setTheme(theme) {
+            this.theme = theme
+            localStorage.setItem('theme', theme)
+            this.applyTheme()
+        },
+        applyTheme() {
+            const root = document.documentElement
+            let isDark = this.theme === 'dark' ||
+                (this.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+            root.classList.toggle('dark', isDark)
         },
         formatDate(dateString) {
             if (!dateString) return '-'
@@ -380,6 +427,36 @@ export default {
 .preference-group:last-child {
     border-bottom: none;
     padding-bottom: 0;
+}
+
+/* Theme Toggle */
+.theme-toggle {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.theme-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.theme-btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.theme-btn.is-active {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #3b82f6;
 }
 
 .preference-label {
