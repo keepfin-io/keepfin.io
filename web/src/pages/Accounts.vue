@@ -210,14 +210,17 @@
                 <form @submit.prevent="saveAccount" class="modal-body">
                     <div class="form-group">
                         <label for="accountName">Account Name *</label>
-                        <input type="text" id="accountName" v-model="form.account_name" required maxlength="100"
-                            placeholder="e.g., Main Checking Account">
+                        <input type="text" id="accountName" v-model="form.account_name" maxlength="100"
+                            placeholder="e.g., Main Checking Account"
+                            :class="{ 'input-error': fieldErrors.account_name }">
+                        <span v-if="fieldErrors.account_name" class="field-error">{{ fieldErrors.account_name }}</span>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="currency">Currency *</label>
-                            <select id="currency" v-model="form.currency" required>
+                            <select id="currency" v-model="form.currency"
+                                :class="{ 'input-error': fieldErrors.currency }">
                                 <option value="">Select currency</option>
                                 <option value="USD">🇺🇸 USD - US Dollar</option>
                                 <option value="EUR">🇪🇺 EUR - Euro</option>
@@ -240,6 +243,7 @@
                                 <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
                                 <option value="RUB">🇷🇺 RUB - Russian Ruble</option>
                             </select>
+                            <span v-if="fieldErrors.currency" class="field-error">{{ fieldErrors.currency }}</span>
                         </div>
                         <div class="form-group">
                             <label for="initialBalance">Cash Balance</label>
@@ -304,6 +308,7 @@
 
 <script>
 import { accountAPI } from '@/services/accountApi'
+import { createAccountSchema, updateAccountSchema } from '@/schemas/account'
 import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
 import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import PlatformSelect from '@/components/ui/PlatformSelect.vue'
@@ -350,7 +355,8 @@ export default {
                 platform: '',
                 description: '',
                 is_excluded: false
-            }
+            },
+            fieldErrors: {}
         }
     },
     mounted() {
@@ -381,6 +387,7 @@ export default {
                 is_excluded: false
             }
             this.formError = null
+            this.fieldErrors = {}
             this.showModal = true
         },
 
@@ -395,6 +402,7 @@ export default {
                 is_excluded: account.is_excluded
             }
             this.formError = null
+            this.fieldErrors = {}
             this.showModal = true
         },
 
@@ -402,9 +410,31 @@ export default {
             this.showModal = false
             this.editingAccount = null
             this.formError = null
+            this.fieldErrors = {}
+        },
+
+        validateForm() {
+            this.fieldErrors = {}
+            const schema = this.editingAccount ? updateAccountSchema : createAccountSchema
+            const result = schema.safeParse(this.form)
+
+            if (!result.success) {
+                const errors = result.error.flatten().fieldErrors
+                this.fieldErrors = {
+                    account_name: errors.account_name?.[0],
+                    currency: errors.currency?.[0],
+                    initial_balance: errors.initial_balance?.[0],
+                    platform: errors.platform?.[0],
+                    description: errors.description?.[0]
+                }
+                return false
+            }
+            return true
         },
 
         async saveAccount() {
+            if (!this.validateForm()) return
+
             // If editing, show confirmation modal first
             if (this.editingAccount) {
                 this.showUpdateModal = true
@@ -1350,6 +1380,26 @@ export default {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input.input-error,
+.form-group select.input-error,
+.form-group textarea.input-error {
+    border-color: #ef4444;
+}
+
+.form-group input.input-error:focus,
+.form-group select.input-error:focus,
+.form-group textarea.input-error:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.field-error {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    color: #ef4444;
 }
 
 .form-group input::placeholder,
