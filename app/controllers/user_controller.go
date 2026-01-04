@@ -27,7 +27,7 @@ func (ctrl *UserController) GetCurrentUser(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := ctrl.userService.GetUserByID(userID)
+	user, err := ctrl.userService.GetUserByID(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error":   true,
@@ -58,7 +58,7 @@ func (ctrl *UserController) UpdateProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := ctrl.userService.UpdateProfile(userID, req)
+	user, err := ctrl.userService.UpdateProfile(c.Context(), userID, req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":   true,
