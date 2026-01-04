@@ -1,11 +1,7 @@
 const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000/api/v1'
 
-console.log('[API] Base URL:', API_URL)
-
 // Fetch wrapper with default options
 async function apiFetch(endpoint, options = {}) {
-  const fullUrl = `${API_URL}${endpoint}`
-  console.log('[API] Request:', fullUrl)
 
   const config = {
     credentials: 'include', // Important for cookies!
@@ -16,7 +12,7 @@ async function apiFetch(endpoint, options = {}) {
     ...options
   }
 
-  const response = await fetch(fullUrl, config)
+  const response = await fetch(`${API_URL}${endpoint}`, config)
 
   // Handle 401 Unauthorized
   if (response.status === 401) {

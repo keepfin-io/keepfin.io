@@ -82,9 +82,18 @@
 
             <!-- Holdings Tab -->
             <div v-if="activeTab === 'holdings'" class="tab-content">
+                <div class="tab-header">
+                    <button @click="showAddHoldingModal = true" class="btn-primary btn-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Holding
+                    </button>
+                </div>
                 <div v-if="holdings.length === 0" class="empty-state-sm">
                     <p>No holdings yet</p>
-                    <button @click="showAddHoldingModal = true" class="btn-primary btn-sm">Add Holding</button>
                 </div>
                 <div v-else class="table-container">
                     <table class="data-table">
@@ -92,26 +101,26 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Quantity</th>
+                                <th>Current Price</th>
                                 <th>Value</th>
-                                <th>Allocation</th>
-                                <th>Change</th>
+                                <th>Profit/Loss</th>
                                 <th>Performance</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="holding in holdings" :key="holding.id">
                                 <td class="holding-name">
-                                    <span class="name">{{ holding.name }}</span>
+                                    <span class="name">{{ holding.name || holding.symbol }}</span>
                                     <span class="symbol">{{ holding.symbol }}</span>
                                 </td>
                                 <td>{{ holding.quantity }}</td>
+                                <td>{{ formatCurrency(holding.current_price, account.currency) }}</td>
                                 <td>{{ formatCurrency(holding.value, account.currency) }}</td>
-                                <td>{{ holding.allocation }}%</td>
-                                <td :class="holding.change >= 0 ? 'text-green' : 'text-red'">
-                                    {{ formatCurrency(holding.change, account.currency) }}
+                                <td :class="holding.profit_loss >= 0 ? 'text-green' : 'text-red'">
+                                    {{ formatCurrency(holding.profit_loss, account.currency) }}
                                 </td>
                                 <td :class="holding.performance >= 0 ? 'text-green' : 'text-red'">
-                                    {{ holding.performance }}%
+                                    {{ holding.performance?.toFixed(2) }}%
                                 </td>
                             </tr>
                         </tbody>
@@ -164,22 +173,30 @@
                 </div>
             </div>
         </template>
+
+        <!-- Add Holding Modal -->
+        <AddHoldingModal :show="showAddHoldingModal" :accountId="$route.params.id" @close="showAddHoldingModal = false"
+            @success="onHoldingAdded" />
     </main>
 </template>
 
 <script>
 import { accountAPI } from '@/services/accountApi'
+import { holdingAPI } from '@/services/holdingApi'
 import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
+import AddHoldingModal from '@/components/holdings/AddHoldingModal.vue'
 
 export default {
     name: 'AccountDetailPage',
     components: {
-        FullPageSpinner
+        FullPageSpinner,
+        AddHoldingModal
     },
     data() {
         return {
             account: null,
             holdings: [],
+            holdingsSummary: null,
             activities: [],
             loading: true,
             error: null,
@@ -203,14 +220,27 @@ export default {
             try {
                 const response = await accountAPI.getAccount(this.$route.params.id)
                 this.account = response.account
-                // TODO: Fetch holdings and activities from API when ready
-                this.holdings = []
+                // Fetch holdings after account is loaded
+                await this.fetchHoldings()
                 this.activities = []
             } catch (err) {
                 this.error = err.message || 'Failed to load account details'
             } finally {
                 this.loading = false
             }
+        },
+        async fetchHoldings() {
+            try {
+                const response = await holdingAPI.getHoldings(this.$route.params.id)
+                this.holdings = response.holdings || []
+                this.holdingsSummary = response.summary || null
+            } catch (err) {
+                console.error('Failed to fetch holdings:', err)
+                this.holdings = []
+            }
+        },
+        onHoldingAdded() {
+            this.fetchHoldings()
         },
         formatCurrency(amount, currency) {
             return new Intl.NumberFormat('en-US', {
