@@ -139,3 +139,35 @@ func (ctrl *UserController) UpdateUserTheme(c *fiber.Ctx) error {
 		"user":    user,
 	})
 }
+
+func (ctrl *UserController) UpdateUserLocale(c *fiber.Ctx) error {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   true,
+			"message": "User not authenticated",
+		})
+	}
+
+	req := &models.UpdateLocaleRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "Invalid request body",
+		})
+	}
+
+	user, err := ctrl.userService.UpdateUserLocale(c.Context(), userID, req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"error":   false,
+		"message": "User locale updated successfully",
+		"user":    user,
+	})
+}

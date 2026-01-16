@@ -22,6 +22,12 @@ export const userAPI = {
         apiFetch('/user/theme', {
             method: 'PUT',
             body: JSON.stringify({ theme })
+        }),
+
+    updateLocale: (locale) =>
+        apiFetch('/user/locale', {
+            method: 'PUT',
+            body: JSON.stringify({ locale })
         })
 }
 

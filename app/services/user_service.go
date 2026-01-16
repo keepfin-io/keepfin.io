@@ -40,7 +40,6 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 		PasswordHash: utils.GeneratePassword(signUp.Password),
 		UserStatus:   1,
 		UserRole:     "user",
-		Language:     models.LangEnglish,
 		Theme:        models.ThemeLight,
 		BaseCurrency: "USD",
 		Locale:       models.LocaleEnUS,
@@ -148,9 +147,6 @@ func (s *UserService) UpdateProfile(ctx context.Context, id uuid.UUID, req *mode
 		return nil, errors.New("user not found")
 	}
 
-	if req.Language != "" {
-		user.Language = req.Language
-	}
 	if req.Theme != "" {
 		user.Theme = req.Theme
 	}
@@ -200,6 +196,25 @@ func (s *UserService) UpdateUserTheme(ctx context.Context, id uuid.UUID, req *mo
 	}
 
 	user.Theme = req.Theme
+
+	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(ctx, id, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *UserService) UpdateUserLocale(ctx context.Context, id uuid.UUID, req *models.UpdateLocaleRequest) (*models.User, error) {
+	if err := s.validate.Struct(req); err != nil {
+		return nil, errors.New(utils.ValidatorErrorsString(err))
+	}
+
+	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	user.Locale = req.Locale
 
 	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(ctx, id, user); err != nil {
 		return nil, err

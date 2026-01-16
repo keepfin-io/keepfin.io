@@ -241,9 +241,9 @@ export default {
             immediate: true,
             handler(newUser) {
                 if (newUser) {
-                    // Sync preferences from backend user object
                     this.baseCurrency = newUser.base_currency || 'USD'
                     this.theme = newUser.theme || 'light'
+                    this.locale = newUser.locale || 'en-US'
                     this.applyTheme()
                 }
             }
@@ -253,7 +253,7 @@ export default {
         this.applyTheme()
     },
     methods: {
-        selectEmoji(emoji) {
+        async selectEmoji(emoji) {
             this.selectedEmoji = emoji
             localStorage.setItem('user_avatar', emoji)
             this.showEmojiPicker = false
@@ -269,11 +269,36 @@ export default {
                 this.saving = false
             }
         },
-        saveLanguage() {
-            localStorage.setItem('language', this.language)
+        async saveLanguage() {
+            const languageToLocale = {
+                'en': 'en-US',
+                'tr': 'tr-TR',
+                'de': 'de-DE',
+                'fr': 'fr-FR',
+                'es': 'es-ES',
+                'pt': 'pt-BR',
+                'ja': 'ja-JP',
+                'zh': 'zh-CN'
+            }
+
+            const newLocale = languageToLocale[this.language] || 'en-US'
+            this.locale = newLocale
+
+            try {
+                await userAPI.updateLocale(newLocale)
+                localStorage.setItem('language', this.language)
+                localStorage.setItem('locale', newLocale)
+            } catch (error) {
+                console.error('Failed to save language/locale:', error)
+            }
         },
-        saveLocale() {
-            localStorage.setItem('locale', this.locale)
+        async saveLocale() {
+            try {
+                await userAPI.updateLocale(this.locale)
+                localStorage.setItem('locale', this.locale)
+            } catch (error) {
+                console.error('Failed to save locale:', error)
+            }
         },
         async setTheme(theme) {
             this.theme = theme
@@ -288,7 +313,7 @@ export default {
             }
             localStorage.setItem('theme', theme)
         },
-        applyTheme() {
+        async applyTheme() {
             const root = document.documentElement
             let isDark = this.theme === 'dark' ||
                 (this.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
