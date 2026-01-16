@@ -3,6 +3,7 @@ package controllers
 import (
 	"keepnode/app/models"
 	"keepnode/app/services"
+	"keepnode/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -30,8 +31,8 @@ func NewAccountController(accountService *services.AccountService) *AccountContr
 // @Success 201 {object} models.Account
 // @Router /api/v1/accounts/create [post]
 func (ctrl *AccountController) CreateAccount(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -72,8 +73,8 @@ func (ctrl *AccountController) CreateAccount(c *fiber.Ctx) error {
 // @Router /api/v1/accounts/{id} [get]
 func (ctrl *AccountController) GetAccount(c *fiber.Ctx) error {
 	// Get user ID from context (set by JWT middleware)
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -116,8 +117,8 @@ func (ctrl *AccountController) GetAccount(c *fiber.Ctx) error {
 // @Router /api/v1/accounts [get]
 func (ctrl *AccountController) GetUserAccounts(c *fiber.Ctx) error {
 	// Get user ID from context (set by JWT middleware)
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -152,8 +153,8 @@ func (ctrl *AccountController) GetUserAccounts(c *fiber.Ctx) error {
 // @Router /api/v1/accounts/{id} [put]
 func (ctrl *AccountController) UpdateAccount(c *fiber.Ctx) error {
 	// Get user ID from context (set by JWT middleware)
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -207,8 +208,8 @@ func (ctrl *AccountController) UpdateAccount(c *fiber.Ctx) error {
 // @Router /api/v1/accounts/{id} [delete]
 func (ctrl *AccountController) DeleteAccount(c *fiber.Ctx) error {
 	// Get user ID from context (set by JWT middleware)
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -252,8 +253,8 @@ func (ctrl *AccountController) DeleteAccount(c *fiber.Ctx) error {
 // @Router /api/v1/accounts/{id}/toggle-status [patch]
 func (ctrl *AccountController) ToggleAccountStatus(c *fiber.Ctx) error {
 	// Get user ID from context (set by JWT middleware)
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",

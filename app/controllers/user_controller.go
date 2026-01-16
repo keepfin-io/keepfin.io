@@ -3,9 +3,9 @@ package controllers
 import (
 	"keepnode/app/models"
 	"keepnode/app/services"
+	"keepnode/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 type UserController struct {
@@ -19,8 +19,9 @@ func NewUserController(userService *services.UserService) *UserController {
 }
 
 func (ctrl *UserController) GetCurrentUser(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -42,8 +43,8 @@ func (ctrl *UserController) GetCurrentUser(c *fiber.Ctx) error {
 }
 
 func (ctrl *UserController) UpdateProfile(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -69,6 +70,40 @@ func (ctrl *UserController) UpdateProfile(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"error":   false,
 		"message": "Profile updated successfully",
+		"user":    user,
+	})
+}
+
+func (ctrl *UserController) UpdateUserBaseCurrency(c *fiber.Ctx) error {
+
+	userID, err := utils.GetUserID(c)
+
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   true,
+			"message": "User not authenticated",
+		})
+	}
+
+	req := &models.UpdateBaseCurrencyRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "Invalid request body",
+		})
+	}
+
+	user, err := ctrl.userService.UpdateUserBaseCurrency(c.Context(), userID, req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"error":   false,
+		"message": "User base currency updated successfully",
 		"user":    user,
 	})
 }

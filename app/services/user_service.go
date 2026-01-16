@@ -188,3 +188,23 @@ func (s *UserService) UpdateProfile(ctx context.Context, id uuid.UUID, req *mode
 	user.PasswordHash = ""
 	return user, nil
 }
+
+func (s *UserService) UpdateUserBaseCurrency(ctx context.Context, id uuid.UUID, req *models.UpdateBaseCurrencyRequest) (*models.User, error) {
+	if err := s.validate.Struct(req); err != nil {
+		return nil, errors.New(utils.ValidatorErrorsString(err))
+	}
+
+	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	user.BaseCurrency = req.BaseCurrency
+
+	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(ctx, id, user); err != nil {
+		return nil, err
+	}
+
+	user.PasswordHash = ""
+	return user, nil
+}

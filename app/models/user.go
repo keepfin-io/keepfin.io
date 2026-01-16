@@ -56,3 +56,7 @@ type UpdateProfileRequest struct {
 	BaseCurrency string `json:"base_currency" validate:"omitempty,currency"`
 	Locale       string `json:"locale" validate:"omitempty,oneof=en-US en-GB tr-TR"`
 }
+
+type UpdateBaseCurrencyRequest struct {
+	BaseCurrency string `json:"base_currency" validate:"required,currency"`
+}

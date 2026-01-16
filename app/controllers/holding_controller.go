@@ -3,6 +3,7 @@ package controllers
 import (
 	"keepnode/app/models"
 	"keepnode/app/services"
+	"keepnode/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -87,8 +88,8 @@ func (ctrl *HoldingController) AddHolding(c *fiber.Ctx) error {
 // @Success 200 {array} models.HoldingWithLiveData
 // @Router /api/v1/accounts/{id}/holdings [get]
 func (ctrl *HoldingController) GetHoldings(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -138,8 +139,8 @@ func (ctrl *HoldingController) GetHoldings(c *fiber.Ctx) error {
 // @Success 200 {object} models.Holding
 // @Router /api/v1/holdings/{id} [put]
 func (ctrl *HoldingController) UpdateHolding(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
@@ -204,8 +205,8 @@ func (ctrl *HoldingController) UpdateHolding(c *fiber.Ctx) error {
 // @Success 200 {string} string "Holding deleted successfully"
 // @Router /api/v1/holdings/{id} [delete]
 func (ctrl *HoldingController) DeleteHolding(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   true,
 			"message": "User not authenticated",
