@@ -30,13 +30,11 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 		return nil, errors.New(utils.ValidatorErrorsString(err))
 	}
 
-	// Check if user already exists
 	existingUser, _ := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(context.Background(), signUp.Email)
 	if existingUser.ID != uuid.Nil {
 		return nil, errors.New("user with this email already exists")
 	}
 
-	// Create new user
 	user := &models.User{
 		Email:        signUp.Email,
 		PasswordHash: utils.GeneratePassword(signUp.Password),
@@ -48,86 +46,70 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 		Locale:       models.LocaleEnUS,
 	}
 
-	// Validate user data
 	if err := s.validate.Struct(user); err != nil {
 		return nil, errors.New(utils.ValidatorErrorsString(err))
 	}
 
-	// Save user to database
 	if err := (&queries.UserQueries{DB: s.DB}).CreateUser(context.Background(), user); err != nil {
 		return nil, err
 	}
 
-	// Remove password hash from response
 	user.PasswordHash = ""
 
 	return user, nil
 }
 
-// SignIn authenticates a user and returns user data with JWT token
 func (s *UserService) SignIn(signIn *models.UserSignIn) (*models.User, string, error) {
-	// Validate sign in data
 	if err := s.validate.Struct(signIn); err != nil {
 		return nil, "", errors.New(utils.ValidatorErrorsString(err))
 	}
 
-	// Get user by email
 	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(context.Background(), signIn.Email)
 	if err != nil {
 		return nil, "", errors.New("user with the given email is not found")
 	}
 
-	// Check if user is active
 	if user.UserStatus != 1 {
 		return nil, "", errors.New("user account is blocked")
 	}
 
-	// Compare passwords
 	if !utils.ComparePasswords(user.PasswordHash, signIn.Password) {
 		return nil, "", errors.New("wrong email address or password")
 	}
 
-	// Generate JWT token
 	token, err := utils.GenerateJWT(user.ID.String(), user.Email)
 	if err != nil {
 		return nil, "", errors.New("failed to generate authentication token")
 	}
 
-	// Remove password hash from response
 	user.PasswordHash = ""
 
 	return user, token, nil
 }
 
-// GetUserByID retrieves a user by ID
 func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
 
-	// Remove password hash from response
 	user.PasswordHash = ""
 
 	return user, nil
 }
 
-// GetUserByEmail retrieves a user by email
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
 
-	// Remove password hash from response
 	user.PasswordHash = ""
 
 	return user, nil
 }
 
-// UpdateUser updates user information
 func (s *UserService) UpdateUser(ctx context.Context, id uuid.UUID, updateData *models.User) error {
-	// Check if user exists
 	_, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
 	if err != nil {
 		return errors.New("user not found")
@@ -141,7 +123,6 @@ func (s *UserService) UpdateUser(ctx context.Context, id uuid.UUID, updateData *
 	return nil
 }
 
-// DeleteUser deletes a user (soft delete)
 func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	// Check if user exists
 	_, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
@@ -157,7 +138,6 @@ func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// UpdateProfile updates user profile (language, theme, currency, locale)
 func (s *UserService) UpdateProfile(ctx context.Context, id uuid.UUID, req *models.UpdateProfileRequest) (*models.User, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return nil, errors.New(utils.ValidatorErrorsString(err))
@@ -206,5 +186,24 @@ func (s *UserService) UpdateUserBaseCurrency(ctx context.Context, id uuid.UUID, 
 	}
 
 	user.PasswordHash = ""
+	return user, nil
+}
+
+func (s *UserService) UpdateUserTheme(ctx context.Context, id uuid.UUID, req *models.UpdateThemeRequest) (*models.User, error) {
+	if err := s.validate.Struct(req); err != nil {
+		return nil, errors.New(utils.ValidatorErrorsString(err))
+	}
+
+	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	user.Theme = req.Theme
+
+	if err := (&queries.UserQueries{DB: s.DB}).UpdateUser(ctx, id, user); err != nil {
+		return nil, err
+	}
+
 	return user, nil
 }

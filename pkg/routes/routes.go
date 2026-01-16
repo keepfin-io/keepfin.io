@@ -40,6 +40,7 @@ func Register(app *fiber.App) {
 	api.Get("/user/me", userController.GetCurrentUser)
 	api.Put("/user/profile", userController.UpdateProfile)
 	api.Put("/user/base-currency", userController.UpdateUserBaseCurrency)
+	api.Put("/user/theme", userController.UpdateUserTheme)
 
 	// Market data routes
 	api.Get("/market/eod/:symbol", marketController.GetEODData)

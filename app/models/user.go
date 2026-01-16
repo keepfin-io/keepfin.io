@@ -60,3 +60,7 @@ type UpdateProfileRequest struct {
 type UpdateBaseCurrencyRequest struct {
 	BaseCurrency string `json:"base_currency" validate:"required,currency"`
 }
+
+type UpdateThemeRequest struct {
+	Theme string `json:"theme" validate:"required,oneof=light dark"`
+}

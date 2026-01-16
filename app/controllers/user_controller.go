@@ -107,3 +107,35 @@ func (ctrl *UserController) UpdateUserBaseCurrency(c *fiber.Ctx) error {
 		"user":    user,
 	})
 }
+
+func (ctrl *UserController) UpdateUserTheme(c *fiber.Ctx) error {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   true,
+			"message": "User not authenticated",
+		})
+	}
+
+	req := &models.UpdateThemeRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "Invalid request body",
+		})
+	}
+
+	user, err := ctrl.userService.UpdateUserTheme(c.Context(), userID, req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"error":   false,
+		"message": "User theme updated successfully",
+		"user":    user,
+	})
+}

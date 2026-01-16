@@ -167,6 +167,7 @@
 
 <script>
 import { useAuth } from '@/composables/useAuth'
+import { userAPI } from '@/services/userApi'
 import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
 
 export default {
@@ -187,10 +188,11 @@ export default {
         return {
             showEmojiPicker: false,
             selectedEmoji: localStorage.getItem('user_avatar') || '😊',
-            baseCurrency: localStorage.getItem('base_currency') || 'USD',
+            baseCurrency: 'USD',
             language: localStorage.getItem('language') || 'en',
             locale: localStorage.getItem('locale') || 'en-US',
-            theme: localStorage.getItem('theme') || 'system',
+            theme: 'light',
+            saving: false,
             emojiList: [
                 '😊', '😎', '🤩', '😇', '🥳', '😄', '🤗', '😏',
                 '🧑‍💻', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🎨', '👩‍🎨', '🧑‍🚀', '👨‍🚀',
@@ -234,6 +236,19 @@ export default {
             ]
         }
     },
+    watch: {
+        user: {
+            immediate: true,
+            handler(newUser) {
+                if (newUser) {
+                    // Sync preferences from backend user object
+                    this.baseCurrency = newUser.base_currency || 'USD'
+                    this.theme = newUser.theme || 'light'
+                    this.applyTheme()
+                }
+            }
+        }
+    },
     mounted() {
         this.applyTheme()
     },
@@ -243,8 +258,16 @@ export default {
             localStorage.setItem('user_avatar', emoji)
             this.showEmojiPicker = false
         },
-        saveCurrency() {
-            localStorage.setItem('base_currency', this.baseCurrency)
+        async saveCurrency() {
+            try {
+                this.saving = true
+                await userAPI.updateBaseCurrency(this.baseCurrency)
+                localStorage.setItem('base_currency', this.baseCurrency)
+            } catch (error) {
+                console.error('Failed to save currency:', error)
+            } finally {
+                this.saving = false
+            }
         },
         saveLanguage() {
             localStorage.setItem('language', this.language)
@@ -252,10 +275,18 @@ export default {
         saveLocale() {
             localStorage.setItem('locale', this.locale)
         },
-        setTheme(theme) {
+        async setTheme(theme) {
             this.theme = theme
-            localStorage.setItem('theme', theme)
             this.applyTheme()
+
+            if (theme === 'light' || theme === 'dark') {
+                try {
+                    await userAPI.updateTheme(theme)
+                } catch (error) {
+                    console.error('Failed to save theme:', error)
+                }
+            }
+            localStorage.setItem('theme', theme)
         },
         applyTheme() {
             const root = document.documentElement
