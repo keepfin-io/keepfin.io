@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen bg-gray-50 dark:bg-[#0f0f12]">
+  <div class="flex min-h-screen bg-[#0f0f12]">
     <!-- Material Icons font link -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <template v-if="!isAuthPage">
