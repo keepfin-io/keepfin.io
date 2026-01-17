@@ -39,7 +39,7 @@
                     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
-                  Profile
+                  {{ $t('nav.profile') }}
                 </router-link>
                 <button class="dropdown-item">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -47,7 +47,7 @@
                     <rect x="2" y="5" width="20" height="14" rx="2"></rect>
                     <line x1="2" y1="10" x2="22" y2="10"></line>
                   </svg>
-                  Billing
+                  {{ $t('common.billing') }}
                 </button>
                 <button @click="handleLogout" class="dropdown-item text-red-600 hover:bg-red-50">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -56,7 +56,7 @@
                     <polyline points="16 17 21 12 16 7"></polyline>
                     <line x1="21" y1="12" x2="9" y2="12"></line>
                   </svg>
-                  Sign out
+                  {{ $t('common.signOut') }}
                 </button>
               </template>
             </DropdownMenu>

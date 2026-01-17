@@ -1,6 +1,6 @@
 <template>
     <!-- Loading Spinner -->
-    <FullPageSpinner :visible="loading" message="Loading account details..." />
+    <FullPageSpinner :visible="loading" :message="$t('accountDetail.loadingDetails')" />
 
     <main class="account-detail-page">
         <!-- Header -->
@@ -15,7 +15,7 @@
                 </router-link>
                 <div class="header-content">
                     <h1 class="page-title">{{ account?.account_name || 'Account' }}</h1>
-                    <p class="page-subtitle">{{ account?.platform || 'General' }}</p>
+                    <p class="page-subtitle">{{ account?.platform || $t('accounts.general') }}</p>
                 </div>
             </div>
         </div>
@@ -23,7 +23,7 @@
         <!-- Error State -->
         <div v-if="error" class="error-container">
             <p>{{ error }}</p>
-            <router-link to="/accounts" class="btn-primary">Back to Accounts</router-link>
+            <router-link to="/accounts" class="btn-primary">{{ $t('accountDetail.backToAccounts') }}</router-link>
         </div>
 
         <!-- Account Content -->
@@ -31,27 +31,27 @@
             <!-- Summary Cards -->
             <div class="summary-cards">
                 <div class="summary-card">
-                    <span class="summary-label">Cash Balance</span>
+                    <span class="summary-label">{{ $t('accountDetail.cashBalance') }}</span>
                     <span class="summary-value">{{ formatCurrency(account.initial_balance, account.currency) }}</span>
                 </div>
                 <div class="summary-card">
-                    <span class="summary-label">Equity</span>
+                    <span class="summary-label">{{ $t('accountDetail.equity') }}</span>
                     <span class="summary-value">{{ formatCurrency(totalEquity, account.currency) }}</span>
                 </div>
                 <div class="summary-card">
-                    <span class="summary-label">Interest</span>
+                    <span class="summary-label">{{ $t('accountDetail.interest') }}</span>
                     <span class="summary-value">{{ formatCurrency(0, account.currency) }}</span>
                 </div>
                 <div class="summary-card">
-                    <span class="summary-label">Dividend</span>
+                    <span class="summary-label">{{ $t('accountDetail.dividend') }}</span>
                     <span class="summary-value">{{ formatCurrency(0, account.currency) }}</span>
                 </div>
                 <div class="summary-card">
-                    <span class="summary-label">Activities</span>
+                    <span class="summary-label">{{ $t('accountDetail.activities') }}</span>
                     <span class="summary-value">{{ activities.length }}</span>
                 </div>
                 <div class="summary-card">
-                    <span class="summary-label">Currency</span>
+                    <span class="summary-label">{{ $t('accountDetail.currency') }}</span>
                     <span class="summary-value">{{ account.currency }}</span>
                 </div>
             </div>
@@ -67,7 +67,7 @@
                                 d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
                             </path>
                         </svg>
-                        Holdings
+                        {{ $t('accountDetail.holdings') }}
                     </button>
                     <button @click="activeTab = 'activities'" class="tab"
                         :class="{ 'is-active': activeTab === 'activities' }">
@@ -75,7 +75,7 @@
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                         </svg>
-                        Activities
+                        {{ $t('accountDetail.activities') }}
                     </button>
                 </div>
             </div>
@@ -89,22 +89,22 @@
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Add Holding
+                        {{ $t('accountDetail.addHolding') }}
                     </button>
                 </div>
                 <div v-if="holdings.length === 0" class="empty-state-sm">
-                    <p>No holdings yet</p>
+                    <p>{{ $t('accountDetail.noHoldingsYet') }}</p>
                 </div>
                 <div v-else class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Quantity</th>
-                                <th>Current Price</th>
-                                <th>Value</th>
-                                <th>Profit/Loss</th>
-                                <th>Performance</th>
+                                <th>{{ $t('accountDetail.name') }}</th>
+                                <th>{{ $t('accountDetail.quantity') }}</th>
+                                <th>{{ $t('accountDetail.currentPrice') }}</th>
+                                <th>{{ $t('accountDetail.value') }}</th>
+                                <th>{{ $t('accountDetail.profitLoss') }}</th>
+                                <th>{{ $t('accountDetail.performance') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -137,22 +137,22 @@
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Add Activity
+                        {{ $t('accountDetail.addActivity') }}
                     </button>
                 </div>
                 <div v-if="activities.length === 0" class="empty-state-sm">
-                    <p>No activities recorded</p>
+                    <p>{{ $t('accountDetail.noActivitiesRecorded') }}</p>
                 </div>
                 <div v-else class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Symbol</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Total</th>
+                                <th>{{ $t('accountDetail.date') }}</th>
+                                <th>{{ $t('accountDetail.type') }}</th>
+                                <th>{{ $t('accountDetail.symbol') }}</th>
+                                <th>{{ $t('accountDetail.quantity') }}</th>
+                                <th>{{ $t('accountDetail.price') }}</th>
+                                <th>{{ $t('accountDetail.total') }}</th>
                             </tr>
                         </thead>
                         <tbody>

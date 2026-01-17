@@ -1,8 +1,8 @@
 <template>
   <div class="flex items-center justify-center h-full">
     <div class="text-center">
-      <h1 class="text-2xl font-bold mb-4">Settings</h1>
-      <p class="text-gray-600">Adjust your application settings here.</p>
+      <h1 class="text-2xl font-bold mb-4">{{ $t('settings.title') }}</h1>
+      <p class="text-gray-600">{{ $t('settings.comingSoon') }}</p>
     </div>
   </div>
 </template>
@@ -13,5 +13,4 @@ export default {
 };
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

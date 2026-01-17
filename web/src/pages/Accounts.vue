@@ -6,8 +6,8 @@
         <!-- Header -->
         <div class="page-header">
             <div class="header-content">
-                <h1 class="page-title">Accounts</h1>
-                <p class="page-subtitle">Manage your financial accounts</p>
+                <h1 class="page-title">{{ $t('accounts.title') }}</h1>
+                <p class="page-subtitle">{{ $t('accounts.subtitle') }}</p>
             </div>
             <button @click="openCreateModal" class="btn-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -15,7 +15,7 @@
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                Add Account
+                {{ $t('accounts.addAccount') }}
             </button>
         </div>
 
@@ -59,7 +59,7 @@
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
             <p>{{ error }}</p>
-            <button @click="fetchAccounts" class="btn-secondary">Retry</button>
+            <button @click="fetchAccounts" class="btn-secondary">{{ $t('common.retry') }}</button>
         </div>
 
         <!-- Empty State -->
@@ -74,16 +74,15 @@
                     </svg>
                 </div>
             </div>
-            <h3 class="empty-state-title">No accounts yet</h3>
-            <p class="empty-state-description">Start managing your finances by adding your first account.<br>Track
-                balances across multiple currencies and platforms.</p>
+            <h3 class="empty-state-title">{{ $t('accounts.noAccountsYet') }}</h3>
+            <p class="empty-state-description">{{ $t('accounts.noAccountsDescription') }}</p>
             <button @click="openCreateModal" class="btn-primary btn-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                Create Your First Account
+                {{ $t('accounts.createFirst') }}
             </button>
         </div>
 
@@ -92,12 +91,12 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th class="th-account">Account</th>
-                        <th class="th-platform">Platform</th>
-                        <th class="th-currency">Currency</th>
-                        <th class="th-balance">Balance</th>
-                        <th class="th-status">Status</th>
-                        <th class="th-actions">Actions</th>
+                        <th class="th-account">{{ $t('accounts.account') }}</th>
+                        <th class="th-platform">{{ $t('accounts.platform') }}</th>
+                        <th class="th-currency">{{ $t('accounts.currency') }}</th>
+                        <th class="th-balance">{{ $t('accounts.balance') }}</th>
+                        <th class="th-status">{{ $t('accounts.status') }}</th>
+                        <th class="th-actions">{{ $t('common.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,7 +122,7 @@
                                     <rect x="2" y="5" width="20" height="14" rx="2"></rect>
                                     <line x1="2" y1="10" x2="22" y2="10"></line>
                                 </svg>
-                                {{ account.platform || 'General' }}
+                                {{ account.platform || $t('accounts.general') }}
                             </span>
                         </td>
 
@@ -149,7 +148,8 @@
                                 <span class="toggle-switch">
                                     <span class="toggle-knob"></span>
                                 </span>
-                                <span class="status-text">{{ account.is_active ? 'Active' : 'Inactive' }}</span>
+                                <span class="status-text">{{ account.is_active ? $t('common.active') :
+                                    $t('common.inactive') }}</span>
                             </button>
                         </td>
 
@@ -157,7 +157,7 @@
                         <td class="td-actions">
                             <div class="action-buttons">
                                 <router-link :to="`/accounts/${account.id}`" class="btn-action btn-view"
-                                    title="View Details">
+                                    :title="$t('common.viewDetails')">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round">
@@ -165,14 +165,16 @@
                                         <circle cx="12" cy="12" r="3"></circle>
                                     </svg>
                                 </router-link>
-                                <button @click="openEditModal(account)" class="btn-action btn-edit" title="Edit">
+                                <button @click="openEditModal(account)" class="btn-action btn-edit"
+                                    :title="$t('common.edit')">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round">
                                         <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                                     </svg>
                                 </button>
-                                <button @click="confirmDelete(account)" class="btn-action btn-delete" title="Delete">
+                                <button @click="confirmDelete(account)" class="btn-action btn-delete"
+                                    :title="$t('common.delete')">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round">
@@ -190,7 +192,7 @@
 
             <!-- Table Footer -->
             <div class="table-footer">
-                <span class="table-count">{{ accounts.length }} account{{ accounts.length !== 1 ? 's' : '' }}</span>
+                <span class="table-count">{{ accounts.length }} {{ $t('accounts.accounts_count') }}</span>
             </div>
         </div>
 
@@ -198,7 +200,7 @@
         <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
             <div class="modal">
                 <div class="modal-header">
-                    <h2>{{ editingAccount ? 'Edit Account' : 'Create Account' }}</h2>
+                    <h2>{{ editingAccount ? $t('accounts.editAccount') : $t('accounts.createAccount') }}</h2>
                     <button @click="closeModal" class="btn-close">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -209,19 +211,19 @@
                 </div>
                 <form @submit.prevent="saveAccount" class="modal-body">
                     <div class="form-group">
-                        <label for="accountName">Account Name *</label>
+                        <label for="accountName">{{ $t('accounts.accountName') }} *</label>
                         <input type="text" id="accountName" v-model="form.account_name" maxlength="100"
-                            placeholder="e.g., Main Checking Account"
+                            :placeholder="$t('accounts.accountNamePlaceholder')"
                             :class="{ 'input-error': fieldErrors.account_name }">
                         <span v-if="fieldErrors.account_name" class="field-error">{{ fieldErrors.account_name }}</span>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="currency">Currency *</label>
+                            <label for="currency">{{ $t('accounts.currency') }} *</label>
                             <select id="currency" v-model="form.currency"
                                 :class="{ 'input-error': fieldErrors.currency }">
-                                <option value="">Select currency</option>
+                                <option value="">{{ $t('accounts.selectCurrency') }}</option>
                                 <option value="USD">🇺🇸 USD - US Dollar</option>
                                 <option value="EUR">🇪🇺 EUR - Euro</option>
                                 <option value="GBP">🇬🇧 GBP - British Pound</option>
@@ -246,38 +248,40 @@
                             <span v-if="fieldErrors.currency" class="field-error">{{ fieldErrors.currency }}</span>
                         </div>
                         <div class="form-group">
-                            <label for="initialBalance">Cash Balance</label>
+                            <label for="initialBalance">{{ $t('accounts.cashBalance') }}</label>
                             <input type="number" id="initialBalance" v-model.number="form.initial_balance" step="0.01"
                                 placeholder="0.00">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="platform">Platform</label>
+                        <label for="platform">{{ $t('accounts.platform') }}</label>
                         <PlatformSelect v-model="form.platform" />
                     </div>
 
                     <div class="form-group">
-                        <label for="description">Description</label>
+                        <label for="description">{{ $t('accounts.description') }}</label>
                         <textarea id="description" v-model="form.description" maxlength="255" rows="3"
-                            placeholder="Optional notes about this account"></textarea>
+                            :placeholder="$t('accounts.descriptionPlaceholder')"></textarea>
                     </div>
 
                     <div class="form-group checkbox-group">
                         <label class="checkbox-label">
                             <input type="checkbox" v-model="form.is_excluded">
                             <span class="checkmark"></span>
-                            Exclude from totals
+                            {{ $t('accounts.excludeFromTotals') }}
                         </label>
-                        <span class="checkbox-hint">This account won't be included in total balance calculations</span>
+                        <span class="checkbox-hint">{{ $t('accounts.excludeHint') }}</span>
                     </div>
 
                     <div v-if="formError" class="form-error">{{ formError }}</div>
 
                     <div class="modal-footer">
-                        <button type="button" @click="closeModal" class="btn-secondary">Cancel</button>
+                        <button type="button" @click="closeModal" class="btn-secondary">{{ $t('common.cancel')
+                        }}</button>
                         <button type="submit" class="btn-primary" :disabled="saving">
-                            {{ saving ? 'Saving...' : (editingAccount ? 'Update Account' : 'Create Account') }}
+                            {{ saving ? $t('common.saving') : (editingAccount ? $t('accounts.updateAccount') :
+                                $t('accounts.createAccount')) }}
                         </button>
                     </div>
                 </form>
@@ -285,24 +289,26 @@
         </div>
 
         <!-- Delete Confirmation Modal -->
-        <ConfirmModal :visible="showDeleteModal" variant="danger" title="Delete Account"
-            :message="`Are you sure you want to delete ${accountToDelete?.account_name}? This action cannot be undone.`"
-            confirmText="Delete Account" cancelText="Cancel" loadingText="Deleting..." :loading="deleting"
-            @confirm="deleteAccount" @cancel="cancelDelete" />
+        <ConfirmModal :visible="showDeleteModal" variant="danger" :title="$t('accounts.deleteConfirmTitle')"
+            :message="`${$t('accounts.deleteConfirmMessage')} ${accountToDelete?.account_name}? ${$t('accounts.deleteConfirmWarning')}`"
+            :confirmText="$t('accounts.deleteAccount')" :cancelText="$t('common.cancel')"
+            :loadingText="$t('common.deleting')" :loading="deleting" @confirm="deleteAccount" @cancel="cancelDelete" />
 
         <!-- Update Confirmation Modal -->
-        <ConfirmModal :visible="showUpdateModal" variant="warning" title="Update Account"
-            :message="`Are you sure you want to update ${form.account_name}?`" confirmText="Update Account"
-            cancelText="Cancel" loadingText="Updating..." :loading="saving" @confirm="confirmUpdateAccount"
+        <ConfirmModal :visible="showUpdateModal" variant="warning" :title="$t('accounts.updateConfirmTitle')"
+            :message="`${$t('accounts.updateConfirmMessage')} ${form.account_name}?`"
+            :confirmText="$t('accounts.updateAccount')" :cancelText="$t('common.cancel')"
+            :loadingText="$t('common.updating')" :loading="saving" @confirm="confirmUpdateAccount"
             @cancel="cancelUpdate" />
 
         <!-- Status Toggle Confirmation Modal -->
         <ConfirmModal :visible="showStatusModal" :variant="accountToToggle?.is_active ? 'warning' : 'info'"
-            :title="accountToToggle?.is_active ? 'Deactivate Account' : 'Activate Account'"
-            :message="`Are you sure you want to ${accountToToggle?.is_active ? 'deactivate' : 'activate'} ${accountToToggle?.account_name}?`"
-            :confirmText="accountToToggle?.is_active ? 'Deactivate' : 'Activate'" cancelText="Cancel"
-            :loadingText="accountToToggle?.is_active ? 'Deactivating...' : 'Activating...'" :loading="togglingStatus"
-            @confirm="confirmToggleStatus" @cancel="cancelToggleStatus" />
+            :title="accountToToggle?.is_active ? $t('accounts.deactivateAccount') : $t('accounts.activateAccount')"
+            :message="`${accountToToggle?.is_active ? $t('accounts.deactivateConfirm') : $t('accounts.activateConfirm')} ${accountToToggle?.account_name}?`"
+            :confirmText="accountToToggle?.is_active ? $t('common.inactive') : $t('common.active')"
+            :cancelText="$t('common.cancel')"
+            :loadingText="accountToToggle?.is_active ? $t('accounts.deactivating') : $t('accounts.activating')"
+            :loading="togglingStatus" @confirm="confirmToggleStatus" @cancel="cancelToggleStatus" />
     </main>
 </template>
 
@@ -324,9 +330,9 @@ export default {
     },
     computed: {
         spinnerMessage() {
-            if (this.loading) return 'Loading accounts...'
-            if (this.saving) return 'Saving account...'
-            if (this.deleting) return 'Deleting account...'
+            if (this.loading) return this.$t('accounts.loadingAccounts')
+            if (this.saving) return this.$t('accounts.savingAccount')
+            if (this.deleting) return this.$t('accounts.deletingAccount')
             return ''
         }
     },

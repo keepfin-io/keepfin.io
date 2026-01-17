@@ -9,7 +9,7 @@
             <rect x="2" y="5" width="20" height="14" rx="2"></rect>
             <line x1="2" y1="10" x2="22" y2="10"></line>
           </svg>
-          <span v-if="!collapsed || mobile" class="sidebar-text">Accounts</span>
+          <span v-if="!collapsed || mobile" class="sidebar-text">{{ $t('nav.accounts') }}</span>
         </router-link>
       </li>
       <li>
@@ -22,7 +22,7 @@
             <rect x="14" y="14" width="7" height="7"></rect>
             <rect x="3" y="14" width="7" height="7"></rect>
           </svg>
-          <span v-if="!collapsed || mobile" class="sidebar-text">Dashboard</span>
+          <span v-if="!collapsed || mobile" class="sidebar-text">{{ $t('nav.dashboard') }}</span>
         </router-link>
       </li>
       <li>
@@ -32,7 +32,7 @@
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
           </svg>
-          <span v-if="!collapsed || mobile" class="sidebar-text">Projects</span>
+          <span v-if="!collapsed || mobile" class="sidebar-text">{{ $t('nav.projects') }}</span>
         </router-link>
       </li>
       <li>
@@ -45,7 +45,7 @@
               d="M12 1v6m0 6v6m5.196-15.196l-4.243 4.243m-2.828 2.828l-4.243 4.243m15.314 0l-4.243-4.243m-2.828-2.828l-4.243-4.243">
             </path>
           </svg>
-          <span v-if="!collapsed || mobile" class="sidebar-text">Settings</span>
+          <span v-if="!collapsed || mobile" class="sidebar-text">{{ $t('nav.settings') }}</span>
         </router-link>
       </li>
     </ul>
