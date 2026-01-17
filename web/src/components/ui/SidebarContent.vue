@@ -113,3 +113,20 @@ export default {
   transition: opacity 0.2s, width 0.2s;
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+.dark .sidebar-link {
+  color: #a1a1aa;
+}
+
+.dark .sidebar-link:hover {
+  background: #2a2a30;
+  color: #fafafa;
+}
+
+.dark .sidebar-link.active {
+  background: #2a2a30;
+  color: #fafafa;
+}
+</style>

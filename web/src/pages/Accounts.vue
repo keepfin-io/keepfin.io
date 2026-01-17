@@ -1480,3 +1480,238 @@ export default {
     }
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+/* ==================== ACCOUNTS DARK MODE ==================== */
+
+/* Page Background */
+.dark .accounts-page {
+    background: #0f0f12;
+}
+
+/* Header */
+.dark .page-title {
+    color: #fafafa;
+}
+
+.dark .page-subtitle {
+    color: #a1a1aa;
+}
+
+/* Notifications */
+.dark .notification-success {
+    background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+    border-color: #22c55e;
+    color: #dcfce7;
+}
+
+.dark .notification-error {
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border-color: #ef4444;
+    color: #fef2f2;
+}
+
+/* Table Container */
+.dark .table-container {
+    background: #1a1a1f;
+    border-color: #2a2a30;
+}
+
+.dark .data-table th {
+    background: #0f0f12;
+    color: #a1a1aa;
+    border-bottom-color: #2a2a30;
+}
+
+.dark .data-table td {
+    border-bottom-color: #2a2a30;
+}
+
+.dark .table-row:hover {
+    background: #2a2a30;
+}
+
+.dark .table-row.is-excluded {
+    background: rgba(39, 39, 42, 0.5);
+}
+
+/* Account Info */
+.dark .account-name {
+    color: #fafafa;
+}
+
+.dark .account-description {
+    color: #71717a;
+}
+
+/* Badges */
+.dark .platform-badge {
+    background: #2a2a30;
+    color: #a1a1aa;
+}
+
+.dark .currency-badge {
+    background: #2a2a30;
+    color: #a1a1aa;
+}
+
+.dark .balance-amount {
+    color: #fafafa;
+}
+
+.dark .balance-amount.negative {
+    color: #f87171;
+}
+
+/* Status Toggle */
+.dark .status-toggle.is-active .toggle-switch {
+    background: #22c55e;
+}
+
+.dark .status-toggle.is-inactive .toggle-switch {
+    background: #42424a;
+}
+
+.dark .status-text {
+    color: #a1a1aa;
+}
+
+/* Action Buttons */
+.dark .btn-action {
+    background: #2a2a30;
+    color: #a1a1aa;
+}
+
+.dark .btn-action:hover {
+    background: #42424a;
+    color: #fafafa;
+}
+
+.dark .btn-view:hover {
+    color: #60a5fa;
+}
+
+.dark .btn-edit:hover {
+    color: #fbbf24;
+}
+
+.dark .btn-delete:hover {
+    color: #f87171;
+}
+
+/* Table Footer */
+.dark .table-footer {
+    background: #1a1a1f;
+    border-top-color: #2a2a30;
+}
+
+.dark .table-count {
+    color: #71717a;
+}
+
+/* Empty State */
+.dark .empty-state-illustration .illustration-bg {
+    background: linear-gradient(135deg, #2a2a30 0%, #1a1a1f 100%);
+}
+
+.dark .empty-state-illustration .illustration-icon {
+    background: #1a1a1f;
+    color: #555560;
+}
+
+.dark .empty-state-title {
+    color: #fafafa;
+}
+
+.dark .empty-state-description {
+    color: #71717a;
+}
+
+/* Error Container */
+.dark .error-container {
+    color: #f87171;
+}
+
+/* Modal */
+.dark .modal-overlay {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.dark .modal {
+    background: #1a1a1f;
+    border-color: #2a2a30;
+}
+
+.dark .modal-header {
+    border-bottom-color: #2a2a30;
+}
+
+.dark .modal-header h2 {
+    color: #fafafa;
+}
+
+.dark .btn-close {
+    color: #71717a;
+}
+
+.dark .btn-close:hover {
+    background: #2a2a30;
+    color: #a1a1aa;
+}
+
+/* Form */
+.dark .form-group label {
+    color: #a1a1aa;
+}
+
+.dark .form-group input,
+.dark .form-group select,
+.dark .form-group textarea {
+    background: #0f0f12;
+    border-color: #2a2a30;
+    color: #fafafa;
+}
+
+.dark .form-group input:focus,
+.dark .form-group select:focus,
+.dark .form-group textarea:focus {
+    border-color: #555560;
+    box-shadow: 0 0 0 3px rgba(82, 82, 91, 0.3);
+}
+
+.dark .form-group input::placeholder,
+.dark .form-group textarea::placeholder {
+    color: #555560;
+}
+
+.dark .form-group select option {
+    background: #1a1a1f;
+    color: #fafafa;
+}
+
+.dark .checkbox-hint {
+    color: #71717a;
+}
+
+.dark .form-error {
+    background: #450a0a;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+}
+
+/* Modal Footer */
+.dark .modal-footer {
+    border-top-color: #2a2a30;
+}
+
+.dark .btn-secondary {
+    background: #2a2a30;
+    border-color: #42424a;
+    color: #fafafa;
+}
+
+.dark .btn-secondary:hover {
+    background: #42424a;
+}
+</style>

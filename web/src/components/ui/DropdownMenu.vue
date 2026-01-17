@@ -4,11 +4,7 @@
       <slot name="trigger"></slot>
     </div>
     <transition name="dropdown-fade">
-      <div
-        v-if="dropdownOpen"
-        class="dropdown-menu"
-        @click.stop
-      >
+      <div v-if="dropdownOpen" class="dropdown-menu" @click.stop>
         <slot name="content"></slot>
       </div>
     </transition>
@@ -82,5 +78,14 @@ export default {
 .collapsed .dropdown-fade-enter-from,
 .collapsed .dropdown-fade-leave-to {
   transform: translateX(-10px);
+}
+</style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+.dark .dropdown-menu {
+  background: #1a1a1f;
+  border-color: #2a2a30;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
 }
 </style>

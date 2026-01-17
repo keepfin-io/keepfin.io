@@ -614,3 +614,169 @@ export default {
     background: #f9fafb;
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+/* ==================== ADD HOLDING MODAL DARK MODE ==================== */
+
+.dark .modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.dark .modal-content {
+    background: #1a1a1f;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.dark .modal-header {
+    border-bottom-color: #2a2a30;
+}
+
+.dark .modal-header h2 {
+    color: #fafafa;
+}
+
+.dark .close-btn {
+    color: #71717a;
+}
+
+.dark .close-btn:hover {
+    color: #fafafa;
+}
+
+.dark .modal-footer {
+    border-top-color: #2a2a30;
+}
+
+/* Form */
+.dark .form-group label {
+    color: #a1a1aa;
+}
+
+.dark .form-group input,
+.dark .form-group select,
+.dark .form-group textarea {
+    background: #0f0f12;
+    border-color: #2a2a30;
+    color: #fafafa;
+}
+
+.dark .form-group input:focus,
+.dark .form-group select:focus,
+.dark .form-group textarea:focus {
+    border-color: #555560;
+    box-shadow: 0 0 0 3px rgba(85, 85, 96, 0.3);
+}
+
+.dark .form-group input::placeholder,
+.dark .form-group textarea::placeholder {
+    color: #555560;
+}
+
+.dark .form-group select option {
+    background: #1a1a1f;
+    color: #fafafa;
+}
+
+/* Search */
+.dark .search-input {
+    background: #0f0f12;
+    border-color: #2a2a30;
+    color: #fafafa;
+}
+
+.dark .search-results {
+    background: #1a1a1f;
+    border-color: #2a2a30;
+}
+
+.dark .search-result-item {
+    border-bottom-color: #2a2a30;
+}
+
+.dark .search-result-item:hover {
+    background: #2a2a30;
+}
+
+.dark .result-symbol {
+    color: #fafafa;
+}
+
+.dark .result-name {
+    color: #a1a1aa;
+}
+
+.dark .no-results {
+    color: #71717a;
+}
+
+/* Selected Asset */
+.dark .selected-asset {
+    background: #2a2a30;
+    border-color: #42424a;
+}
+
+.dark .asset-symbol {
+    color: #fafafa;
+}
+
+.dark .asset-name {
+    color: #a1a1aa;
+}
+
+.dark .asset-exchange {
+    background: #1e3a5f;
+    color: #93c5fd;
+}
+
+.dark .change-btn {
+    background: #1a1a1f;
+    border-color: #42424a;
+    color: #a1a1aa;
+}
+
+.dark .change-btn:hover {
+    background: #42424a;
+}
+
+/* Current Price */
+.dark .current-price {
+    background: #14532d;
+    border-color: #22c55e;
+}
+
+.dark .price-label {
+    color: #dcfce7;
+}
+
+.dark .price-value {
+    color: #fafafa;
+}
+
+.dark .price-change.positive {
+    background: #166534;
+    color: #4ade80;
+}
+
+.dark .price-change.negative {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+
+/* Total Preview */
+.dark .total-preview {
+    background: #1e3a5f;
+    color: #93c5fd;
+}
+
+/* Buttons */
+.dark .btn-secondary {
+    background: #2a2a30;
+    border-color: #42424a;
+    color: #fafafa;
+}
+
+.dark .btn-secondary:hover {
+    background: #42424a;
+}
+</style>

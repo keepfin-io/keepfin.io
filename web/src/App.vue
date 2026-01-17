@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen bg-gray-50">
+  <div class="flex min-h-screen bg-gray-50 dark:bg-[#0f0f12]">
     <!-- Material Icons font link -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <template v-if="!isAuthPage">
@@ -186,5 +186,30 @@ export default {
 
 .dropdown-item:hover {
   background: #f3f4f6;
+}
+</style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+/* User Button */
+.dark .user-button {
+  color: #fafafa;
+}
+
+.dark .user-button:hover {
+  background: #2a2a30;
+}
+
+.dark .build-version {
+  color: #71717a;
+}
+
+/* Dropdown Items */
+.dark .dropdown-item {
+  color: #fafafa;
+}
+
+.dark .dropdown-item:hover {
+  background: #2a2a30;
 }
 </style>

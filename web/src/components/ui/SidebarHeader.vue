@@ -63,3 +63,10 @@ export default {
   transform: translateX(-10px);
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+.dark .header-text {
+  color: #f1f5f9;
+}
+</style>

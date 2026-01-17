@@ -537,3 +537,112 @@ export default {
     }
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+/* ==================== ACCOUNT DETAIL DARK MODE ==================== */
+
+/* Page Background */
+.dark .account-detail-page {
+    background: #0f0f12;
+}
+
+/* Header */
+.dark .page-title {
+    color: #fafafa;
+}
+
+.dark .page-subtitle {
+    color: #a1a1aa;
+}
+
+.dark .back-button {
+    background: #2a2a30;
+    color: #a1a1aa;
+}
+
+.dark .back-button:hover {
+    background: #42424a;
+    color: #fafafa;
+}
+
+/* Summary Cards */
+.dark .summary-card {
+    background: #1a1a1f;
+    border-color: #2a2a30;
+}
+
+.dark .summary-label {
+    color: #71717a;
+}
+
+.dark .summary-value {
+    color: #fafafa;
+}
+
+/* Tabs */
+.dark .tabs-container {
+    background: #1a1a1f;
+    border-color: #2a2a30;
+}
+
+.dark .tab {
+    color: #a1a1aa;
+}
+
+.dark .tab:hover {
+    color: #fafafa;
+}
+
+.dark .tab.is-active {
+    color: #fafafa;
+    border-bottom-color: #fafafa;
+}
+
+/* Tab Content */
+.dark .tab-content {
+    background: #1a1a1f;
+    border-color: #2a2a30;
+}
+
+/* Empty State */
+.dark .empty-state-sm {
+    color: #71717a;
+}
+
+/* Table */
+.dark .data-table th {
+    color: #71717a;
+    border-bottom-color: #2a2a30;
+}
+
+.dark .data-table td {
+    color: #fafafa;
+    border-bottom-color: #2a2a30;
+}
+
+.dark .data-table tbody tr:hover {
+    background: #2a2a30;
+}
+
+/* Holding Name */
+.dark .holding-name .symbol {
+    color: #71717a;
+}
+
+/* Activity Type */
+.dark .type-buy {
+    background: #14532d;
+    color: #4ade80;
+}
+
+.dark .type-sell {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+
+.dark .type-dividend {
+    background: #1e3a5f;
+    color: #93c5fd;
+}
+</style>

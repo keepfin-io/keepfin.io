@@ -108,37 +108,6 @@
                     </option>
                 </select>
             </div>
-
-            <!-- Theme -->
-            <div class="preference-group">
-                <label class="preference-label">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                    {{ $t('profile.theme') }}
-                </label>
-                <p class="preference-hint">{{ $t('profile.themeHint') }}</p>
-                <div class="theme-toggle">
-                    <button @click="setTheme('light')" class="theme-btn" :class="{ 'is-active': theme === 'light' }">
-                        ☀️ {{ $t('profile.themeLight') }}
-                    </button>
-                    <button @click="setTheme('dark')" class="theme-btn" :class="{ 'is-active': theme === 'dark' }">
-                        🌙 {{ $t('profile.themeDark') }}
-                    </button>
-                    <button @click="setTheme('system')" class="theme-btn" :class="{ 'is-active': theme === 'system' }">
-                        💻 {{ $t('profile.themeSystem') }}
-                    </button>
-                </div>
-            </div>
         </div>
 
         <!-- Emoji Picker Modal -->
@@ -668,5 +637,173 @@ export default {
     .avatar-emoji {
         font-size: 3rem;
     }
+}
+</style>
+
+<!-- Dark Mode Styles (unscoped to work with .dark on html element) -->
+<style>
+/* ==================== PROFILE DARK MODE ==================== */
+/* Using pure black/gray tones instead of blue-tinted slate */
+
+/* Page Background */
+.dark .profile-page {
+    background: #0f0f12;
+}
+
+/* Header */
+.dark .page-title {
+    color: #fafafa;
+}
+
+.dark .page-subtitle {
+    color: #a1a1aa;
+}
+
+/* Profile Card */
+.dark .profile-card {
+    background: #1a1a1f !important;
+    border-color: #2a2a30 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Avatar Section */
+.dark .avatar-section {
+    border-bottom-color: #2a2a30;
+}
+
+.dark .avatar-display {
+    background: linear-gradient(135deg, #2a2a30 0%, #1a1a1f 100%);
+    border-color: #42424a;
+}
+
+.dark .avatar-display:hover {
+    border-color: #a1a1aa;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dark .avatar-edit-hint {
+    background: #2a2a30;
+    color: #a1a1aa;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dark .avatar-hint {
+    color: #71717a;
+}
+
+/* Info Section */
+.dark .info-label {
+    color: #a1a1aa;
+}
+
+.dark .info-value {
+    color: #fafafa;
+}
+
+.dark .info-uuid {
+    background: #0f0f12;
+    color: #a1a1aa;
+    border-color: #2a2a30;
+}
+
+/* Preferences Card */
+.dark .card-title {
+    color: #fafafa;
+    border-bottom-color: #2a2a30;
+}
+
+.dark .preference-group {
+    border-bottom-color: #2a2a30;
+}
+
+.dark .preference-label {
+    color: #fafafa;
+}
+
+.dark .preference-label svg {
+    color: #a1a1aa;
+}
+
+.dark .preference-hint {
+    color: #71717a;
+}
+
+.dark .preference-select {
+    background-color: #0f0f12;
+    border-color: #2a2a30;
+    color: #fafafa;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a1a1aa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25rem;
+}
+
+.dark .preference-select option {
+    background: #1a1a1f;
+    color: #fafafa;
+}
+
+.dark .preference-select:hover {
+    border-color: #42424a;
+}
+
+.dark .preference-select:focus {
+    border-color: #555560;
+    box-shadow: 0 0 0 3px rgba(82, 82, 91, 0.3);
+}
+
+/* Theme Toggle */
+.dark .theme-btn {
+    background: #0f0f12;
+    border-color: #2a2a30;
+    color: #a1a1aa;
+}
+
+.dark .theme-btn:hover {
+    background: #1a1a1f;
+    border-color: #42424a;
+}
+
+.dark .theme-btn.is-active {
+    background: #2a2a30;
+    border-color: #555560;
+    color: #fafafa;
+}
+
+/* Modal */
+.dark .modal-overlay {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.dark .emoji-picker-modal {
+    background: #1a1a1f;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+.dark .modal-header {
+    border-bottom-color: #2a2a30;
+}
+
+.dark .modal-header h2 {
+    color: #fafafa;
+}
+
+.dark .btn-close {
+    color: #71717a;
+}
+
+.dark .btn-close:hover {
+    background: #2a2a30;
+    color: #a1a1aa;
+}
+
+/* Emoji Grid */
+.dark .emoji-option:hover {
+    background: #2a2a30;
+}
+
+.dark .emoji-option.is-selected {
+    background: #42424a;
+    border-color: #555560;
 }
 </style>

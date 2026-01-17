@@ -1,46 +1,52 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-gray-50">
-    <form @submit.prevent="handleRegister" class="w-full max-w-sm bg-white p-8 rounded-lg shadow-md space-y-6">
-      <h2 class="text-2xl font-bold text-center mb-4">{{ $t('auth.registerTitle') }}</h2>
+  <div class="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#0f0f12]">
+    <form @submit.prevent="handleRegister"
+      class="w-full max-w-sm bg-white dark:bg-[#1a1a1f] p-8 rounded-lg shadow-md dark:shadow-xl dark:border dark:border-[#2a2a30] space-y-6">
+      <h2 class="text-2xl font-bold text-center mb-4 dark:text-white">{{ $t('auth.registerTitle') }}</h2>
 
       <!-- Error Message -->
-      <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+      <div v-if="error"
+        class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
         {{ error }}
       </div>
 
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">{{ $t('auth.email') }}</label>
+        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('auth.email')
+          }}</label>
         <input id="email" type="email" v-model="form.email" :disabled="isLoading"
-          class="block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          class="block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:bg-[#0f0f12] dark:border-[#2a2a30] dark:text-white dark:placeholder-gray-500 dark:disabled:bg-[#1a1a1f]"
           :class="{ 'border-red-500': errors.email }" placeholder="you@example.com" />
-        <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email }}</p>
+        <p v-if="errors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.email }}</p>
       </div>
 
       <div>
-        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">{{ $t('auth.password') }}</label>
+        <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{
+          $t('auth.password') }}</label>
         <input id="password" type="password" v-model="form.password" :disabled="isLoading"
-          class="block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          class="block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:bg-[#0f0f12] dark:border-[#2a2a30] dark:text-white dark:placeholder-gray-500 dark:disabled:bg-[#1a1a1f]"
           :class="{ 'border-red-500': errors.password }" placeholder="••••••••" />
-        <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
+        <p v-if="errors.password" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.password }}</p>
       </div>
 
       <div>
-        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">{{ $t('auth.confirmPassword')
+        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{
+          $t('auth.confirmPassword')
           }}</label>
         <input id="confirmPassword" type="password" v-model="form.confirmPassword" :disabled="isLoading"
-          class="block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          class="block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:bg-[#0f0f12] dark:border-[#2a2a30] dark:text-white dark:placeholder-gray-500 dark:disabled:bg-[#1a1a1f]"
           :class="{ 'border-red-500': errors.confirmPassword }" placeholder="••••••••" />
-        <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">{{ errors.confirmPassword }}</p>
+        <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.confirmPassword
+          }}</p>
       </div>
 
       <!-- Password Requirements -->
-      <div class="text-xs text-gray-500 space-y-1">
+      <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
         <p class="font-medium">Password must contain:</p>
         <ul class="list-disc list-inside space-y-0.5">
-          <li :class="{ 'text-green-600': hasMinLength }">At least 8 characters</li>
-          <li :class="{ 'text-green-600': hasUppercase }">One uppercase letter</li>
-          <li :class="{ 'text-green-600': hasLowercase }">One lowercase letter</li>
-          <li :class="{ 'text-green-600': hasNumber }">One number</li>
+          <li :class="{ 'text-green-600 dark:text-green-400': hasMinLength }">At least 8 characters</li>
+          <li :class="{ 'text-green-600 dark:text-green-400': hasUppercase }">One uppercase letter</li>
+          <li :class="{ 'text-green-600 dark:text-green-400': hasLowercase }">One lowercase letter</li>
+          <li :class="{ 'text-green-600 dark:text-green-400': hasNumber }">One number</li>
         </ul>
       </div>
 
@@ -49,9 +55,10 @@
         {{ isLoading ? $t('common.registering') : $t('auth.register') }}
       </button>
 
-      <div class="text-center text-sm text-gray-500">
+      <div class="text-center text-sm text-gray-500 dark:text-gray-400">
         {{ $t('auth.hasAccount') }}
-        <router-link to="/login" class="text-blue-600 hover:underline">{{ $t('auth.login') }}</router-link>
+        <router-link to="/login" class="text-blue-600 dark:text-blue-400 hover:underline">{{ $t('auth.login')
+          }}</router-link>
       </div>
     </form>
   </div>

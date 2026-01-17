@@ -2,24 +2,18 @@
   <div class="sidebar-container">
     <!-- Mobile overlay -->
     <transition name="overlay">
-      <div
-        v-if="isMobileOpen"
-        class="fixed inset-0 bg-black/50 z-40 md:hidden"
-        @click="closeMobile"
-      />
+      <div v-if="isMobileOpen" class="fixed inset-0 bg-black/50 z-40 md:hidden" @click="closeMobile" />
     </transition>
 
     <!-- Sidebar -->
-    <aside
-      :class="[
-        'sidebar',
-        {
-          'collapsed': isCollapsed && !isMobile,
-          'mobile-open': isMobileOpen,
-          'mobile-closed': !isMobileOpen && isMobile
-        }
-      ]"
-    >
+    <aside :class="[
+      'sidebar',
+      {
+        'collapsed': isCollapsed && !isMobile,
+        'mobile-open': isMobileOpen,
+        'mobile-closed': !isMobileOpen && isMobile
+      }
+    ]">
       <!-- Header -->
       <div class="sidebar-header">
         <slot name="header">
@@ -34,12 +28,10 @@
         </slot>
 
         <!-- Close button for mobile -->
-        <button
-          v-if="isMobile"
-          @click="closeMobile"
-          class="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button v-if="isMobile" @click="closeMobile"
+          class="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -57,35 +49,20 @@
       </div>
 
       <!-- Collapse Toggle Button (Desktop only) -->
-      <button
-        @click="toggleCollapse"
-        class="collapse-toggle hidden md:flex"
-        :title="isCollapsed ? 'Genişlet' : 'Daralt'"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          :class="{ 'rotate-180': isCollapsed }"
-          class="transition-transform duration-200"
-        >
+      <button @click="toggleCollapse" class="collapse-toggle hidden md:flex"
+        :title="isCollapsed ? 'Genişlet' : 'Daralt'">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          :class="{ 'rotate-180': isCollapsed }" class="transition-transform duration-200">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
     </aside>
 
     <!-- Mobile Menu Button -->
-    <button
-      @click="toggleMobile"
-      class="mobile-menu-button md:hidden"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button @click="toggleMobile" class="mobile-menu-button md:hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="3" y1="12" x2="21" y2="12"></line>
         <line x1="3" y1="6" x2="21" y2="6"></line>
         <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -295,5 +272,62 @@ export default {
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+</style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+/* ==================== SIDEBAR DARK MODE ==================== */
+
+/* Sidebar Base */
+.dark .sidebar {
+  background: #0f0f12;
+  border-right-color: #2a2a30;
+}
+
+/* Header */
+.dark .sidebar-header {
+  background: #0f0f12;
+  border-bottom-color: #2a2a30;
+}
+
+.dark .sidebar-header span {
+  color: #fafafa;
+}
+
+/* Footer */
+.dark .sidebar-footer {
+  border-top-color: #2a2a30;
+}
+
+/* Collapse Toggle Button */
+.dark .collapse-toggle {
+  background: #1a1a1f;
+  border-color: #2a2a30;
+  color: #a1a1aa;
+}
+
+.dark .collapse-toggle:hover {
+  background: #2a2a30;
+}
+
+/* Mobile Menu Button */
+.dark .mobile-menu-button {
+  background: #1a1a1f;
+  border-color: #2a2a30;
+  color: #fafafa;
+}
+
+.dark .mobile-menu-button:hover {
+  background: #2a2a30;
+}
+
+/* Scrollbar */
+.dark .sidebar-content::-webkit-scrollbar-thumb {
+  background: #42424a;
+}
+
+.dark .sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #555560;
 }
 </style>

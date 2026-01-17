@@ -263,3 +263,31 @@ export default {
     }
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+/* ==================== CONFIRM MODAL DARK MODE ==================== */
+
+.dark .confirm-modal {
+    background: #1a1a1f;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+.dark .confirm-title {
+    color: #fafafa;
+}
+
+.dark .confirm-message {
+    color: #a1a1aa;
+}
+
+.dark .btn-cancel {
+    background: #2a2a30;
+    border-color: #42424a;
+    color: #fafafa;
+}
+
+.dark .btn-cancel:hover:not(:disabled) {
+    background: #42424a;
+}
+</style>

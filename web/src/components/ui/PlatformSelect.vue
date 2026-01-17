@@ -370,3 +370,95 @@ export default {
     color: #dc2626;
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+.dark .select-trigger {
+    background: #0f0f12;
+    border-color: #2a2a30;
+    color: #fafafa;
+}
+
+.dark .select-trigger:hover {
+    border-color: #42424a;
+}
+
+.dark .select-trigger:focus,
+.dark .is-open .select-trigger {
+    border-color: #555560;
+    box-shadow: 0 0 0 3px rgba(85, 85, 96, 0.3);
+}
+
+.dark .placeholder {
+    color: #71717a;
+}
+
+.dark .chevron {
+    color: #71717a;
+}
+
+/* Dropdown */
+.dark .dropdown {
+    background: #1a1a1f;
+    border-color: #2a2a30;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Search */
+.dark .search-box {
+    border-bottom-color: #2a2a30;
+}
+
+.dark .search-box svg {
+    color: #71717a;
+}
+
+.dark .search-box input {
+    background: transparent;
+    color: #fafafa;
+}
+
+.dark .search-box input::placeholder {
+    color: #555560;
+}
+
+/* Options */
+.dark .option-group-label {
+    color: #71717a;
+}
+
+.dark .option {
+    color: #fafafa;
+}
+
+.dark .option:hover {
+    background: #2a2a30;
+}
+
+.dark .option.is-selected {
+    background: #2a2a30;
+    color: #fafafa;
+}
+
+.dark .check-icon {
+    color: #4ade80;
+}
+
+.dark .no-results {
+    color: #71717a;
+}
+
+/* Clear Section */
+.dark .clear-section {
+    border-top-color: #2a2a30;
+}
+
+.dark .clear-btn {
+    color: #a1a1aa;
+}
+
+.dark .clear-btn:hover {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+</style>
