@@ -122,3 +122,14 @@ export default {
     opacity: 0;
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+.dark .spinner-overlay {
+    background: rgba(15, 15, 18, 0.85);
+}
+
+.dark .spinner-message {
+    color: #a1a1aa;
+}
+</style>
