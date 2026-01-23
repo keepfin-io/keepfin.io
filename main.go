@@ -35,7 +35,10 @@ func main() {
 		ReadBufferSize: 16384, // 16KB - prevents 431 error for large headers/cookies
 	})
 
-	allowedOrigin := "http://localhost:8080"
+	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
+	if allowedOrigin == "" {
+		allowedOrigin = "http://localhost:8080"
+	}
 
 	// CORS middleware
 	app.Use(func(c *fiber.Ctx) error {
