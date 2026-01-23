@@ -10,6 +10,7 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=keepnode
       - DB_SSL_MODE=disable
+      - ALLOWED_ORIGIN=http://localhost:8080
     depends_on:
       - postgres
     restart: unless-stopped
