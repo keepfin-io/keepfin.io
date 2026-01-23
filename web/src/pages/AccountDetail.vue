@@ -1,9 +1,7 @@
 <template>
-    <!-- Loading Spinner -->
-    <FullPageSpinner :visible="loading" :message="$t('accountDetail.loadingDetails')" />
+    <FullPageSpinner :visible="loading || deleting || updating" :message="spinnerMessage" />
 
     <main class="account-detail-page">
-        <!-- Header -->
         <div class="page-header">
             <div class="header-left">
                 <router-link to="/accounts" class="back-button">
@@ -24,6 +22,12 @@
         <div v-if="error" class="error-container">
             <p>{{ error }}</p>
             <router-link to="/accounts" class="btn-primary">{{ $t('accountDetail.backToAccounts') }}</router-link>
+        </div>
+
+        <!-- Alert -->
+        <div v-if="alert.show" class="alert-container">
+            <Alert :variant="alert.variant" :title="alert.title" :description="alert.description" :dismissible="true"
+                @dismiss="alert.show = false" />
         </div>
 
         <!-- Account Content -->
@@ -105,6 +109,7 @@
                                 <th>{{ $t('accountDetail.value') }}</th>
                                 <th>{{ $t('accountDetail.profitLoss') }}</th>
                                 <th>{{ $t('accountDetail.performance') }}</th>
+                                <th class="actions-header">{{ $t('accountDetail.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -121,6 +126,30 @@
                                 </td>
                                 <td :class="holding.performance >= 0 ? 'text-green' : 'text-red'">
                                     {{ holding.performance?.toFixed(2) }}%
+                                </td>
+                                <td class="actions-cell">
+                                    <button class="action-btn edit-btn" @click="openEditHolding(holding)"
+                                        :title="$t('common.edit')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="action-btn delete-btn" @click="confirmDeleteHolding(holding)"
+                                        :title="$t('common.delete')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path
+                                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                            </path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -147,26 +176,33 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>{{ $t('accountDetail.date') }}</th>
+                                <th>{{ $t('accountDetail.name') }}</th>
                                 <th>{{ $t('accountDetail.type') }}</th>
-                                <th>{{ $t('accountDetail.symbol') }}</th>
+                                <th>{{ $t('accountDetail.date') }}</th>
                                 <th>{{ $t('accountDetail.quantity') }}</th>
-                                <th>{{ $t('accountDetail.price') }}</th>
-                                <th>{{ $t('accountDetail.total') }}</th>
+                                <th>{{ $t('accountDetail.unitPrice') }}</th>
+                                <th>{{ $t('accountDetail.fee') }}</th>
+                                <th>{{ $t('accountDetail.value') }}</th>
+                                <th>{{ $t('accountDetail.currency') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="activity in activities" :key="activity.id">
-                                <td>{{ formatDate(activity.date) }}</td>
+                                <td class="holding-name">
+                                    <span class="name">{{ activity.name || activity.symbol }}</span>
+                                    <span class="symbol">{{ activity.symbol }}</span>
+                                </td>
                                 <td>
                                     <span class="activity-type" :class="`type-${activity.type}`">
                                         {{ activity.type }}
                                     </span>
                                 </td>
-                                <td>{{ activity.symbol }}</td>
-                                <td>{{ activity.quantity }}</td>
-                                <td>{{ formatCurrency(activity.price, account.currency) }}</td>
-                                <td>{{ formatCurrency(activity.total, account.currency) }}</td>
+                                <td>{{ formatDate(activity.date) }}</td>
+                                <td>{{ activity.quantity?.toFixed(2) }}</td>
+                                <td>{{ formatCurrency(activity.unit_price, activity.currency) }}</td>
+                                <td>{{ formatCurrency(activity.fee, activity.currency) }}</td>
+                                <td>{{ formatCurrency(activity.total, activity.currency) }}</td>
+                                <td>{{ activity.currency }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -177,20 +213,43 @@
         <!-- Add Holding Modal -->
         <AddHoldingModal :show="showAddHoldingModal" :accountId="$route.params.id" @close="showAddHoldingModal = false"
             @success="onHoldingAdded" />
+
+        <!-- Edit Holding Modal -->
+        <EditHoldingModal :show="showEditHoldingModal" :accountId="$route.params.id" :holding="selectedHolding"
+            @close="showEditHoldingModal = false" @success="onHoldingUpdated" />
+
+        <!-- Delete Confirmation Modal -->
+        <div v-if="showDeleteConfirm" class="modal-overlay">
+            <div class="confirm-modal">
+                <h3>{{ $t('accountDetail.deleteHoldingTitle') }}</h3>
+                <p>{{ $t('accountDetail.deleteHoldingMessage', { symbol: holdingToDelete?.symbol }) }}</p>
+                <div class="confirm-actions">
+                    <button class="btn-secondary" @click="showDeleteConfirm = false">{{ $t('common.cancel') }}</button>
+                    <button class="btn-danger" @click="deleteHolding" :disabled="deleting">
+                        {{ deleting ? $t('common.deleting') : $t('common.delete') }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </main>
 </template>
 
 <script>
 import { accountAPI } from '@/services/accountApi'
 import { holdingAPI } from '@/services/holdingApi'
+import { activityAPI } from '@/services/activityApi'
 import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
 import AddHoldingModal from '@/components/holdings/AddHoldingModal.vue'
+import EditHoldingModal from '@/components/holdings/EditHoldingModal.vue'
+import Alert from '@/components/ui/Alert.vue'
 
 export default {
     name: 'AccountDetailPage',
     components: {
         FullPageSpinner,
-        AddHoldingModal
+        AddHoldingModal,
+        EditHoldingModal,
+        Alert
     },
     data() {
         return {
@@ -202,12 +261,29 @@ export default {
             error: null,
             activeTab: 'holdings',
             showAddHoldingModal: false,
-            showAddActivityModal: false
+            showAddActivityModal: false,
+            showEditHoldingModal: false,
+            selectedHolding: null,
+            showDeleteConfirm: false,
+            holdingToDelete: null,
+            deleting: false,
+            updating: false,
+            alert: {
+                show: false,
+                variant: 'success',
+                title: '',
+                description: ''
+            }
         }
     },
     computed: {
         totalEquity() {
             return this.holdings.reduce((sum, h) => sum + (h.value || 0), 0)
+        },
+        spinnerMessage() {
+            if (this.deleting) return this.$t('common.deleting')
+            if (this.updating) return this.$t('common.updating')
+            return this.$t('accountDetail.loadingDetails')
         }
     },
     mounted() {
@@ -220,9 +296,11 @@ export default {
             try {
                 const response = await accountAPI.getAccount(this.$route.params.id)
                 this.account = response.account
-                // Fetch holdings after account is loaded
-                await this.fetchHoldings()
-                this.activities = []
+                // Fetch holdings and activities after account is loaded
+                await Promise.all([
+                    this.fetchHoldings(),
+                    this.fetchActivities()
+                ])
             } catch (err) {
                 this.error = err.message || 'Failed to load account details'
             } finally {
@@ -239,8 +317,73 @@ export default {
                 this.holdings = []
             }
         },
+        async fetchActivities() {
+            try {
+                const response = await activityAPI.getActivities(this.$route.params.id)
+                this.activities = response.activities || []
+            } catch (err) {
+                console.error('Failed to fetch activities:', err)
+                this.activities = []
+            }
+        },
         onHoldingAdded() {
             this.fetchHoldings()
+            this.fetchActivities()
+            this.showAlert('success', this.$t('common.success'), this.$t('accountDetail.holdingAddedDesc'))
+        },
+        onActivityAdded() {
+            this.fetchActivities()
+            this.showAlert('success', this.$t('common.success'), this.$t('accountDetail.activityAddedDesc'))
+        },
+        async onHoldingUpdated() {
+            this.updating = true
+            try {
+                await this.fetchHoldings()
+                await this.fetchActivities()
+                this.showAlert('success', this.$t('common.success'), this.$t('accountDetail.holdingUpdatedDesc'))
+            } catch (err) {
+                console.error('Failed to refresh data:', err)
+            } finally {
+                this.updating = false
+            }
+        },
+        openEditHolding(holding) {
+            this.selectedHolding = holding
+            this.showEditHoldingModal = true
+        },
+        confirmDeleteHolding(holding) {
+            this.holdingToDelete = holding
+            this.showDeleteConfirm = true
+        },
+        async deleteHolding() {
+            if (!this.holdingToDelete || this.deleting) return
+            this.deleting = true
+            try {
+                await holdingAPI.deleteHolding(this.$route.params.id, this.holdingToDelete.id)
+                this.showDeleteConfirm = false
+                this.holdingToDelete = null
+                await this.fetchHoldings()
+                await this.fetchActivities()
+                this.showAlert('success', this.$t('common.success'), this.$t('accountDetail.holdingDeletedDesc'))
+            } catch (err) {
+                console.error('Failed to delete holding:', err)
+                this.showAlert('error', this.$t('common.error'), err.message || 'Failed to delete holding')
+            } finally {
+                this.deleting = false
+            }
+        },
+        showAlert(variant, title, description) {
+            this.alert = {
+                show: true,
+                variant,
+                title,
+                description
+            }
+            if (variant === 'success') {
+                setTimeout(() => {
+                    this.alert.show = false
+                }, 3000)
+            }
         },
         formatCurrency(amount, currency) {
             return new Intl.NumberFormat('en-US', {
@@ -311,6 +454,11 @@ export default {
     color: #6b7280;
     margin: 0.25rem 0 0 0;
     font-size: 0.875rem;
+}
+
+/* Alert */
+.alert-container {
+    margin-bottom: 1.5rem;
 }
 
 /* Error */
@@ -536,12 +684,139 @@ export default {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* Action Buttons */
+.actions-header {
+    width: 100px;
+    text-align: center;
+}
+
+.actions-cell {
+    text-align: center;
+}
+
+.actions-cell .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0.25rem;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.edit-btn {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.edit-btn:hover {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.delete-btn {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.delete-btn:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Confirm Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.confirm-modal {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.confirm-modal h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.confirm-modal p {
+    margin: 0 0 1.5rem 0;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.btn-secondary {
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: #374151;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #f9fafb;
+}
+
+.btn-danger {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 </style>
 
-<!-- Dark Mode Styles (unscoped) -->
 <style>
-/* ==================== ACCOUNT DETAIL DARK MODE ==================== */
-
 /* Page Background */
 .dark .account-detail-page {
     background: #0f0f12;
@@ -644,5 +919,49 @@ export default {
 .dark .type-dividend {
     background: #1e3a5f;
     color: #93c5fd;
+}
+
+/* Action Buttons Dark Mode */
+.dark .edit-btn {
+    background: #1e3a5f;
+    color: #93c5fd;
+}
+
+.dark .edit-btn:hover {
+    background: #2563eb;
+    color: #fafafa;
+}
+
+.dark .delete-btn {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+
+.dark .delete-btn:hover {
+    background: #dc2626;
+    color: #fafafa;
+}
+
+/* Confirm Modal Dark Mode */
+.dark .confirm-modal {
+    background: #1a1a1f;
+}
+
+.dark .confirm-modal h3 {
+    color: #fafafa;
+}
+
+.dark .confirm-modal p {
+    color: #a1a1aa;
+}
+
+.dark .btn-secondary {
+    background: #2a2a30;
+    border-color: #42424a;
+    color: #fafafa;
+}
+
+.dark .btn-secondary:hover {
+    background: #42424a;
 }
 </style>

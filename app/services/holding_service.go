@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"keepnode/app/models"
 	"keepnode/app/queries"
@@ -12,14 +13,16 @@ import (
 )
 
 type HoldingService struct {
-	DB            *gorm.DB
-	marketService *MarketService
+	DB              *gorm.DB
+	marketService   *MarketService
+	activityQueries *queries.ActivityQueries
 }
 
 func NewHoldingService(db *gorm.DB, marketService *MarketService) *HoldingService {
 	return &HoldingService{
-		DB:            db,
-		marketService: marketService,
+		DB:              db,
+		marketService:   marketService,
+		activityQueries: &queries.ActivityQueries{DB: db},
 	}
 }
 
@@ -31,17 +34,14 @@ func (s *HoldingService) AddHolding(accountID uuid.UUID, req *models.CreateHoldi
 		return nil, errors.New("quantity must be greater than 0")
 	}
 
-	// Normalize symbol (uppercase)
 	symbol := strings.ToUpper(req.Symbol)
 
-	// Check if holding already exists for this symbol
 	holdingQueries := &queries.HoldingQueries{DB: s.DB}
 	existingHolding, err := holdingQueries.GetHoldingBySymbol(accountID, symbol)
 	if err == nil && existingHolding.ID != uuid.Nil {
 		return nil, errors.New("holding for this symbol already exists in account")
 	}
 
-	// Try to get asset info from API
 	var name string
 	searchReq := &models.SearchRequest{Query: strings.Split(symbol, ".")[0], Limit: 1}
 	results, err := s.marketService.SearchAssets(searchReq)
@@ -49,7 +49,6 @@ func (s *HoldingService) AddHolding(accountID uuid.UUID, req *models.CreateHoldi
 		name = results[0].Name
 	}
 
-	// Set default currency
 	buyCurrency := req.BuyCurrency
 	if buyCurrency == "" {
 		buyCurrency = "USD"
@@ -69,13 +68,27 @@ func (s *HoldingService) AddHolding(accountID uuid.UUID, req *models.CreateHoldi
 		return nil, err
 	}
 
+	activity := &models.Activity{
+		AccountID: accountID,
+		HoldingID: &holding.ID,
+		Symbol:    symbol,
+		Name:      name,
+		Type:      models.ActivityTypeBuy,
+		Date:      time.Now(),
+		Quantity:  req.Quantity,
+		UnitPrice: req.BuyPrice,
+		Fee:       req.Fee,
+		Currency:  buyCurrency,
+		Notes:     req.Notes,
+	}
+	_ = s.activityQueries.CreateActivity(activity)
+
 	return holding, nil
 }
 
 func (s *HoldingService) GetHoldingsWithLiveData(accountID uuid.UUID) ([]models.HoldingWithLiveData, *models.HoldingsSummary, error) {
 	holdingQueries := &queries.HoldingQueries{DB: s.DB}
 
-	// Get all holdings for account
 	holdings, err := holdingQueries.GetHoldingsByAccountID(accountID)
 	if err != nil {
 		return nil, nil, err
@@ -85,26 +98,20 @@ func (s *HoldingService) GetHoldingsWithLiveData(accountID uuid.UUID) ([]models.
 		return []models.HoldingWithLiveData{}, &models.HoldingsSummary{}, nil
 	}
 
-	// Collect all symbols
 	symbols := make([]string, len(holdings))
 	for i, h := range holdings {
 		symbols[i] = h.Symbol
 	}
 
-	// Fetch live prices for all symbols
 	livePrices, err := s.marketService.GetMultipleLivePrices(symbols)
 	if err != nil {
-		// Continue without live data if API fails
 		livePrices = []models.LivePrice{}
 	}
 
-	// Create price map for quick lookup
 	priceMap := make(map[string]models.LivePrice)
 	for _, lp := range livePrices {
 		priceMap[lp.Code] = lp
 	}
-
-	// Build response with live data
 	result := make([]models.HoldingWithLiveData, len(holdings))
 	summary := &models.HoldingsSummary{}
 
@@ -170,13 +177,10 @@ func (s *HoldingService) GetHoldingByID(holdingID, accountID uuid.UUID) (*models
 func (s *HoldingService) UpdateHolding(holdingID, accountID uuid.UUID, req *models.UpdateHoldingRequest) (*models.Holding, error) {
 	holdingQueries := &queries.HoldingQueries{DB: s.DB}
 
-	// Check if holding exists
 	holding, err := holdingQueries.GetHoldingByID(holdingID, accountID)
 	if err != nil {
 		return nil, errors.New("holding not found")
 	}
-
-	// Build updates map
 	updates := make(map[string]interface{})
 	if req.Quantity != nil && *req.Quantity > 0 {
 		updates["quantity"] = *req.Quantity
@@ -199,7 +203,6 @@ func (s *HoldingService) UpdateHolding(holdingID, accountID uuid.UUID, req *mode
 		return nil, err
 	}
 
-	// Fetch updated holding
 	updatedHolding, _ := holdingQueries.GetHoldingByID(holdingID, accountID)
 	return &updatedHolding, nil
 }
@@ -207,7 +210,6 @@ func (s *HoldingService) UpdateHolding(holdingID, accountID uuid.UUID, req *mode
 func (s *HoldingService) DeleteHolding(holdingID, accountID uuid.UUID) error {
 	holdingQueries := &queries.HoldingQueries{DB: s.DB}
 
-	// Check if holding exists and belongs to account
 	_, err := holdingQueries.GetHoldingByID(holdingID, accountID)
 	if err != nil {
 		return errors.New("holding not found")

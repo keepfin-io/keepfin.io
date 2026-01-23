@@ -186,3 +186,69 @@ export default {
     background: rgba(0, 0, 0, 0.05);
 }
 </style>
+
+<!-- Dark Mode Styles (unscoped) -->
+<style>
+.dark .alert {
+    background: #1a1a1f;
+    border-color: #2a2a30;
+}
+
+.dark .alert-title {
+    color: #fafafa;
+}
+
+.dark .alert-description {
+    color: #a1a1aa;
+}
+
+.dark .alert-dismiss {
+    color: #a1a1aa;
+}
+
+.dark .alert-dismiss:hover {
+    background: #2a2a30;
+    color: #fafafa;
+}
+
+/* Dark Mode Variants */
+.dark .alert-success {
+    background: rgba(22, 163, 74, 0.1);
+    border-color: rgba(22, 163, 74, 0.2);
+    color: #4ade80;
+}
+
+.dark .alert-success .alert-icon {
+    color: #4ade80;
+}
+
+.dark .alert-error {
+    background: rgba(127, 29, 29, 0.4);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.dark .alert-error .alert-icon {
+    color: #fca5a5;
+}
+
+.dark .alert-warning {
+    background: rgba(120, 53, 15, 0.4);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #fcd34d;
+}
+
+.dark .alert-warning .alert-icon {
+    color: #fcd34d;
+}
+
+.dark .alert-info {
+    background: rgba(30, 58, 138, 0.4);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+}
+
+.dark .alert-info .alert-icon {
+    color: #3b82f6;
+}
+</style>

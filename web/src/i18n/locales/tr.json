@@ -149,6 +149,16 @@
         "type": "Tür",
         "symbol": "Sembol",
         "price": "Fiyat",
-        "total": "Toplam"
+        "total": "Toplam",
+        "unitPrice": "Birim Fiyat",
+        "fee": "Komisyon",
+        "activityAdded": "Aktivite eklendi",
+        "activityAddedDesc": "başarıyla kaydedildi.",
+        "holdingAddedDesc": "başarıyla eklendi.",
+        "holdingUpdatedDesc": "başarıyla güncellendi.",
+        "holdingDeletedDesc": "başarıyla silindi.",
+        "actions": "İşlemler",
+        "deleteHoldingTitle": "Varlığı Sil",
+        "deleteHoldingMessage": "{symbol} varlığını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
     }
 }

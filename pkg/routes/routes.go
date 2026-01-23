@@ -17,6 +17,7 @@ func Register(app *fiber.App) {
 	accountService := services.NewAccountService(db)
 	marketService := services.NewMarketService()
 	holdingService := services.NewHoldingService(db, marketService)
+	activityService := services.NewActivityService(db, marketService)
 
 	// Initialize controllers
 	authController := controllers.NewAuthController(userService)
@@ -24,6 +25,7 @@ func Register(app *fiber.App) {
 	accountController := controllers.NewAccountController(accountService)
 	marketController := controllers.NewMarketController(marketService)
 	holdingController := controllers.NewHoldingController(holdingService, accountService)
+	activityController := controllers.NewActivityController(activityService, accountService)
 
 	// Public routes (no auth required)
 	app.Post("/api/v1/user/signup", authController.UserSignUp)
@@ -62,4 +64,9 @@ func Register(app *fiber.App) {
 	api.Get("/accounts/:id/holdings", holdingController.GetHoldings)
 	api.Put("/accounts/:accountId/holdings/:id", holdingController.UpdateHolding)
 	api.Delete("/accounts/:accountId/holdings/:id", holdingController.DeleteHolding)
+
+	// Activity routes
+	api.Post("/accounts/:id/activities", activityController.CreateActivity)
+	api.Get("/accounts/:id/activities", activityController.GetActivities)
+	api.Delete("/accounts/:accountId/activities/:activityId", activityController.DeleteActivity)
 }

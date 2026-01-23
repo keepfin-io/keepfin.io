@@ -111,7 +111,7 @@ export default {
     }
 }
 
-/* Fade Transition */
+
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.2s ease;
@@ -123,7 +123,7 @@ export default {
 }
 </style>
 
-<!-- Dark Mode Styles (unscoped) -->
+
 <style>
 .dark .spinner-overlay {
     background: rgba(15, 15, 18, 0.85);

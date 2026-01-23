@@ -8,10 +8,10 @@ import (
 
 // AutoMigrate runs auto migration for all models.
 func AutoMigrate(db *gorm.DB) error {
-	// Auto migrate all models.
 	return db.AutoMigrate(
 		&models.User{},
 		&models.Account{},
 		&models.Holding{},
+		&models.Activity{},
 	)
 }

@@ -17,9 +17,7 @@ type Holding struct {
 	BuyPrice    float64   `gorm:"type:decimal(18,4);not null" json:"buy_price" validate:"required,gte=0"`
 	BuyCurrency string    `gorm:"type:varchar(3);default:'USD'" json:"buy_currency"`
 	Notes       string    `gorm:"type:text" json:"notes,omitempty"`
-
-	// Relations
-	Account Account `gorm:"foreignKey:AccountID" json:"-"`
+	Account     Account   `gorm:"foreignKey:AccountID" json:"-"`
 }
 
 func (Holding) TableName() string {
@@ -30,7 +28,6 @@ func (h *Holding) BeforeCreate(tx *gorm.DB) error {
 	return h.Base.BeforeCreate(tx)
 }
 
-// HoldingWithLiveData represents a holding with live market data
 type HoldingWithLiveData struct {
 	ID            uuid.UUID `json:"id"`
 	AccountID     uuid.UUID `json:"account_id"`
@@ -48,7 +45,6 @@ type HoldingWithLiveData struct {
 	FirstActivity time.Time `json:"first_activity"`
 }
 
-// HoldingsSummary represents portfolio summary
 type HoldingsSummary struct {
 	TotalValue       float64 `json:"total_value"`
 	TotalCost        float64 `json:"total_cost"`
@@ -57,16 +53,15 @@ type HoldingsSummary struct {
 	DailyChange      float64 `json:"daily_change"`
 }
 
-// CreateHoldingRequest represents request body for creating a holding
 type CreateHoldingRequest struct {
 	Symbol      string  `json:"symbol" validate:"required,lte=20"`
 	Quantity    float64 `json:"quantity" validate:"required,gt=0"`
 	BuyPrice    float64 `json:"buy_price" validate:"required,gte=0"`
+	Fee         float64 `json:"fee"`
 	BuyCurrency string  `json:"buy_currency"`
 	Notes       string  `json:"notes"`
 }
 
-// UpdateHoldingRequest represents request body for updating a holding
 type UpdateHoldingRequest struct {
 	Quantity    *float64 `json:"quantity" validate:"omitempty,gt=0"`
 	BuyPrice    *float64 `json:"buy_price" validate:"omitempty,gte=0"`

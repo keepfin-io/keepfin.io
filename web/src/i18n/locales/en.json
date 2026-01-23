@@ -149,6 +149,16 @@
         "type": "Type",
         "symbol": "Symbol",
         "price": "Price",
-        "total": "Total"
+        "total": "Total",
+        "unitPrice": "Unit Price",
+        "fee": "Fee",
+        "activityAdded": "Activity added",
+        "activityAddedDesc": "has been recorded successfully.",
+        "holdingAddedDesc": "has been added successfully.",
+        "holdingUpdatedDesc": "has been updated successfully.",
+        "holdingDeletedDesc": "has been deleted successfully.",
+        "actions": "Actions",
+        "deleteHoldingTitle": "Delete Holding",
+        "deleteHoldingMessage": "Are you sure you want to delete {symbol}? This action cannot be undone."
     }
 }

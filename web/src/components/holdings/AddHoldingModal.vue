@@ -1,5 +1,5 @@
 <template>
-    <div v-if="show" class="modal-overlay" @click.self="close">
+    <div v-if="show" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Add Holding</h2>
@@ -76,14 +76,27 @@
                             </div>
                         </div>
 
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fee">Fee</label>
+                                <input id="fee" type="number" v-model.number="form.fee" step="any" min="0"
+                                    placeholder="e.g., 1.50" />
+                            </div>
+                            <div class="form-group">
+                                <label for="buyCurrency">Currency</label>
+                                <select id="buyCurrency" v-model="form.buy_currency">
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                    <option value="TRY">TRY</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="form-group">
-                            <label for="buyCurrency">Currency</label>
-                            <select id="buyCurrency" v-model="form.buy_currency">
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="GBP">GBP</option>
-                                <option value="TRY">TRY</option>
-                            </select>
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" v-model="form.notes" rows="2"
+                                placeholder="Optional notes about this holding"></textarea>
                         </div>
 
                         <div class="form-group">
@@ -95,7 +108,8 @@
                         <!-- Total Value Preview -->
                         <div v-if="form.quantity && form.buy_price" class="total-preview">
                             <span>Total Cost:</span>
-                            <strong>{{ formatCurrency(form.quantity * form.buy_price, form.buy_currency) }}</strong>
+                            <strong>{{ formatCurrency((form.quantity * form.buy_price) + (form.fee || 0),
+                                form.buy_currency) }}</strong>
                         </div>
                     </form>
                 </div>
@@ -142,6 +156,7 @@ export default {
                 symbol: '',
                 quantity: null,
                 buy_price: null,
+                fee: 0,
                 buy_currency: 'USD',
                 notes: ''
             }
@@ -227,6 +242,7 @@ export default {
                     symbol: this.form.symbol,
                     quantity: this.form.quantity,
                     buy_price: this.form.buy_price,
+                    fee: this.form.fee || 0,
                     buy_currency: this.form.buy_currency,
                     notes: this.form.notes
                 })
@@ -253,6 +269,7 @@ export default {
                 symbol: '',
                 quantity: null,
                 buy_price: null,
+                fee: 0,
                 buy_currency: 'USD',
                 notes: ''
             }
@@ -615,10 +632,7 @@ export default {
 }
 </style>
 
-<!-- Dark Mode Styles (unscoped) -->
 <style>
-/* ==================== ADD HOLDING MODAL DARK MODE ==================== */
-
 .dark .modal-overlay {
     background: rgba(0, 0, 0, 0.7);
 }
