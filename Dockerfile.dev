@@ -4,7 +4,8 @@ FROM golang:1.25-alpine
 WORKDIR /app
 
 # Install Air for live reloading
-RUN go install github.com/air-verse/air@latest
+# ----- Official images use GOTOOLCHAIN=local; auto lets Go fetch the newer toolchain Air needs
+RUN GOTOOLCHAIN=auto go install github.com/air-verse/air@latest
 
 # Copy go module files
 COPY go.mod go.sum ./

@@ -30,8 +30,12 @@ func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
 		return nil, errors.New(utils.ValidatorErrorsString(err))
 	}
 
-	existingUser, _ := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(context.Background(), signUp.Email)
-	if existingUser.ID != uuid.Nil {
+	// -----> GetUserByEmail returns nil user when no record exists
+	existingUser, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(context.Background(), signUp.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.New("failed to check existing user")
+	}
+	if existingUser != nil {
 		return nil, errors.New("user with this email already exists")
 	}
 

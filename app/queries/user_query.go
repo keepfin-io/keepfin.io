@@ -45,7 +45,7 @@ func (q *UserQueries) GetUserByEmail(ctx context.Context, email string) (*models
 }
 
 func (q *UserQueries) CreateUser(ctx context.Context, user *models.User) error {
-	err := q.DB.WithContext(ctx).Create(&user).Error
+	err := q.DB.WithContext(ctx).Create(user).Error
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}

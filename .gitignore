@@ -2,6 +2,7 @@
 node_modules
 /dist
 build-errors.log
+/tmp
 # local env files
 .env
 .env.local
@@ -21,3 +22,5 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+./tmp

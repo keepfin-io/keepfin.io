@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"os/signal"
@@ -29,10 +30,16 @@ func main() {
 	}
 	log.Println("Migrations completed successfully")
 
+	// Seed default user (only when env vars are set)
+	if err := database.SeedDefaultUser(db); err != nil {
+		log.Printf("Default user seed error: %v", err)
+	}
+
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:        "KeepNode API",
 		ReadBufferSize: 16384, // 16KB - prevents 431 error for large headers/cookies
+		ErrorHandler:   jsonErrorHandler,
 	})
 
 	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
@@ -88,4 +95,23 @@ func main() {
 	}
 
 	log.Println("Server gracefully stopped")
+}
+
+// jsonErrorHandler returns all errors (also recovered panics) as JSON
+func jsonErrorHandler(c *fiber.Ctx, err error) error {
+	code := fiber.StatusInternalServerError
+	message := "Internal server error"
+
+	var fiberErr *fiber.Error
+	if errors.As(err, &fiberErr) {
+		code = fiberErr.Code
+		message = fiberErr.Message
+	} else {
+		log.Printf("Unhandled error: %v", err)
+	}
+
+	return c.Status(code).JSON(fiber.Map{
+		"error":   true,
+		"message": message,
+	})
 }

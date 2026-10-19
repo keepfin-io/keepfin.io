@@ -13,6 +13,8 @@ services:
       - DB_NAME=keepnode
       - DB_SSL_MODE=disable
       - ALLOWED_ORIGIN=http://localhost:8080
+      - DEFAULT_USER_EMAIL=demo@keepfin.io
+      - DEFAULT_USER_PASSWORD=Demo1234
     volumes:
       - .:/app
     depends_on:
