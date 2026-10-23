@@ -1,23 +1,40 @@
 <template>
-  <div class="flex min-h-svh items-center justify-center p-4 sm:p-8">
+  <div
+    data-testid="register-page"
+    class="flex min-h-svh items-center justify-center p-4 sm:p-8"
+  >
     <Card class="w-full max-w-md">
       <CardHeader class="text-center">
         <CardTitle class="text-2xl">{{ $t('auth.registerTitle') }}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form class="space-y-5" @submit.prevent="handleRegister">
-          <Alert v-if="error" variant="error" :description="error" />
+        <form
+          data-testid="register-form"
+          class="space-y-5"
+          @submit.prevent="handleRegister"
+        >
+          <Alert
+            data-testid="register-error"
+            v-if="error"
+            variant="error"
+            :description="error"
+          />
           <div class="space-y-2">
             <Label for="email">{{ $t('auth.email') }}</Label>
             <Input
               id="email"
+              data-testid="register-email"
               v-model="form.email"
               type="email"
               autocomplete="email"
               :disabled="isLoading"
               :aria-invalid="!!errors.email"
             />
-            <p v-if="errors.email" class="text-sm text-destructive">
+            <p
+              data-testid="register-email-error"
+              v-if="errors.email"
+              class="text-sm text-destructive"
+            >
               {{ errors.email }}
             </p>
           </div>
@@ -25,13 +42,18 @@
             <Label for="password">{{ $t('auth.password') }}</Label>
             <Input
               id="password"
+              data-testid="register-password"
               v-model="form.password"
               type="password"
               autocomplete="new-password"
               :disabled="isLoading"
               :aria-invalid="!!errors.password"
             />
-            <p v-if="errors.password" class="text-sm text-destructive">
+            <p
+              data-testid="register-password-error"
+              v-if="errors.password"
+              class="text-sm text-destructive"
+            >
               {{ errors.password }}
             </p>
           </div>
@@ -41,13 +63,18 @@
             </Label>
             <Input
               id="confirmPassword"
+              data-testid="register-confirm-password"
               v-model="form.confirmPassword"
               type="password"
               autocomplete="new-password"
               :disabled="isLoading"
               :aria-invalid="!!errors.confirmPassword"
             />
-            <p v-if="errors.confirmPassword" class="text-sm text-destructive">
+            <p
+              data-testid="register-confirm-password-error"
+              v-if="errors.confirmPassword"
+              class="text-sm text-destructive"
+            >
               {{ errors.confirmPassword }}
             </p>
           </div>
@@ -69,6 +96,7 @@
             </ul>
           </div>
           <Button
+            data-testid="register-submit"
             type="submit"
             class="w-full"
             :loading="isLoading"
@@ -83,7 +111,9 @@
       >
         {{ $t('auth.hasAccount') }}
         <Button variant="link" size="inline" as-child>
-          <router-link to="/login">{{ $t('auth.login') }}</router-link>
+          <router-link data-testid="register-login-link" to="/login">
+            {{ $t('auth.login') }}
+          </router-link>
         </Button>
       </CardFooter>
     </Card>

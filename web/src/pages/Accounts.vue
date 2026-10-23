@@ -1,9 +1,10 @@
 <template>
   <FullPageSpinner
+    data-testid="accounts-loading"
     :visible="loading || saving || deleting"
     :message="spinnerMessage"
   />
-  <section class="min-w-0 space-y-6">
+  <section data-testid="accounts-page" class="min-w-0 space-y-6">
     <div
       class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
     >
@@ -15,12 +16,17 @@
           {{ $t('accounts.subtitle') }}
         </p>
       </div>
-      <Button class="w-full sm:w-auto" @click="openCreateModal">
+      <Button
+        data-testid="accounts-add"
+        class="w-full sm:w-auto"
+        @click="openCreateModal"
+      >
         <Plus class="size-4" />
         {{ $t('accounts.addAccount') }}
       </Button>
     </div>
     <Alert
+      data-testid="accounts-notification"
       v-if="notification"
       v-bind="notification"
       dismissible
@@ -28,13 +34,24 @@
     />
     <Card v-if="!loading && error">
       <CardContent class="space-y-4 py-6">
-        <Alert variant="error" :description="error" />
-        <Button variant="outline" @click="fetchAccounts">
+        <Alert
+          data-testid="accounts-error"
+          variant="error"
+          :description="error"
+        />
+        <Button
+          data-testid="accounts-retry"
+          variant="outline"
+          @click="fetchAccounts"
+        >
           {{ $t('common.retry') }}
         </Button>
       </CardContent>
     </Card>
-    <Card v-if="!loading && !error && accounts.length === 0">
+    <Card
+      data-testid="accounts-empty"
+      v-if="!loading && !error && accounts.length === 0"
+    >
       <CardContent
         class="flex flex-col items-center gap-4 px-6 py-12 text-center"
       >
@@ -45,14 +62,23 @@
         <p class="max-w-md text-sm text-muted-foreground">
           {{ $t('accounts.noAccountsDescription') }}
         </p>
-        <Button class="max-w-full whitespace-normal" @click="openCreateModal">
+        <Button
+          data-testid="accounts-create-first"
+          class="max-w-full whitespace-normal"
+          @click="openCreateModal"
+        >
           {{ $t('accounts.createFirst') }}
         </Button>
       </CardContent>
     </Card>
     <template v-if="!loading && !error && accounts.length">
-      <div class="grid gap-4 md:hidden">
-        <Card v-for="account in accounts" :key="account.id" class="min-w-0">
+      <div data-testid="accounts-cards" class="grid gap-4 md:hidden">
+        <Card
+          :data-testid="`account-card-${account.id}`"
+          v-for="account in accounts"
+          :key="account.id"
+          class="min-w-0"
+        >
           <CardHeader class="gap-3">
             <CardTitle class="break-words text-base">
               {{ account.account_name }}
@@ -84,6 +110,7 @@
           <CardFooter class="flex-wrap justify-between gap-3 border-t pt-4">
             <div class="flex items-center gap-2">
               <Switch
+                :data-testid="`account-card-${account.id}-status`"
                 :id="`mobile-status-${account.id}`"
                 :model-value="account.is_active"
                 @update:model-value="toggleAccountStatus(account)"
@@ -97,6 +124,7 @@
               </Label>
             </div>
             <RecordActions
+              :data-testid="`account-card-${account.id}-actions`"
               :view-to="`/accounts/${account.id}`"
               @edit="openEditModal(account)"
               @delete="confirmDelete(account)"
@@ -106,7 +134,7 @@
       </div>
       <Card class="hidden min-w-0 overflow-hidden py-0 md:block">
         <CardContent class="min-w-0 p-0">
-          <Table>
+          <Table data-testid="accounts-table">
             <TableHeader>
               <TableRow>
                 <TableHead>{{ $t('accounts.account') }}</TableHead>
@@ -122,7 +150,11 @@
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="account in accounts" :key="account.id">
+              <TableRow
+                :data-testid="`account-row-${account.id}`"
+                v-for="account in accounts"
+                :key="account.id"
+              >
                 <TableCell class="max-w-64">
                   <p class="truncate font-medium">
                     {{ account.account_name }}
@@ -168,6 +200,7 @@
                 <TableCell>
                   <div class="flex items-center gap-2">
                     <Switch
+                      :data-testid="`account-row-${account.id}-status`"
                       :id="`status-${account.id}`"
                       :model-value="account.is_active"
                       @update:model-value="toggleAccountStatus(account)"
@@ -183,6 +216,7 @@
                 </TableCell>
                 <TableCell>
                   <RecordActions
+                    :data-testid="`account-row-${account.id}-actions`"
                     class="justify-end"
                     :view-to="`/accounts/${account.id}`"
                     @edit="openEditModal(account)"
@@ -194,12 +228,13 @@
           </Table>
         </CardContent>
       </Card>
-      <p class="text-sm text-muted-foreground">
+      <p data-testid="accounts-count" class="text-sm text-muted-foreground">
         {{ accounts.length }} {{ $t('accounts.accounts_count') }}
       </p>
     </template>
     <Dialog :open="showModal" @update:open="!$event && !saving && closeModal()">
       <DialogContent
+        data-testid="account-form-dialog"
         :show-close-button="!saving"
         @interact-outside="saving && $event.preventDefault()"
         @escape-key-down="saving && $event.preventDefault()"
@@ -214,17 +249,26 @@
           </DialogTitle>
           <DialogDescription>{{ $t('accounts.subtitle') }}</DialogDescription>
         </DialogHeader>
-        <form class="space-y-4" @submit.prevent="saveAccount">
+        <form
+          data-testid="account-form"
+          class="space-y-4"
+          @submit.prevent="saveAccount"
+        >
           <div class="space-y-2">
             <Label for="accountName">{{ $t('accounts.accountName') }} *</Label>
             <Input
               id="accountName"
+              data-testid="account-form-name"
               v-model="form.account_name"
               maxlength="100"
               :placeholder="$t('accounts.accountNamePlaceholder')"
               :aria-invalid="!!fieldErrors.account_name"
             />
-            <p v-if="fieldErrors.account_name" class="text-sm text-destructive">
+            <p
+              data-testid="account-form-name-error"
+              v-if="fieldErrors.account_name"
+              class="text-sm text-destructive"
+            >
               {{ fieldErrors.account_name }}
             </p>
           </div>
@@ -233,12 +277,17 @@
               <Label for="currency">{{ $t('accounts.currency') }} *</Label>
               <FormSelect
                 id="currency"
+                data-testid="account-form-currency"
                 v-model="form.currency"
                 :options="currencyOptions"
                 :placeholder="$t('accounts.selectCurrency')"
                 :invalid="!!fieldErrors.currency"
               />
-              <p v-if="fieldErrors.currency" class="text-sm text-destructive">
+              <p
+                data-testid="account-form-currency-error"
+                v-if="fieldErrors.currency"
+                class="text-sm text-destructive"
+              >
                 {{ fieldErrors.currency }}
               </p>
             </div>
@@ -248,6 +297,7 @@
               </Label>
               <Input
                 id="initialBalance"
+                data-testid="account-form-balance"
                 v-model.number="form.initial_balance"
                 type="number"
                 step="0.01"
@@ -255,6 +305,7 @@
                 :aria-invalid="!!fieldErrors.initial_balance"
               />
               <p
+                data-testid="account-form-balance-error"
                 v-if="fieldErrors.initial_balance"
                 class="text-sm text-destructive"
               >
@@ -264,8 +315,16 @@
           </div>
           <div class="space-y-2">
             <Label for="platform">{{ $t('accounts.platform') }}</Label>
-            <PlatformSelect id="platform" v-model="form.platform" />
-            <p v-if="fieldErrors.platform" class="text-sm text-destructive">
+            <PlatformSelect
+              id="platform"
+              data-testid="account-form-platform"
+              v-model="form.platform"
+            />
+            <p
+              data-testid="account-form-platform-error"
+              v-if="fieldErrors.platform"
+              class="text-sm text-destructive"
+            >
               {{ fieldErrors.platform }}
             </p>
           </div>
@@ -273,16 +332,25 @@
             <Label for="description">{{ $t('accounts.description') }}</Label>
             <Textarea
               id="description"
+              data-testid="account-form-description"
               v-model="form.description"
               maxlength="255"
               :placeholder="$t('accounts.descriptionPlaceholder')"
             />
-            <p v-if="fieldErrors.description" class="text-sm text-destructive">
+            <p
+              data-testid="account-form-description-error"
+              v-if="fieldErrors.description"
+              class="text-sm text-destructive"
+            >
               {{ fieldErrors.description }}
             </p>
           </div>
           <div class="flex items-start gap-3 rounded-lg border p-3">
-            <Checkbox id="excluded" v-model="form.is_excluded" />
+            <Checkbox
+              id="excluded"
+              data-testid="account-form-excluded"
+              v-model="form.is_excluded"
+            />
             <div class="space-y-1">
               <Label for="excluded" class="leading-snug">
                 {{ $t('accounts.excludeFromTotals') }}
@@ -292,17 +360,24 @@
               </p>
             </div>
           </div>
-          <Alert v-if="formError" variant="error" :description="formError" />
+          <Alert
+            data-testid="account-form-error"
+            v-if="formError"
+            variant="error"
+            :description="formError"
+          />
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               :disabled="saving"
+              data-testid="account-form-cancel"
               @click="closeModal"
             >
               {{ $t('common.cancel') }}
             </Button>
             <Button
+              data-testid="account-form-submit"
               type="submit"
               :loading="saving"
               :loading-text="$t('common.saving')"
@@ -318,6 +393,7 @@
       </DialogContent>
     </Dialog>
     <ConfirmModal
+      data-testid="account-delete-dialog"
       :visible="showDeleteModal"
       variant="danger"
       :title="$t('accounts.deleteConfirmTitle')"
@@ -332,6 +408,7 @@
       @cancel="cancelDelete"
     />
     <ConfirmModal
+      data-testid="account-update-dialog"
       :visible="showUpdateModal"
       variant="warning"
       :title="$t('accounts.updateConfirmTitle')"
@@ -344,6 +421,7 @@
       @cancel="cancelUpdate"
     />
     <ConfirmModal
+      data-testid="account-status-dialog"
       :visible="showStatusModal"
       :title="
         accountToToggle?.is_active

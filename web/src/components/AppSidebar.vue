@@ -5,7 +5,11 @@
         <SidebarMenu class="min-w-0">
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" as-child>
-              <router-link to="/" class="font-semibold">
+              <router-link
+                data-testid="sidebar-brand-link"
+                to="/"
+                class="font-semibold"
+              >
                 <Wallet class="size-5" />
                 <span>Keepfin</span>
               </router-link>
@@ -13,6 +17,7 @@
           </SidebarMenuItem>
         </SidebarMenu>
         <Button
+          data-testid="sidebar-close"
           variant="ghost"
           size="icon"
           class="mr-2 shrink-0 md:hidden"
@@ -23,7 +28,7 @@
         </Button>
       </div>
     </SidebarHeader>
-    <SidebarContent>
+    <SidebarContent data-testid="sidebar-navigation">
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -37,7 +42,12 @@
                 "
                 :tooltip="$t(item.label)"
               >
-                <router-link :to="item.path">
+                <router-link
+                  :data-testid="`sidebar-nav-${
+                    item.path === '/' ? 'dashboard' : item.path.slice(1)
+                  }`"
+                  :to="item.path"
+                >
                   <component :is="item.icon" />
                   <span>{{ $t(item.label) }}</span>
                 </router-link>
@@ -52,7 +62,10 @@
         <SidebarMenuItem>
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
-              <SidebarMenuButton size="lg">
+              <SidebarMenuButton
+                data-testid="sidebar-user-menu-trigger"
+                size="lg"
+              >
                 <Avatar class="size-8 rounded-lg">
                   <AvatarFallback class="rounded-lg">
                     {{ user?.email?.slice(0, 2).toUpperCase() }}
@@ -63,6 +76,7 @@
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
+              data-testid="sidebar-user-menu"
               side="top"
               align="start"
               class="w-56 max-w-[calc(100vw-2rem)]"
@@ -72,13 +86,13 @@
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem as-child>
-                <router-link to="/profile">
+                <router-link data-testid="sidebar-profile-link" to="/profile">
                   <User />
                   {{ $t('nav.profile') }}
                 </router-link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem @select="logout">
+              <DropdownMenuItem data-testid="sidebar-sign-out" @select="logout">
                 <LogOut />
                 {{ $t('common.signOut') }}
               </DropdownMenuItem>
@@ -87,7 +101,7 @@
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarFooter>
-    <SidebarRail />
+    <SidebarRail data-testid="sidebar-rail" />
   </Sidebar>
 </template>
 <script setup>

@@ -1,6 +1,7 @@
 <template>
   <Dialog :open="show" @update:open="!$event && close()">
     <DialogContent
+      data-testid="holding-add-dialog"
       :show-close-button="!submitting"
       @interact-outside="submitting && $event.preventDefault()"
       @escape-key-down="submitting && $event.preventDefault()"
@@ -9,16 +10,23 @@
         <DialogTitle>{{ $t('accountDetail.addHolding') }}</DialogTitle>
         <DialogDescription>{{ $t('holdings.formHint') }}</DialogDescription>
       </DialogHeader>
-      <Alert v-if="formError" variant="error" :description="formError" />
+      <Alert
+        data-testid="holding-add-error"
+        v-if="formError"
+        variant="error"
+        :description="formError"
+      />
       <div v-if="!selectedAsset" class="space-y-3">
         <Label for="assetSearch">{{ $t('holdings.searchAsset') }}</Label>
         <Input
           id="assetSearch"
+          data-testid="holding-add-search"
           v-model="searchQuery"
           @update:model-value="onSearchInput"
           :placeholder="$t('holdings.searchPlaceholder')"
         />
         <p
+          data-testid="holding-add-search-loading"
           v-if="searchLoading"
           class="flex items-center gap-2 text-sm text-muted-foreground"
         >
@@ -26,9 +34,10 @@
           {{ $t('common.loading') }}
         </p>
         <Command v-if="searchResults.length" class="rounded-lg border">
-          <CommandList>
+          <CommandList data-testid="holding-add-search-results">
             <CommandGroup>
               <CommandItem
+                :data-testid="`holding-add-result-${asset.Code}.${asset.Exchange}`"
                 v-for="asset in searchResults"
                 :key="`${asset.Code}-${asset.Exchange}`"
                 :value="`${asset.Code}.${asset.Exchange}`"
@@ -46,6 +55,7 @@
           </CommandList>
         </Command>
         <p
+          data-testid="holding-add-search-empty"
           v-else-if="searchQuery.length >= 2 && !searchLoading"
           class="text-sm text-muted-foreground"
         >
@@ -53,6 +63,7 @@
         </p>
       </div>
       <form
+        data-testid="holding-add-form"
         id="add-holding-form"
         v-if="selectedAsset"
         class="space-y-4"
@@ -75,19 +86,28 @@
             variant="ghost"
             size="sm"
             :disabled="submitting"
+            data-testid="holding-add-change-asset"
             @click="clearSelection"
           >
             {{ $t('common.edit') }}
           </Button>
         </div>
-        <p v-if="livePrice" class="text-sm text-muted-foreground">
+        <p
+          data-testid="holding-add-live-price"
+          v-if="livePrice"
+          class="text-sm text-muted-foreground"
+        >
           {{ $t('accountDetail.currentPrice') }}:
           {{ formatCurrency(livePrice.close, selectedAsset.Currency) }}
           <span class="tabular-nums">
             ({{ livePrice.change_p?.toFixed(2) }}%)
           </span>
         </p>
-        <p v-if="priceLoading" class="text-sm text-muted-foreground">
+        <p
+          data-testid="holding-add-price-loading"
+          v-if="priceLoading"
+          class="text-sm text-muted-foreground"
+        >
           {{ $t('common.loading') }}
         </p>
         <div class="grid gap-4 sm:grid-cols-2">
@@ -95,6 +115,7 @@
             <Label for="add-quantity">{{ $t('accountDetail.quantity') }}</Label>
             <Input
               id="add-quantity"
+              data-testid="holding-add-quantity"
               type="number"
               v-model.number="form.quantity"
               step="any"
@@ -107,6 +128,7 @@
             <Label for="add-buy_price">{{ $t('accountDetail.price') }}</Label>
             <Input
               id="add-buy_price"
+              data-testid="holding-add-price"
               type="number"
               v-model.number="form.buy_price"
               step="any"
@@ -119,6 +141,7 @@
             <Label for="add-fee">{{ $t('accountDetail.fee') }}</Label>
             <Input
               id="add-fee"
+              data-testid="holding-add-fee"
               type="number"
               v-model.number="form.fee"
               step="any"
@@ -132,6 +155,7 @@
             </Label>
             <FormSelect
               id="add-buyCurrency"
+              data-testid="holding-add-currency"
               v-model="form.buy_currency"
               :disabled="submitting"
               :options="[
@@ -144,6 +168,7 @@
           <Label for="add-notes">{{ $t('holdings.notes') }}</Label>
           <Textarea
             id="add-notes"
+            data-testid="holding-add-notes"
             v-model="form.notes"
             :disabled="submitting"
           />
@@ -152,7 +177,10 @@
           class="flex flex-wrap justify-between gap-2 rounded-lg bg-muted p-3 text-sm"
         >
           <span>{{ $t('holdings.totalCost') }}</span>
-          <strong class="break-all tabular-nums">
+          <strong
+            data-testid="holding-add-total"
+            class="break-all tabular-nums"
+          >
             {{
               formatCurrency(
                 form.quantity * form.buy_price + (form.fee || 0),
@@ -167,11 +195,13 @@
           type="button"
           variant="outline"
           :disabled="submitting"
+          data-testid="holding-add-cancel"
           @click="close"
         >
           {{ $t('common.cancel') }}
         </Button>
         <Button
+          data-testid="holding-add-submit"
           type="submit"
           form="add-holding-form"
           :disabled="!canSubmit"

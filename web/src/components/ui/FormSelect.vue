@@ -4,11 +4,24 @@
     :disabled="disabled"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <SelectTrigger :id="id" class="w-full" :aria-invalid="invalid">
+    <SelectTrigger
+      v-bind="$attrs"
+      :id="id"
+      class="w-full"
+      :aria-invalid="invalid"
+    >
       <SelectValue :placeholder="placeholder" />
     </SelectTrigger>
-    <SelectContent>
+    <SelectContent
+      :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-options`"
+    >
       <SelectItem
+        :data-testid="
+          $attrs['data-testid'] &&
+          `${$attrs['data-testid']}-option-${
+            typeof option === 'string' ? option : option.value
+          }`
+        "
         v-for="option in options"
         :key="typeof option === 'string' ? option : option.value"
         :value="typeof option === 'string' ? option : option.value"
@@ -19,6 +32,7 @@
   </Select>
 </template>
 <script setup>
+defineOptions({ inheritAttrs: false })
 import {
   Select,
   SelectContent,

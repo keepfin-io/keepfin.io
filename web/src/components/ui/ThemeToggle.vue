@@ -1,6 +1,7 @@
 <template>
   <div class="flex min-w-0 flex-col gap-2">
     <Button
+      :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-toggle`"
       v-if="compact"
       variant="ghost"
       size="icon"
@@ -19,6 +20,9 @@
       :aria-label="$t('profile.theme')"
     >
       <Button
+        :data-testid="
+          $attrs['data-testid'] && `${$attrs['data-testid']}-${option}`
+        "
         v-for="option in ['light', 'dark']"
         :key="option"
         :variant="theme === option ? 'default' : 'outline'"
@@ -34,6 +38,7 @@
       </Button>
     </div>
     <Alert
+      :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-error`"
       v-if="saveFailed"
       :class="
         compact && 'fixed right-4 top-16 z-50 w-[calc(100vw-2rem)] max-w-sm'

@@ -1,6 +1,7 @@
 <template>
   <Teleport to="body">
     <div
+      v-bind="$attrs"
       v-if="visible"
       class="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm"
       role="status"
@@ -18,6 +19,7 @@
   </Teleport>
 </template>
 <script setup>
+defineOptions({ inheritAttrs: false })
 import { Card, CardContent } from '@/components/ui/card'
 import { LoaderCircle } from 'lucide-vue-next'
 defineProps({ visible: Boolean, message: String })

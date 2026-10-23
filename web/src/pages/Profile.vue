@@ -1,6 +1,13 @@
 <template>
-  <FullPageSpinner :visible="loading" :message="$t('common.loading')" />
-  <section class="mx-auto min-w-0 max-w-3xl space-y-6">
+  <FullPageSpinner
+    data-testid="profile-loading"
+    :visible="loading"
+    :message="$t('common.loading')"
+  />
+  <section
+    data-testid="profile-page"
+    class="mx-auto min-w-0 max-w-3xl space-y-6"
+  >
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">
         {{ $t('profile.title') }}
@@ -16,6 +23,7 @@
             variant="ghost"
             class="size-24 rounded-full p-0"
             :aria-label="$t('profile.chooseAvatar')"
+            data-testid="profile-avatar-trigger"
             @click="showEmojiPicker = true"
           >
             <Avatar class="size-24">
@@ -34,7 +42,10 @@
             <dt class="text-sm text-muted-foreground">
               {{ $t('profile.userId') }}
             </dt>
-            <dd class="mt-1 break-all font-mono text-sm">
+            <dd
+              data-testid="profile-user-id"
+              class="mt-1 break-all font-mono text-sm"
+            >
               {{ user?.id || '-' }}
             </dd>
           </div>
@@ -42,7 +53,10 @@
             <dt class="text-sm text-muted-foreground">
               {{ $t('profile.email') }}
             </dt>
-            <dd class="mt-1 break-all text-sm font-medium">
+            <dd
+              data-testid="profile-email"
+              class="mt-1 break-all text-sm font-medium"
+            >
               {{ user?.email || '-' }}
             </dd>
           </div>
@@ -50,7 +64,10 @@
             <dt class="text-sm text-muted-foreground">
               {{ $t('profile.memberSince') }}
             </dt>
-            <dd class="mt-1 text-sm font-medium">
+            <dd
+              data-testid="profile-member-since"
+              class="mt-1 text-sm font-medium"
+            >
               {{ formatDate(user?.created_at) }}
             </dd>
           </div>
@@ -67,7 +84,7 @@
           <p class="text-sm text-muted-foreground">
             {{ $t('profile.themeHint') }}
           </p>
-          <ThemeToggle />
+          <ThemeToggle data-testid="profile-theme" />
         </div>
         <Separator />
         <div class="space-y-2">
@@ -77,6 +94,7 @@
           </p>
           <FormSelect
             id="baseCurrency"
+            data-testid="profile-currency"
             v-model="baseCurrency"
             :options="
               currencies.map((c) => ({
@@ -95,6 +113,7 @@
           </p>
           <FormSelect
             id="language"
+            data-testid="profile-language"
             v-model="language"
             :options="
               languages.map((l) => ({
@@ -112,6 +131,7 @@
           </p>
           <FormSelect
             id="locale"
+            data-testid="profile-locale"
             v-model="locale"
             :options="
               locales.map((l) => ({
@@ -125,13 +145,16 @@
       </CardContent>
     </Card>
     <Dialog v-model:open="showEmojiPicker">
-      <DialogContent>
+      <DialogContent data-testid="profile-avatar-dialog">
         <DialogHeader>
           <DialogTitle>{{ $t('profile.chooseAvatar') }}</DialogTitle>
           <DialogDescription>{{ $t('profile.avatarHint') }}</DialogDescription>
         </DialogHeader>
         <div class="grid grid-cols-5 gap-2 sm:grid-cols-8">
           <Button
+            :data-testid="`profile-avatar-option-${Array.from(emoji, (char) =>
+              char.codePointAt(0).toString(16)
+            ).join('-')}`"
             v-for="emoji in emojiList"
             :key="emoji"
             :variant="emoji === selectedEmoji ? 'secondary' : 'ghost'"

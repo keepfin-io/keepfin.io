@@ -1,21 +1,35 @@
 <template>
-  <div v-if="isAuthPage" class="min-h-svh bg-background text-foreground">
+  <div
+    data-testid="auth-layout"
+    v-if="isAuthPage"
+    class="min-h-svh bg-background text-foreground"
+  >
     <router-view />
   </div>
   <SidebarProvider v-else>
     <AppSidebar />
-    <SidebarInset class="min-w-0">
+    <SidebarInset data-testid="app-layout" class="min-w-0">
       <header
+        data-testid="app-header"
         class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur sm:px-6"
       >
-        <SidebarTrigger :aria-label="$t('common.toggleMenu')" />
+        <SidebarTrigger
+          data-testid="sidebar-toggle"
+          :aria-label="$t('common.toggleMenu')"
+        />
         <Separator orientation="vertical" class="h-5!" />
-        <span class="min-w-0 flex-1 truncate text-sm font-medium">
+        <span
+          data-testid="app-page-title"
+          class="min-w-0 flex-1 truncate text-sm font-medium"
+        >
           {{ pageTitle }}
         </span>
-        <ThemeToggle compact />
+        <ThemeToggle data-testid="header-theme" compact />
       </header>
-      <div class="mx-auto w-full min-w-0 max-w-7xl p-4 sm:p-6 lg:p-8">
+      <div
+        data-testid="app-content"
+        class="mx-auto w-full min-w-0 max-w-7xl p-4 sm:p-6 lg:p-8"
+      >
         <router-view />
       </div>
     </SidebarInset>

@@ -1,4 +1,5 @@
 <script setup>
+defineOptions({ inheritAttrs: false })
 import { cn } from 'cn'
 
 const props = defineProps({
@@ -9,6 +10,7 @@ const props = defineProps({
 <template>
   <div data-slot="table-container" class="relative w-full overflow-auto">
     <table
+      v-bind="$attrs"
       data-slot="table"
       :class="cn('w-full caption-bottom text-sm', props.class)"
     >

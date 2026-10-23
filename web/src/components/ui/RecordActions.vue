@@ -18,7 +18,11 @@ defineEmits(['edit', 'delete'])
       :size="compact ? 'icon' : 'sm'"
       as-child
     >
-      <router-link :to="viewTo" :aria-label="$t('common.viewDetails')">
+      <router-link
+        :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-view`"
+        :to="viewTo"
+        :aria-label="$t('common.viewDetails')"
+      >
         <Eye aria-hidden="true" />
         <span v-if="!compact">{{ $t('common.viewDetails') }}</span>
       </router-link>
@@ -29,6 +33,7 @@ defineEmits(['edit', 'delete'])
       :size="compact ? 'icon' : 'sm'"
       :disabled="disabled"
       :aria-label="$t('common.edit')"
+      :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-edit`"
       @click="$emit('edit')"
     >
       <Pencil aria-hidden="true" />
@@ -40,6 +45,7 @@ defineEmits(['edit', 'delete'])
       :size="compact ? 'icon' : 'sm'"
       :disabled="disabled"
       :aria-label="$t('common.delete')"
+      :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-delete`"
       @click="$emit('delete')"
     >
       <Trash2 aria-hidden="true" />

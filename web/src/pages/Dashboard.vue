@@ -1,5 +1,5 @@
 <template>
-  <section class="space-y-6">
+  <section data-testid="dashboard-page" class="space-y-6">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">
         {{ $t('dashboard.title') }}
@@ -8,7 +8,7 @@
         {{ $t('dashboard.welcome') }}
       </p>
     </div>
-    <Card>
+    <Card data-testid="dashboard-card">
       <CardHeader>
         <Wallet class="mb-2 size-8 text-muted-foreground" />
         <CardTitle>{{ $t('accounts.title') }}</CardTitle>
@@ -16,7 +16,7 @@
       </CardHeader>
       <CardFooter>
         <Button as-child class="w-full sm:w-auto">
-          <router-link to="/accounts">
+          <router-link data-testid="dashboard-accounts-link" to="/accounts">
             {{ $t('nav.accounts') }}
             <ArrowRight class="size-4" />
           </router-link>

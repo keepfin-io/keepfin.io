@@ -3,16 +3,36 @@
     :open="visible"
     @update:open="!$event && !loading && $emit('cancel')"
   >
-    <AlertDialogContent>
+    <AlertDialogContent v-bind="$attrs">
       <AlertDialogHeader>
-        <AlertDialogTitle>{{ title }}</AlertDialogTitle>
-        <AlertDialogDescription>{{ message }}</AlertDialogDescription>
+        <AlertDialogTitle
+          :data-testid="
+            $attrs['data-testid'] && `${$attrs['data-testid']}-title`
+          "
+        >
+          {{ title }}
+        </AlertDialogTitle>
+        <AlertDialogDescription
+          :data-testid="
+            $attrs['data-testid'] && `${$attrs['data-testid']}-description`
+          "
+        >
+          {{ message }}
+        </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="loading">
+        <AlertDialogCancel
+          :data-testid="
+            $attrs['data-testid'] && `${$attrs['data-testid']}-cancel`
+          "
+          :disabled="loading"
+        >
           {{ cancelText }}
         </AlertDialogCancel>
         <Button
+          :data-testid="
+            $attrs['data-testid'] && `${$attrs['data-testid']}-confirm`
+          "
           type="button"
           :loading="loading"
           :loading-text="loadingText"
@@ -26,6 +46,7 @@
   </AlertDialog>
 </template>
 <script setup>
+defineOptions({ inheritAttrs: false })
 import {
   AlertDialog,
   AlertDialogContent,

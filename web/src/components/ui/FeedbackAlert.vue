@@ -9,12 +9,23 @@
       class="size-4"
     />
     <CircleCheck v-else class="size-4" />
-    <AlertTitle v-if="title">{{ title }}</AlertTitle>
-    <AlertDescription class="break-words">
+    <AlertTitle
+      :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-title`"
+      v-if="title"
+    >
+      {{ title }}
+    </AlertTitle>
+    <AlertDescription
+      :data-testid="
+        $attrs['data-testid'] && `${$attrs['data-testid']}-description`
+      "
+      class="break-words"
+    >
       {{ description }}
       <slot />
     </AlertDescription>
     <Button
+      :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-dismiss`"
       v-if="dismissible"
       variant="ghost"
       size="icon"

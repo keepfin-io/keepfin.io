@@ -2,6 +2,7 @@
   <Popover v-model:open="open">
     <PopoverTrigger as-child>
       <Button
+        v-bind="$attrs"
         :id="id"
         type="button"
         variant="outline"
@@ -16,15 +17,33 @@
       </Button>
     </PopoverTrigger>
     <PopoverContent
+      :data-testid="$attrs['data-testid'] && `${$attrs['data-testid']}-options`"
       class="w-[var(--reka-popover-trigger-width)] p-0"
       align="start"
     >
       <Command>
-        <CommandInput :placeholder="$t('accounts.searchPlatform')" />
+        <CommandInput
+          :data-testid="
+            $attrs['data-testid'] && `${$attrs['data-testid']}-search`
+          "
+          :placeholder="$t('accounts.searchPlatform')"
+        />
         <CommandList>
-          <CommandEmpty>{{ $t('common.noResults') }}</CommandEmpty>
+          <CommandEmpty
+            :data-testid="
+              $attrs['data-testid'] && `${$attrs['data-testid']}-empty`
+            "
+          >
+            {{ $t('common.noResults') }}
+          </CommandEmpty>
           <CommandGroup>
-            <CommandItem value="__none__" @select="select('')">
+            <CommandItem
+              :data-testid="
+                $attrs['data-testid'] && `${$attrs['data-testid']}-option-none`
+              "
+              value="__none__"
+              @select="select('')"
+            >
               {{ $t('accounts.general') }}
             </CommandItem>
           </CommandGroup>
@@ -34,6 +53,10 @@
             :heading="group.label"
           >
             <CommandItem
+              :data-testid="
+                $attrs['data-testid'] &&
+                `${$attrs['data-testid']}-option-${item.domain}`
+              "
               v-for="item in group.options"
               :key="item.name"
               :value="item.name"
@@ -50,6 +73,7 @@
   </Popover>
 </template>
 <script setup>
+defineOptions({ inheritAttrs: false })
 import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import {

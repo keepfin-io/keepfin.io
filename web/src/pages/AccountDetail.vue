@@ -1,12 +1,14 @@
 <template>
   <FullPageSpinner
+    data-testid="account-detail-loading"
     :visible="loading || deleting || updating"
     :message="spinnerMessage"
   />
-  <section class="min-w-0 space-y-6">
+  <section data-testid="account-detail-page" class="min-w-0 space-y-6">
     <div class="flex items-center gap-3">
       <Button variant="outline" size="icon" as-child>
         <router-link
+          data-testid="account-detail-back"
           to="/accounts"
           :aria-label="$t('accountDetail.backToAccounts')"
         >
@@ -14,7 +16,10 @@
         </router-link>
       </Button>
       <div class="min-w-0">
-        <h1 class="break-words text-2xl font-semibold tracking-tight">
+        <h1
+          data-testid="account-detail-name"
+          class="break-words text-2xl font-semibold tracking-tight"
+        >
           {{ account?.account_name || $t('accounts.account') }}
         </h1>
         <p class="text-sm text-muted-foreground">
@@ -22,8 +27,14 @@
         </p>
       </div>
     </div>
-    <Alert v-if="error" variant="error" :description="error" />
     <Alert
+      data-testid="account-detail-error"
+      v-if="error"
+      variant="error"
+      :description="error"
+    />
+    <Alert
+      data-testid="account-detail-notification"
       v-if="alert.show"
       v-bind="alert"
       dismissible
@@ -32,6 +43,7 @@
     <template v-if="!loading && !error && account">
       <div class="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-6">
         <Card
+          :data-testid="`account-summary-${stat.label}`"
           v-for="stat in summaryCards"
           :key="stat.label"
           class="min-w-0 gap-2 py-4"
@@ -50,19 +62,27 @@
       </div>
       <Tabs v-model="activeTab" class="min-w-0 space-y-4">
         <TabsList class="grid w-full grid-cols-2 sm:w-fit">
-          <TabsTrigger value="holdings">
+          <TabsTrigger data-testid="holdings-tab" value="holdings">
             {{ $t('accountDetail.holdings') }}
           </TabsTrigger>
-          <TabsTrigger value="activities">
+          <TabsTrigger data-testid="activities-tab" value="activities">
             {{ $t('accountDetail.activities') }}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="holdings" class="min-w-0 space-y-4">
-          <Button class="w-full sm:w-auto" @click="showAddHoldingModal = true">
+        <TabsContent
+          data-testid="holdings-panel"
+          value="holdings"
+          class="min-w-0 space-y-4"
+        >
+          <Button
+            data-testid="holdings-add"
+            class="w-full sm:w-auto"
+            @click="showAddHoldingModal = true"
+          >
             <Plus class="size-4" />
             {{ $t('accountDetail.addHolding') }}
           </Button>
-          <Card v-if="!holdings.length">
+          <Card data-testid="holdings-empty" v-if="!holdings.length">
             <CardContent
               class="py-10 text-center text-sm text-muted-foreground"
             >
@@ -70,8 +90,9 @@
             </CardContent>
           </Card>
           <template v-else>
-            <div class="grid gap-4 md:hidden">
+            <div data-testid="holdings-cards" class="grid gap-4 md:hidden">
               <Card
+                :data-testid="`holding-card-${holding.id}`"
                 v-for="holding in holdings"
                 :key="holding.id"
                 class="min-w-0"
@@ -121,6 +142,7 @@
                 </CardContent>
                 <CardFooter class="justify-end gap-2 border-t pt-4">
                   <RecordActions
+                    :data-testid="`holding-card-${holding.id}-actions`"
                     :compact="false"
                     @edit="openEditHolding(holding)"
                     @delete="confirmDeleteHolding(holding)"
@@ -130,7 +152,7 @@
             </div>
             <Card class="hidden min-w-0 overflow-hidden py-0 md:block">
               <CardContent class="min-w-0 p-0">
-                <Table>
+                <Table data-testid="holdings-table">
                   <TableHeader>
                     <TableRow>
                       <TableHead
@@ -150,7 +172,11 @@
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow v-for="holding in holdings" :key="holding.id">
+                    <TableRow
+                      :data-testid="`holding-row-${holding.id}`"
+                      v-for="holding in holdings"
+                      :key="holding.id"
+                    >
                       <TableCell class="max-w-60">
                         <p class="truncate font-medium">
                           {{ holding.name || holding.symbol }}
@@ -187,6 +213,7 @@
                       </TableCell>
                       <TableCell>
                         <RecordActions
+                          :data-testid="`holding-row-${holding.id}-actions`"
                           @edit="openEditHolding(holding)"
                           @delete="confirmDeleteHolding(holding)"
                         />
@@ -198,12 +225,20 @@
             </Card>
           </template>
         </TabsContent>
-        <TabsContent value="activities" class="min-w-0 space-y-4">
-          <Button disabled :title="$t('projects.comingSoon')">
+        <TabsContent
+          data-testid="activities-panel"
+          value="activities"
+          class="min-w-0 space-y-4"
+        >
+          <Button
+            data-testid="activities-add"
+            disabled
+            :title="$t('projects.comingSoon')"
+          >
             <Plus class="size-4" />
             {{ $t('accountDetail.addActivity') }}
           </Button>
-          <Card v-if="!activities.length">
+          <Card data-testid="activities-empty" v-if="!activities.length">
             <CardContent
               class="py-10 text-center text-sm text-muted-foreground"
             >
@@ -212,7 +247,7 @@
           </Card>
           <Card v-else class="min-w-0 overflow-hidden py-0">
             <CardContent class="min-w-0 p-0">
-              <Table>
+              <Table data-testid="activities-table">
                 <TableHeader>
                   <TableRow>
                     <TableHead
@@ -233,7 +268,11 @@
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow v-for="activity in activities" :key="activity.id">
+                  <TableRow
+                    :data-testid="`activity-row-${activity.id}`"
+                    v-for="activity in activities"
+                    :key="activity.id"
+                  >
                     <TableCell class="max-w-60">
                       <p class="truncate font-medium">
                         {{ activity.name || activity.symbol }}
@@ -281,6 +320,7 @@
       @success="onHoldingUpdated"
     />
     <ConfirmModal
+      data-testid="holding-delete-dialog"
       :visible="showDeleteConfirm"
       variant="danger"
       :title="$t('accountDetail.deleteHoldingTitle')"

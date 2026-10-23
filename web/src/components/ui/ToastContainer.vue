@@ -1,9 +1,11 @@
 <template>
   <Teleport to="body">
     <div
+      data-testid="toast-container"
       class="pointer-events-none fixed right-4 top-4 z-[110] grid w-[calc(100vw-2rem)] max-w-sm gap-3"
     >
       <Alert
+        :data-testid="`toast-${item.id}`"
         v-for="item in toasts"
         :key="item.id"
         class="pointer-events-auto"
