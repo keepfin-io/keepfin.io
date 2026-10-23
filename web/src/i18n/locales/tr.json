@@ -19,7 +19,11 @@
         "inactive": "Pasif",
         "actions": "İşlemler",
         "view": "Görüntüle",
-        "viewDetails": "Detayları Görüntüle"
+        "viewDetails": "Detayları Görüntüle",
+        "toggleMenu": "Menüyü aç/kapat",
+        "closeMenu": "Menüyü kapat",
+        "dismiss": "Kapat",
+        "noResults": "Sonuç bulunamadı"
     },
     "nav": {
         "dashboard": "Kontrol Paneli",
@@ -41,7 +45,12 @@
         "noAccount": "Hesabınız yok mu?",
         "hasAccount": "Zaten hesabınız var mı?",
         "signIn": "Giriş Yap",
-        "signUp": "Kayıt Ol"
+        "signUp": "Kayıt Ol",
+        "passwordRequirements": "Şifreniz şunları içermeli:",
+        "minLength": "En az 8 karakter",
+        "uppercase": "Bir büyük harf",
+        "lowercase": "Bir küçük harf",
+        "number": "Bir rakam"
     },
     "profile": {
         "title": "Profil",
@@ -60,6 +69,9 @@
         "themeHint": "Tercih ettiğiniz görünümü seçin",
         "themeLight": "Açık",
         "themeDark": "Koyu",
+        "switchToLight": "Açık moda geç",
+        "switchToDark": "Koyu moda geç",
+        "themeSaveError": "Tema tercihiniz kaydedilemedi. Lütfen tekrar deneyin.",
         "themeSystem": "Sistem",
         "avatarHint": "Avatarınızı değiştirmek için tıklayın",
         "chooseAvatar": "Avatarınızı Seçin"
@@ -111,7 +123,9 @@
         "activating": "Etkinleştiriliyor...",
         "account": "Hesap",
         "accounts_count": "hesap",
-        "general": "Genel"
+        "general": "Genel",
+        "selectPlatform": "Platform seçin",
+        "searchPlatform": "Platform ara..."
     },
     "dashboard": {
         "title": "Kontrol Paneli",
@@ -160,5 +174,13 @@
         "actions": "İşlemler",
         "deleteHoldingTitle": "Varlığı Sil",
         "deleteHoldingMessage": "{symbol} varlığını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+    },
+    "holdings": {
+        "searchAsset": "Varlık ara",
+        "searchPlaceholder": "Sembol veya ada göre arayın",
+        "editHolding": "Varlığı düzenle",
+        "formHint": "Varlığınızın miktarını ve alış bilgilerini yönetin.",
+        "notes": "Notlar",
+        "totalCost": "Toplam maliyet"
     }
 }

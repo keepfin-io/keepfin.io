@@ -1,12 +1,18 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI } from '../services/authApi'
+import { userAPI } from '../services/userApi'
+import { applyTheme } from './useTheme'
 
 // Load user from sessionStorage on init
 const storedUser = sessionStorage.getItem('keepnode_user')
 const user = ref(storedUser ? JSON.parse(storedUser) : null)
 const isLoading = ref(false)
 const error = ref(null)
+const isSavingTheme = ref(false)
+let themeRevision = 0
+
+if (user.value) applyTheme(user.value.theme)
 
 export function useAuth() {
   const router = useRouter()
@@ -17,8 +23,26 @@ export function useAuth() {
     user.value = userData
     if (userData) {
       sessionStorage.setItem('keepnode_user', JSON.stringify(userData))
+      applyTheme(userData.theme)
     } else {
       sessionStorage.removeItem('keepnode_user')
+    }
+  }
+
+  const setTheme = async (theme) => {
+    if (!user.value || isSavingTheme.value || !['light', 'dark'].includes(theme)) return
+
+    const userID = user.value.id
+    isSavingTheme.value = true
+    try {
+      const data = await userAPI.updateTheme(theme)
+      if (data.error !== false) throw new Error('Failed to save theme')
+      if (user.value?.id === userID) {
+        themeRevision += 1
+        setUser({ ...user.value, theme })
+      }
+    } finally {
+      isSavingTheme.value = false
     }
   }
 
@@ -79,9 +103,14 @@ export function useAuth() {
   }
 
   const checkAuth = async () => {
+    const revision = themeRevision
     try {
       const data = await authAPI.checkAuth()
       if (data.error === false && data.user) {
+        // A session check started before a theme save must not restore the old theme.
+        if (revision !== themeRevision && data.user.id === user.value?.id) {
+          data.user.theme = user.value.theme
+        }
         setUser(data.user)
         return true
       } else {
@@ -107,19 +136,21 @@ export function useAuth() {
   }
 
   // Visibility API - check auth when tab becomes visible
-  if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && user.value) {
-        checkAuth()
-      }
-    })
+  const handleVisibilityChange = () => {
+    if (!document.hidden && user.value) {
+      checkAuth()
+    }
   }
+  onMounted(() => document.addEventListener('visibilitychange', handleVisibilityChange))
+  onUnmounted(() => document.removeEventListener('visibilitychange', handleVisibilityChange))
 
   return {
     user: computed(() => user.value),
     isAuthenticated,
     isLoading: computed(() => isLoading.value),
     error: computed(() => error.value),
+    isSavingTheme: computed(() => isSavingTheme.value),
+    setTheme,
     login,
     register,
     logout,
