@@ -1,6 +1,6 @@
 module keepnode
 
-go 1.24.6
+go 1.27.0
 
 require (
 	github.com/go-playground/validator/v10 v10.28.0
