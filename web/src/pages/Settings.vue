@@ -1,16 +1,23 @@
 <template>
-  <div class="flex items-center justify-center h-full">
-    <div class="text-center">
-      <h1 class="text-2xl font-bold mb-4">{{ $t('settings.title') }}</h1>
-      <p class="text-gray-600">{{ $t('settings.comingSoon') }}</p>
-    </div>
-  </div>
+  <section class="space-y-6">
+    <h1 class="text-2xl font-semibold tracking-tight">
+      {{ $t('settings.title') }}
+    </h1>
+    <Card>
+      <CardContent class="flex flex-col items-center gap-4 py-12 text-center">
+        <Settings class="size-10 text-muted-foreground" />
+        <p class="text-sm text-muted-foreground">
+          {{ $t('settings.comingSoon') }}
+        </p>
+      </CardContent>
+    </Card>
+  </section>
 </template>
-
 <script>
+import { Card, CardContent } from '@/components/ui'
+import { Settings } from 'lucide-vue-next'
 export default {
-  name: "SettingsPage"
-};
+  components: { Card, CardContent, Settings },
+  name: 'SettingsPage',
+}
 </script>
-
-<style scoped></style>

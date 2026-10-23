@@ -9,10 +9,13 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@vueuse/core": "^15.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cn": "^0.5.0",
     "core-js": "^3.8.3",
     "lucide-vue-next": "^0.552.0",
+    "reka-ui": "^2.11.0",
     "shadcn-vue": "^2.3.2",
     "tailwind-merge": "^3.3.1",
     "tw-animate-css": "^1.4.0",
@@ -37,7 +40,8 @@
   "eslintConfig": {
     "root": true,
     "env": {
-      "node": true
+      "node": true,
+      "vue/setup-compiler-macros": true
     },
     "extends": [
       "plugin:vue/vue3-essential",
@@ -48,6 +52,10 @@
     },
     "rules": {
       "vue/multi-word-component-names": "off"
+    },
+    "globals": {
+      "defineOptions": "readonly",
+      "defineModel": "readonly"
     }
   },
   "browserslist": [

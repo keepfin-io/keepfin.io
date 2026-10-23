@@ -1,19 +1,52 @@
 <template>
-  <main class="flex items-center justify-center min-h-screen">
-    <div class="text-center">
-      <h1 class="text-3xl font-bold mb-4">{{ $t('dashboard.title') }}</h1>
-      <p class="text-gray-600 mb-8">{{ $t('dashboard.welcome') }}</p>
-      <router-link to="/login"
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">{{
-          $t('nav.logout') }}</router-link>
+  <section class="space-y-6">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">
+        {{ $t('dashboard.title') }}
+      </h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        {{ $t('dashboard.welcome') }}
+      </p>
     </div>
-  </main>
+    <Card>
+      <CardHeader>
+        <Wallet class="mb-2 size-8 text-muted-foreground" />
+        <CardTitle>{{ $t('accounts.title') }}</CardTitle>
+        <CardDescription>{{ $t('accounts.subtitle') }}</CardDescription>
+      </CardHeader>
+      <CardFooter>
+        <Button as-child class="w-full sm:w-auto">
+          <router-link to="/accounts">
+            {{ $t('nav.accounts') }}
+            <ArrowRight class="size-4" />
+          </router-link>
+        </Button>
+      </CardFooter>
+    </Card>
+  </section>
 </template>
-
 <script>
+import {
+  Button,
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui'
+import { ArrowRight } from 'lucide-vue-next'
+import { Wallet } from 'lucide-vue-next'
 export default {
-  name: "DashboardPage"
-};
+  components: {
+    ArrowRight,
+    Button,
+    Card,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+    Wallet,
+  },
+  name: 'DashboardPage',
+}
 </script>
-
-<style scoped></style>

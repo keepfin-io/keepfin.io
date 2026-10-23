@@ -1,1717 +1,842 @@
 <template>
-    <!-- Full Page Spinner -->
-    <FullPageSpinner :visible="loading || saving || deleting" :message="spinnerMessage" />
-
-    <main class="accounts-page">
-        <!-- Header -->
-        <div class="page-header">
-            <div class="header-content">
-                <h1 class="page-title">{{ $t('accounts.title') }}</h1>
-                <p class="page-subtitle">{{ $t('accounts.subtitle') }}</p>
+  <FullPageSpinner
+    :visible="loading || saving || deleting"
+    :message="spinnerMessage"
+  />
+  <section class="min-w-0 space-y-6">
+    <div
+      class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div class="min-w-0">
+        <h1 class="text-2xl font-semibold tracking-tight">
+          {{ $t('accounts.title') }}
+        </h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+          {{ $t('accounts.subtitle') }}
+        </p>
+      </div>
+      <Button class="w-full sm:w-auto" @click="openCreateModal">
+        <Plus class="size-4" />
+        {{ $t('accounts.addAccount') }}
+      </Button>
+    </div>
+    <Alert
+      v-if="notification"
+      v-bind="notification"
+      dismissible
+      @dismiss="clearNotification"
+    />
+    <Card v-if="!loading && error">
+      <CardContent class="space-y-4 py-6">
+        <Alert variant="error" :description="error" />
+        <Button variant="outline" @click="fetchAccounts">
+          {{ $t('common.retry') }}
+        </Button>
+      </CardContent>
+    </Card>
+    <Card v-if="!loading && !error && accounts.length === 0">
+      <CardContent
+        class="flex flex-col items-center gap-4 px-6 py-12 text-center"
+      >
+        <CreditCard class="size-10 text-muted-foreground" />
+        <h2 class="text-lg font-semibold">
+          {{ $t('accounts.noAccountsYet') }}
+        </h2>
+        <p class="max-w-md text-sm text-muted-foreground">
+          {{ $t('accounts.noAccountsDescription') }}
+        </p>
+        <Button class="max-w-full whitespace-normal" @click="openCreateModal">
+          {{ $t('accounts.createFirst') }}
+        </Button>
+      </CardContent>
+    </Card>
+    <template v-if="!loading && !error && accounts.length">
+      <div class="grid gap-4 md:hidden">
+        <Card v-for="account in accounts" :key="account.id" class="min-w-0">
+          <CardHeader class="gap-3">
+            <CardTitle class="break-words text-base">
+              {{ account.account_name }}
+            </CardTitle>
+            <CardDescription v-if="account.description" class="break-words">
+              {{ account.description }}
+            </CardDescription>
+            <div class="flex flex-wrap gap-2">
+              <Badge variant="secondary">
+                {{ account.platform || $t('accounts.general') }}
+              </Badge>
+              <Badge variant="outline">{{ account.currency }}</Badge>
+              <Badge v-if="account.is_excluded" variant="outline">
+                {{ $t('accounts.excludeFromTotals') }}
+              </Badge>
             </div>
-            <button @click="openCreateModal" class="btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                {{ $t('accounts.addAccount') }}
-            </button>
-        </div>
-
-        <!-- Inline Notification -->
-        <div v-if="notification" class="inline-notification" :class="[`notification-${notification.variant}`]">
-            <div class="notification-icon">
-                <!-- Success Icon -->
-                <svg v-if="notification.variant === 'success'" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <!-- Error Icon -->
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="15" y1="9" x2="9" y2="15"></line>
-                    <line x1="9" y1="9" x2="15" y2="15"></line>
-                </svg>
+          </CardHeader>
+          <CardContent>
+            <p class="text-xs text-muted-foreground">
+              {{ $t('accounts.balance') }}
+            </p>
+            <p
+              class="mt-1 break-all text-2xl font-semibold tabular-nums"
+              :class="account.initial_balance < 0 && 'text-destructive'"
+            >
+              {{ formatCurrency(account.initial_balance, account.currency) }}
+            </p>
+          </CardContent>
+          <CardFooter class="flex-wrap justify-between gap-3 border-t pt-4">
+            <div class="flex items-center gap-2">
+              <Switch
+                :id="`mobile-status-${account.id}`"
+                :model-value="account.is_active"
+                @update:model-value="toggleAccountStatus(account)"
+              />
+              <Label :for="`mobile-status-${account.id}`" class="text-xs">
+                {{
+                  account.is_active
+                    ? $t('common.active')
+                    : $t('common.inactive')
+                }}
+              </Label>
             </div>
-            <div class="notification-content">
-                <p class="notification-title">{{ notification.title }}</p>
-                <p v-if="notification.description" class="notification-description">{{ notification.description }}</p>
+            <RecordActions
+              :view-to="`/accounts/${account.id}`"
+              @edit="openEditModal(account)"
+              @delete="confirmDelete(account)"
+            />
+          </CardFooter>
+        </Card>
+      </div>
+      <Card class="hidden min-w-0 overflow-hidden py-0 md:block">
+        <CardContent class="min-w-0 p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{{ $t('accounts.account') }}</TableHead>
+                <TableHead>{{ $t('accounts.platform') }}</TableHead>
+                <TableHead>{{ $t('accounts.currency') }}</TableHead>
+                <TableHead class="text-right">
+                  {{ $t('accounts.balance') }}
+                </TableHead>
+                <TableHead>{{ $t('accounts.status') }}</TableHead>
+                <TableHead class="text-right">
+                  {{ $t('common.actions') }}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="account in accounts" :key="account.id">
+                <TableCell class="max-w-64">
+                  <p class="truncate font-medium">
+                    {{ account.account_name }}
+                  </p>
+                  <p
+                    v-if="account.description"
+                    class="truncate text-xs text-muted-foreground"
+                  >
+                    {{ account.description }}
+                  </p>
+                  <Badge
+                    v-if="account.is_excluded"
+                    variant="outline"
+                    class="mt-1"
+                  >
+                    {{ $t('accounts.excludeFromTotals') }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <span class="flex items-center gap-2">
+                    <Favicon
+                      v-if="account.platform"
+                      :domain="getPlatformDomain(account.platform)"
+                      :size="16"
+                    />
+                    {{ account.platform || $t('accounts.general') }}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">
+                    {{ getCurrencyFlag(account.currency) }}
+                    {{ account.currency }}
+                  </Badge>
+                </TableCell>
+                <TableCell
+                  class="text-right font-medium tabular-nums"
+                  :class="account.initial_balance < 0 && 'text-destructive'"
+                >
+                  {{
+                    formatCurrency(account.initial_balance, account.currency)
+                  }}
+                </TableCell>
+                <TableCell>
+                  <div class="flex items-center gap-2">
+                    <Switch
+                      :id="`status-${account.id}`"
+                      :model-value="account.is_active"
+                      @update:model-value="toggleAccountStatus(account)"
+                    />
+                    <Label :for="`status-${account.id}`" class="text-xs">
+                      {{
+                        account.is_active
+                          ? $t('common.active')
+                          : $t('common.inactive')
+                      }}
+                    </Label>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <RecordActions
+                    class="justify-end"
+                    :view-to="`/accounts/${account.id}`"
+                    @edit="openEditModal(account)"
+                    @delete="confirmDelete(account)"
+                  />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <p class="text-sm text-muted-foreground">
+        {{ accounts.length }} {{ $t('accounts.accounts_count') }}
+      </p>
+    </template>
+    <Dialog :open="showModal" @update:open="!$event && !saving && closeModal()">
+      <DialogContent
+        :show-close-button="!saving"
+        @interact-outside="saving && $event.preventDefault()"
+        @escape-key-down="saving && $event.preventDefault()"
+      >
+        <DialogHeader>
+          <DialogTitle>
+            {{
+              editingAccount
+                ? $t('accounts.editAccount')
+                : $t('accounts.createAccount')
+            }}
+          </DialogTitle>
+          <DialogDescription>{{ $t('accounts.subtitle') }}</DialogDescription>
+        </DialogHeader>
+        <form class="space-y-4" @submit.prevent="saveAccount">
+          <div class="space-y-2">
+            <Label for="accountName">{{ $t('accounts.accountName') }} *</Label>
+            <Input
+              id="accountName"
+              v-model="form.account_name"
+              maxlength="100"
+              :placeholder="$t('accounts.accountNamePlaceholder')"
+              :aria-invalid="!!fieldErrors.account_name"
+            />
+            <p v-if="fieldErrors.account_name" class="text-sm text-destructive">
+              {{ fieldErrors.account_name }}
+            </p>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <Label for="currency">{{ $t('accounts.currency') }} *</Label>
+              <FormSelect
+                id="currency"
+                v-model="form.currency"
+                :options="currencyOptions"
+                :placeholder="$t('accounts.selectCurrency')"
+                :invalid="!!fieldErrors.currency"
+              />
+              <p v-if="fieldErrors.currency" class="text-sm text-destructive">
+                {{ fieldErrors.currency }}
+              </p>
             </div>
-            <button @click="clearNotification" class="notification-close">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Error State -->
-        <div v-if="!loading && error" class="error-container">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <p>{{ error }}</p>
-            <button @click="fetchAccounts" class="btn-secondary">{{ $t('common.retry') }}</button>
-        </div>
-
-        <!-- Empty State -->
-        <div v-if="!loading && !error && accounts.length === 0" class="empty-state">
-            <div class="empty-state-illustration">
-                <div class="illustration-bg"></div>
-                <div class="illustration-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                        <line x1="2" y1="10" x2="22" y2="10"></line>
-                    </svg>
-                </div>
+            <div class="space-y-2">
+              <Label for="initialBalance">
+                {{ $t('accounts.cashBalance') }}
+              </Label>
+              <Input
+                id="initialBalance"
+                v-model.number="form.initial_balance"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                :aria-invalid="!!fieldErrors.initial_balance"
+              />
+              <p
+                v-if="fieldErrors.initial_balance"
+                class="text-sm text-destructive"
+              >
+                {{ fieldErrors.initial_balance }}
+              </p>
             </div>
-            <h3 class="empty-state-title">{{ $t('accounts.noAccountsYet') }}</h3>
-            <p class="empty-state-description">{{ $t('accounts.noAccountsDescription') }}</p>
-            <button @click="openCreateModal" class="btn-primary btn-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                {{ $t('accounts.createFirst') }}
-            </button>
-        </div>
-
-        <!-- Accounts Table -->
-        <div v-if="!loading && !error && accounts.length > 0" class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th class="th-account">{{ $t('accounts.account') }}</th>
-                        <th class="th-platform">{{ $t('accounts.platform') }}</th>
-                        <th class="th-currency">{{ $t('accounts.currency') }}</th>
-                        <th class="th-balance">{{ $t('accounts.balance') }}</th>
-                        <th class="th-status">{{ $t('accounts.status') }}</th>
-                        <th class="th-actions">{{ $t('common.actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="account in accounts" :key="account.id" class="table-row"
-                        :class="{ 'is-excluded': account.is_excluded }">
-                        <!-- Account -->
-                        <td class="td-account">
-                            <div class="account-info">
-                                <span class="account-name">{{ account.account_name }}</span>
-                                <span v-if="account.description" class="account-description">{{
-                                    account.description }}</span>
-                            </div>
-                        </td>
-
-                        <!-- Platform -->
-                        <td class="td-platform">
-                            <span class="platform-badge">
-                                <Favicon v-if="account.platform" :domain="getPlatformDomain(account.platform)"
-                                    :size="16" />
-                                <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                                    <line x1="2" y1="10" x2="22" y2="10"></line>
-                                </svg>
-                                {{ account.platform || $t('accounts.general') }}
-                            </span>
-                        </td>
-
-                        <!-- Currency -->
-                        <td class="td-currency">
-                            <span class="currency-badge">
-                                <span class="currency-flag">{{ getCurrencyFlag(account.currency) }}</span>
-                                {{ account.currency }}
-                            </span>
-                        </td>
-
-                        <!-- Balance -->
-                        <td class="td-balance">
-                            <span class="balance-amount" :class="{ 'negative': account.initial_balance < 0 }">
-                                {{ formatCurrency(account.initial_balance, account.currency) }}
-                            </span>
-                        </td>
-
-                        <!-- Status -->
-                        <td class="td-status">
-                            <button @click="toggleAccountStatus(account)" class="status-toggle"
-                                :class="{ 'is-active': account.is_active, 'is-inactive': !account.is_active }">
-                                <span class="toggle-switch">
-                                    <span class="toggle-knob"></span>
-                                </span>
-                                <span class="status-text">{{ account.is_active ? $t('common.active') :
-                                    $t('common.inactive') }}</span>
-                            </button>
-                        </td>
-
-                        <!-- Actions -->
-                        <td class="td-actions">
-                            <div class="action-buttons">
-                                <router-link :to="`/accounts/${account.id}`" class="btn-action btn-view"
-                                    :title="$t('common.viewDetails')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </router-link>
-                                <button @click="openEditModal(account)" class="btn-action btn-edit"
-                                    :title="$t('common.edit')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                </button>
-                                <button @click="confirmDelete(account)" class="btn-action btn-delete"
-                                    :title="$t('common.delete')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path
-                                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                        </path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Table Footer -->
-            <div class="table-footer">
-                <span class="table-count">{{ accounts.length }} {{ $t('accounts.accounts_count') }}</span>
+          </div>
+          <div class="space-y-2">
+            <Label for="platform">{{ $t('accounts.platform') }}</Label>
+            <PlatformSelect id="platform" v-model="form.platform" />
+            <p v-if="fieldErrors.platform" class="text-sm text-destructive">
+              {{ fieldErrors.platform }}
+            </p>
+          </div>
+          <div class="space-y-2">
+            <Label for="description">{{ $t('accounts.description') }}</Label>
+            <Textarea
+              id="description"
+              v-model="form.description"
+              maxlength="255"
+              :placeholder="$t('accounts.descriptionPlaceholder')"
+            />
+            <p v-if="fieldErrors.description" class="text-sm text-destructive">
+              {{ fieldErrors.description }}
+            </p>
+          </div>
+          <div class="flex items-start gap-3 rounded-lg border p-3">
+            <Checkbox id="excluded" v-model="form.is_excluded" />
+            <div class="space-y-1">
+              <Label for="excluded" class="leading-snug">
+                {{ $t('accounts.excludeFromTotals') }}
+              </Label>
+              <p class="text-xs text-muted-foreground">
+                {{ $t('accounts.excludeHint') }}
+              </p>
             </div>
-        </div>
-
-        <!-- Create/Edit Modal -->
-        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-            <div class="modal">
-                <div class="modal-header">
-                    <h2>{{ editingAccount ? $t('accounts.editAccount') : $t('accounts.createAccount') }}</h2>
-                    <button @click="closeModal" class="btn-close">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-                <form @submit.prevent="saveAccount" class="modal-body">
-                    <div class="form-group">
-                        <label for="accountName">{{ $t('accounts.accountName') }} *</label>
-                        <input type="text" id="accountName" v-model="form.account_name" maxlength="100"
-                            :placeholder="$t('accounts.accountNamePlaceholder')"
-                            :class="{ 'input-error': fieldErrors.account_name }">
-                        <span v-if="fieldErrors.account_name" class="field-error">{{ fieldErrors.account_name }}</span>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="currency">{{ $t('accounts.currency') }} *</label>
-                            <select id="currency" v-model="form.currency"
-                                :class="{ 'input-error': fieldErrors.currency }">
-                                <option value="">{{ $t('accounts.selectCurrency') }}</option>
-                                <option value="USD">🇺🇸 USD - US Dollar</option>
-                                <option value="EUR">🇪🇺 EUR - Euro</option>
-                                <option value="GBP">🇬🇧 GBP - British Pound</option>
-                                <option value="TRY">🇹🇷 TRY - Turkish Lira</option>
-                                <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
-                                <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
-                                <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
-                                <option value="CHF">🇨🇭 CHF - Swiss Franc</option>
-                                <option value="CNY">🇨🇳 CNY - Chinese Yuan</option>
-                                <option value="INR">🇮🇳 INR - Indian Rupee</option>
-                                <option value="KRW">🇰🇷 KRW - South Korean Won</option>
-                                <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
-                                <option value="HKD">🇭🇰 HKD - Hong Kong Dollar</option>
-                                <option value="SEK">🇸🇪 SEK - Swedish Krona</option>
-                                <option value="NOK">🇳🇴 NOK - Norwegian Krone</option>
-                                <option value="DKK">🇩🇰 DKK - Danish Krone</option>
-                                <option value="PLN">🇵🇱 PLN - Polish Zloty</option>
-                                <option value="BRL">🇧🇷 BRL - Brazilian Real</option>
-                                <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
-                                <option value="RUB">🇷🇺 RUB - Russian Ruble</option>
-                            </select>
-                            <span v-if="fieldErrors.currency" class="field-error">{{ fieldErrors.currency }}</span>
-                        </div>
-                        <div class="form-group">
-                            <label for="initialBalance">{{ $t('accounts.cashBalance') }}</label>
-                            <input type="number" id="initialBalance" v-model.number="form.initial_balance" step="0.01"
-                                placeholder="0.00">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="platform">{{ $t('accounts.platform') }}</label>
-                        <PlatformSelect v-model="form.platform" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="description">{{ $t('accounts.description') }}</label>
-                        <textarea id="description" v-model="form.description" maxlength="255" rows="3"
-                            :placeholder="$t('accounts.descriptionPlaceholder')"></textarea>
-                    </div>
-
-                    <div class="form-group checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" v-model="form.is_excluded">
-                            <span class="checkmark"></span>
-                            {{ $t('accounts.excludeFromTotals') }}
-                        </label>
-                        <span class="checkbox-hint">{{ $t('accounts.excludeHint') }}</span>
-                    </div>
-
-                    <div v-if="formError" class="form-error">{{ formError }}</div>
-
-                    <div class="modal-footer">
-                        <button type="button" @click="closeModal" class="btn-secondary">{{ $t('common.cancel')
-                        }}</button>
-                        <button type="submit" class="btn-primary" :disabled="saving">
-                            {{ saving ? $t('common.saving') : (editingAccount ? $t('accounts.updateAccount') :
-                                $t('accounts.createAccount')) }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Delete Confirmation Modal -->
-        <ConfirmModal :visible="showDeleteModal" variant="danger" :title="$t('accounts.deleteConfirmTitle')"
-            :message="`${$t('accounts.deleteConfirmMessage')} ${accountToDelete?.account_name}? ${$t('accounts.deleteConfirmWarning')}`"
-            :confirmText="$t('accounts.deleteAccount')" :cancelText="$t('common.cancel')"
-            :loadingText="$t('common.deleting')" :loading="deleting" @confirm="deleteAccount" @cancel="cancelDelete" />
-
-        <!-- Update Confirmation Modal -->
-        <ConfirmModal :visible="showUpdateModal" variant="warning" :title="$t('accounts.updateConfirmTitle')"
-            :message="`${$t('accounts.updateConfirmMessage')} ${form.account_name}?`"
-            :confirmText="$t('accounts.updateAccount')" :cancelText="$t('common.cancel')"
-            :loadingText="$t('common.updating')" :loading="saving" @confirm="confirmUpdateAccount"
-            @cancel="cancelUpdate" />
-
-        <!-- Status Toggle Confirmation Modal -->
-        <ConfirmModal :visible="showStatusModal" :variant="accountToToggle?.is_active ? 'warning' : 'info'"
-            :title="accountToToggle?.is_active ? $t('accounts.deactivateAccount') : $t('accounts.activateAccount')"
-            :message="`${accountToToggle?.is_active ? $t('accounts.deactivateConfirm') : $t('accounts.activateConfirm')} ${accountToToggle?.account_name}?`"
-            :confirmText="accountToToggle?.is_active ? $t('common.inactive') : $t('common.active')"
-            :cancelText="$t('common.cancel')"
-            :loadingText="accountToToggle?.is_active ? $t('accounts.deactivating') : $t('accounts.activating')"
-            :loading="togglingStatus" @confirm="confirmToggleStatus" @cancel="cancelToggleStatus" />
-    </main>
+          </div>
+          <Alert v-if="formError" variant="error" :description="formError" />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              :disabled="saving"
+              @click="closeModal"
+            >
+              {{ $t('common.cancel') }}
+            </Button>
+            <Button
+              type="submit"
+              :loading="saving"
+              :loading-text="$t('common.saving')"
+            >
+              {{
+                editingAccount
+                  ? $t('accounts.updateAccount')
+                  : $t('accounts.createAccount')
+              }}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+    <ConfirmModal
+      :visible="showDeleteModal"
+      variant="danger"
+      :title="$t('accounts.deleteConfirmTitle')"
+      :message="`${$t('accounts.deleteConfirmMessage')} ${
+        accountToDelete?.account_name
+      }? ${$t('accounts.deleteConfirmWarning')}`"
+      :confirm-text="$t('accounts.deleteAccount')"
+      :cancel-text="$t('common.cancel')"
+      :loading-text="$t('common.deleting')"
+      :loading="deleting"
+      @confirm="deleteAccount"
+      @cancel="cancelDelete"
+    />
+    <ConfirmModal
+      :visible="showUpdateModal"
+      variant="warning"
+      :title="$t('accounts.updateConfirmTitle')"
+      :message="`${$t('accounts.updateConfirmMessage')} ${form.account_name}?`"
+      :confirm-text="$t('accounts.updateAccount')"
+      :cancel-text="$t('common.cancel')"
+      :loading-text="$t('common.updating')"
+      :loading="saving"
+      @confirm="confirmUpdateAccount"
+      @cancel="cancelUpdate"
+    />
+    <ConfirmModal
+      :visible="showStatusModal"
+      :title="
+        accountToToggle?.is_active
+          ? $t('accounts.deactivateAccount')
+          : $t('accounts.activateAccount')
+      "
+      :message="`${
+        accountToToggle?.is_active
+          ? $t('accounts.deactivateConfirm')
+          : $t('accounts.activateConfirm')
+      } ${accountToToggle?.account_name}?`"
+      :confirm-text="
+        accountToToggle?.is_active ? $t('common.inactive') : $t('common.active')
+      "
+      :cancel-text="$t('common.cancel')"
+      :loading-text="$t('common.updating')"
+      :loading="togglingStatus"
+      @confirm="confirmToggleStatus"
+      @cancel="cancelToggleStatus"
+    />
+  </section>
 </template>
-
 <script>
+import {
+  RecordActions,
+  FeedbackAlert as Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  ConfirmModal,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Favicon,
+  FormSelect,
+  FullPageSpinner,
+  Input,
+  Label,
+  PlatformSelect,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Textarea,
+} from '@/components/ui'
+import { CreditCard } from 'lucide-vue-next'
+import { Plus } from 'lucide-vue-next'
 import { accountAPI } from '@/services/accountApi'
 import { createAccountSchema, updateAccountSchema } from '@/schemas/account'
-import FullPageSpinner from '@/components/ui/FullPageSpinner.vue'
-import ConfirmModal from '@/components/ui/ConfirmModal.vue'
-import PlatformSelect from '@/components/ui/PlatformSelect.vue'
-import Favicon from '@/components/ui/Favicon.vue'
 
 export default {
-    name: 'AccountsPage',
-    components: {
-        FullPageSpinner,
-        ConfirmModal,
-        PlatformSelect,
-        Favicon
+  name: 'AccountsPage',
+  components: {
+    RecordActions,
+    Alert,
+    Badge,
+    Button,
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+    Checkbox,
+    ConfirmModal,
+    CreditCard,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    Favicon,
+    FormSelect,
+    FullPageSpinner,
+    Input,
+    Label,
+    PlatformSelect,
+    Plus,
+    Switch,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+    Textarea,
+  },
+  computed: {
+    spinnerMessage() {
+      if (this.loading) return this.$t('accounts.loadingAccounts')
+      if (this.saving) return this.$t('accounts.savingAccount')
+      if (this.deleting) return this.$t('accounts.deletingAccount')
+      return ''
     },
-    computed: {
-        spinnerMessage() {
-            if (this.loading) return this.$t('accounts.loadingAccounts')
-            if (this.saving) return this.$t('accounts.savingAccount')
-            if (this.deleting) return this.$t('accounts.deletingAccount')
-            return ''
-        }
-    },
-    data() {
-        return {
-            accounts: [],
-            loading: true,
-            error: null,
-            showModal: false,
-            showDeleteModal: false,
-            editingAccount: null,
-            accountToDelete: null,
-            saving: false,
-            deleting: false,
-            formError: null,
-            notification: null,
-            notificationTimer: null,
-            showUpdateModal: false,
-            showStatusModal: false,
-            accountToToggle: null,
-            togglingStatus: false,
-            form: {
-                account_name: '',
-                currency: '',
-                initial_balance: 0,
-                platform: '',
-                description: '',
-                is_excluded: false
-            },
-            fieldErrors: {}
-        }
-    },
-    mounted() {
-        this.fetchAccounts()
-    },
-    methods: {
-        async fetchAccounts() {
-            this.loading = true
-            this.error = null
-            try {
-                const response = await accountAPI.getAccounts()
-                this.accounts = response.accounts || []
-            } catch (err) {
-                this.error = err.message || 'Failed to load accounts'
-            } finally {
-                this.loading = false
-            }
-        },
-
-        openCreateModal() {
-            this.editingAccount = null
-            this.form = {
-                account_name: '',
-                currency: '',
-                initial_balance: 0,
-                platform: '',
-                description: '',
-                is_excluded: false
-            }
-            this.formError = null
-            this.fieldErrors = {}
-            this.showModal = true
-        },
-
-        openEditModal(account) {
-            this.editingAccount = account
-            this.form = {
-                account_name: account.account_name,
-                currency: account.currency,
-                initial_balance: account.initial_balance,
-                platform: account.platform || '',
-                description: account.description || '',
-                is_excluded: account.is_excluded
-            }
-            this.formError = null
-            this.fieldErrors = {}
-            this.showModal = true
-        },
-
-        closeModal() {
-            this.showModal = false
-            this.editingAccount = null
-            this.formError = null
-            this.fieldErrors = {}
-        },
-
-        validateForm() {
-            this.fieldErrors = {}
-            const schema = this.editingAccount ? updateAccountSchema : createAccountSchema
-            const result = schema.safeParse(this.form)
-
-            if (!result.success) {
-                const errors = result.error.flatten().fieldErrors
-                this.fieldErrors = {
-                    account_name: errors.account_name?.[0],
-                    currency: errors.currency?.[0],
-                    initial_balance: errors.initial_balance?.[0],
-                    platform: errors.platform?.[0],
-                    description: errors.description?.[0]
-                }
-                return false
-            }
-            return true
-        },
-
-        async saveAccount() {
-            if (!this.validateForm()) return
-
-            // If editing, show confirmation modal first
-            if (this.editingAccount) {
-                this.showUpdateModal = true
-                return
-            }
-            // For create, proceed directly
-            await this.performSave()
-        },
-
-        cancelUpdate() {
-            this.showUpdateModal = false
-        },
-
-        async confirmUpdateAccount() {
-            this.showUpdateModal = false
-            await this.performSave()
-        },
-
-        async performSave() {
-            this.saving = true
-            this.formError = null
-            try {
-                if (this.editingAccount) {
-                    await accountAPI.updateAccount(this.editingAccount.id, this.form)
-                    this.showNotification('success', 'Account updated', `${this.form.account_name} has been updated successfully.`)
-                } else {
-                    await accountAPI.createAccount(this.form)
-                    this.showNotification('success', 'Account created', `${this.form.account_name} has been created successfully.`)
-                }
-                this.closeModal()
-                await this.fetchAccounts()
-            } catch (err) {
-                this.formError = err.message || 'Failed to save account'
-                this.showNotification('error', 'Error', this.formError)
-            } finally {
-                this.saving = false
-            }
-        },
-
-        toggleAccountStatus(account) {
-            this.accountToToggle = account
-            this.showStatusModal = true
-        },
-
-        cancelToggleStatus() {
-            this.showStatusModal = false
-            this.accountToToggle = null
-        },
-
-        async confirmToggleStatus() {
-            if (!this.accountToToggle) return
-            this.togglingStatus = true
-            try {
-                const response = await accountAPI.toggleAccountStatus(this.accountToToggle.id)
-                this.accountToToggle.is_active = response.account.is_active
-                this.showNotification('success', 'Status updated', `${this.accountToToggle.account_name} is now ${this.accountToToggle.is_active ? 'active' : 'inactive'}.`)
-                this.showStatusModal = false
-                this.accountToToggle = null
-            } catch (err) {
-                this.showNotification('error', 'Error', err.message || 'Failed to update status')
-            } finally {
-                this.togglingStatus = false
-            }
-        },
-
-        confirmDelete(account) {
-            this.accountToDelete = account
-            this.showDeleteModal = true
-        },
-
-        cancelDelete() {
-            this.showDeleteModal = false
-            this.accountToDelete = null
-        },
-
-        async deleteAccount() {
-            if (!this.accountToDelete) return
-            this.deleting = true
-            const accountName = this.accountToDelete.account_name
-            try {
-                await accountAPI.deleteAccount(this.accountToDelete.id)
-                this.cancelDelete()
-                await this.fetchAccounts()
-                this.showNotification('success', 'Account deleted', `${accountName} has been deleted.`)
-            } catch (err) {
-                this.formError = err.message || 'Failed to delete account'
-                this.showNotification('error', 'Error', this.formError)
-            } finally {
-                this.deleting = false
-            }
-        },
-
-        showNotification(variant, title, description = '') {
-            // Clear existing timer
-            if (this.notificationTimer) {
-                clearTimeout(this.notificationTimer)
-            }
-            // Set notification
-            this.notification = { variant, title, description }
-            // Auto-clear after 5 seconds
-            this.notificationTimer = setTimeout(() => {
-                this.clearNotification()
-            }, 5000)
-        },
-
-        clearNotification() {
-            this.notification = null
-            if (this.notificationTimer) {
-                clearTimeout(this.notificationTimer)
-                this.notificationTimer = null
-            }
-        },
-
-        formatCurrency(amount, currency) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: currency || 'USD'
-            }).format(amount || 0)
-        },
-
-        getPlatformDomain(platform) {
-            const domains = {
-                'Bank of America': 'bankofamerica.com',
-                'Chase': 'chase.com',
-                'Wells Fargo': 'wellsfargo.com',
-                'Citibank': 'citibank.com',
-                'HSBC': 'hsbc.com',
-                'Barclays': 'barclays.co.uk',
-                'Deutsche Bank': 'db.com',
-                'ING': 'ing.com',
-                'N26': 'n26.com',
-                'Revolut': 'revolut.com',
-                'Interactive Brokers': 'interactivebrokers.com',
-                'Fidelity': 'fidelity.com',
-                'Charles Schwab': 'schwab.com',
-                'TD Ameritrade': 'tdameritrade.com',
-                'E*TRADE': 'etrade.com',
-                'Robinhood': 'robinhood.com',
-                'Webull': 'webull.com',
-                'Trading 212': 'trading212.com',
-                'eToro': 'etoro.com',
-                'Degiro': 'degiro.com',
-                'Coinbase': 'coinbase.com',
-                'Binance': 'binance.com',
-                'Kraken': 'kraken.com',
-                'Crypto.com': 'crypto.com',
-                'Gemini': 'gemini.com',
-                'Bybit': 'bybit.com',
-                'OKX': 'okx.com',
-                'PayPal': 'paypal.com',
-                'Wise': 'wise.com',
-                'Stripe': 'stripe.com',
-                'Venmo': 'venmo.com',
-                'Cash App': 'cash.app',
-                'Garanti BBVA': 'garantibbva.com.tr',
-                'İş Bankası': 'isbank.com.tr',
-                'Yapı Kredi': 'yapikredi.com.tr',
-                'Akbank': 'akbank.com',
-                'QNB Finansbank': 'qnbfinansbank.com',
-                'Ziraat Bankası': 'ziraatbank.com.tr',
-                'Midas': 'getmidas.com'
-            }
-            return domains[platform] || 'example.com'
-        },
-
-        getCurrencyFlag(currency) {
-            const flags = {
-                'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'TRY': '🇹🇷',
-                'JPY': '🇯🇵', 'CAD': '🇨🇦', 'AUD': '🇦🇺', 'CHF': '🇨🇭',
-                'CNY': '🇨🇳', 'INR': '🇮🇳', 'KRW': '🇰🇷', 'SGD': '🇸🇬',
-                'HKD': '🇭🇰', 'SEK': '🇸🇪', 'NOK': '🇳🇴', 'DKK': '🇩🇰',
-                'PLN': '🇵🇱', 'BRL': '🇧🇷', 'MXN': '🇲🇽', 'RUB': '🇷🇺',
-                'NZD': '🇳🇿', 'ZAR': '🇿🇦', 'THB': '🇹🇭', 'MYR': '🇲🇾',
-                'IDR': '🇮🇩', 'PHP': '🇵🇭', 'VND': '🇻🇳', 'CZK': '🇨🇿',
-                'HUF': '🇭🇺', 'RON': '🇷🇴', 'UAH': '🇺🇦', 'SAR': '🇸🇦',
-                'AED': '🇦🇪', 'QAR': '🇶🇦', 'KWD': '🇰🇼', 'ILS': '🇮🇱',
-                'EGP': '🇪🇬', 'ARS': '🇦🇷', 'CLP': '🇨🇱', 'COP': '🇨🇴',
-                'PEN': '🇵🇪', 'NGN': '🇳🇬', 'KES': '🇰🇪', 'MAD': '🇲🇦',
-                'BTC': '₿', 'ETH': 'Ξ'
-            }
-            return flags[currency] || '💰'
-        },
-
-        getAccountInitial(name) {
-            return name ? name.charAt(0).toUpperCase() : '?'
-        },
-
-        getAccountColor(platform) {
-            const colors = {
-                'paypal': 'linear-gradient(135deg, #003087 0%, #009cde 100%)',
-                'stripe': 'linear-gradient(135deg, #635bff 0%, #a960ee 100%)',
-                'wise': 'linear-gradient(135deg, #9fe870 0%, #37517e 100%)',
-                'revolut': 'linear-gradient(135deg, #0075eb 0%, #191c1f 100%)',
-                'default': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-            }
-            const key = (platform || '').toLowerCase()
-            return colors[key] || colors.default
-        }
+  },
+  data() {
+    return {
+      accounts: [],
+      currencyOptions: [
+        'USD',
+        'EUR',
+        'GBP',
+        'TRY',
+        'JPY',
+        'CAD',
+        'AUD',
+        'CHF',
+        'CNY',
+        'INR',
+        'KRW',
+        'SGD',
+        'HKD',
+        'SEK',
+        'NOK',
+        'DKK',
+        'PLN',
+        'BRL',
+        'MXN',
+        'RUB',
+      ],
+      loading: true,
+      error: null,
+      showModal: false,
+      showDeleteModal: false,
+      editingAccount: null,
+      accountToDelete: null,
+      saving: false,
+      deleting: false,
+      formError: null,
+      notification: null,
+      notificationTimer: null,
+      showUpdateModal: false,
+      showStatusModal: false,
+      accountToToggle: null,
+      togglingStatus: false,
+      form: {
+        account_name: '',
+        currency: '',
+        initial_balance: 0,
+        platform: '',
+        description: '',
+        is_excluded: false,
+      },
+      fieldErrors: {},
     }
+  },
+  mounted() {
+    this.fetchAccounts()
+  },
+  methods: {
+    async fetchAccounts() {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await accountAPI.getAccounts()
+        this.accounts = response.accounts || []
+      } catch (err) {
+        this.error = err.message || 'Failed to load accounts'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    openCreateModal() {
+      this.editingAccount = null
+      this.form = {
+        account_name: '',
+        currency: '',
+        initial_balance: 0,
+        platform: '',
+        description: '',
+        is_excluded: false,
+      }
+      this.formError = null
+      this.fieldErrors = {}
+      this.showModal = true
+    },
+
+    openEditModal(account) {
+      this.editingAccount = account
+      this.form = {
+        account_name: account.account_name,
+        currency: account.currency,
+        initial_balance: account.initial_balance,
+        platform: account.platform || '',
+        description: account.description || '',
+        is_excluded: account.is_excluded,
+      }
+      this.formError = null
+      this.fieldErrors = {}
+      this.showModal = true
+    },
+
+    closeModal() {
+      this.showModal = false
+      this.editingAccount = null
+      this.formError = null
+      this.fieldErrors = {}
+    },
+
+    validateForm() {
+      this.fieldErrors = {}
+      const schema = this.editingAccount
+        ? updateAccountSchema
+        : createAccountSchema
+      const result = schema.safeParse(this.form)
+
+      if (!result.success) {
+        const errors = result.error.flatten().fieldErrors
+        this.fieldErrors = {
+          account_name: errors.account_name?.[0],
+          currency: errors.currency?.[0],
+          initial_balance: errors.initial_balance?.[0],
+          platform: errors.platform?.[0],
+          description: errors.description?.[0],
+        }
+        return false
+      }
+      return true
+    },
+
+    async saveAccount() {
+      if (!this.validateForm()) return
+
+      // If editing, show confirmation modal first
+      if (this.editingAccount) {
+        this.showUpdateModal = true
+        return
+      }
+      // For create, proceed directly
+      await this.performSave()
+    },
+
+    cancelUpdate() {
+      this.showUpdateModal = false
+    },
+
+    async confirmUpdateAccount() {
+      this.showUpdateModal = false
+      await this.performSave()
+    },
+
+    async performSave() {
+      this.saving = true
+      this.formError = null
+      try {
+        if (this.editingAccount) {
+          await accountAPI.updateAccount(this.editingAccount.id, this.form)
+          this.showNotification(
+            'success',
+            'Account updated',
+            `${this.form.account_name} has been updated successfully.`
+          )
+        } else {
+          await accountAPI.createAccount(this.form)
+          this.showNotification(
+            'success',
+            'Account created',
+            `${this.form.account_name} has been created successfully.`
+          )
+        }
+        this.closeModal()
+        await this.fetchAccounts()
+      } catch (err) {
+        this.formError = err.message || 'Failed to save account'
+        this.showNotification('error', 'Error', this.formError)
+      } finally {
+        this.saving = false
+      }
+    },
+
+    toggleAccountStatus(account) {
+      this.accountToToggle = account
+      this.showStatusModal = true
+    },
+
+    cancelToggleStatus() {
+      this.showStatusModal = false
+      this.accountToToggle = null
+    },
+
+    async confirmToggleStatus() {
+      if (!this.accountToToggle) return
+      this.togglingStatus = true
+      try {
+        const response = await accountAPI.toggleAccountStatus(
+          this.accountToToggle.id
+        )
+        this.accountToToggle.is_active = response.account.is_active
+        this.showNotification(
+          'success',
+          'Status updated',
+          `${this.accountToToggle.account_name} is now ${
+            this.accountToToggle.is_active ? 'active' : 'inactive'
+          }.`
+        )
+        this.showStatusModal = false
+        this.accountToToggle = null
+      } catch (err) {
+        this.showNotification(
+          'error',
+          'Error',
+          err.message || 'Failed to update status'
+        )
+      } finally {
+        this.togglingStatus = false
+      }
+    },
+
+    confirmDelete(account) {
+      this.accountToDelete = account
+      this.showDeleteModal = true
+    },
+
+    cancelDelete() {
+      this.showDeleteModal = false
+      this.accountToDelete = null
+    },
+
+    async deleteAccount() {
+      if (!this.accountToDelete) return
+      this.deleting = true
+      const accountName = this.accountToDelete.account_name
+      try {
+        await accountAPI.deleteAccount(this.accountToDelete.id)
+        this.cancelDelete()
+        await this.fetchAccounts()
+        this.showNotification(
+          'success',
+          'Account deleted',
+          `${accountName} has been deleted.`
+        )
+      } catch (err) {
+        this.formError = err.message || 'Failed to delete account'
+        this.showNotification('error', 'Error', this.formError)
+      } finally {
+        this.deleting = false
+      }
+    },
+
+    showNotification(variant, title, description = '') {
+      // Clear existing timer
+      if (this.notificationTimer) {
+        clearTimeout(this.notificationTimer)
+      }
+      // Set notification
+      this.notification = { variant, title, description }
+      // Auto-clear after 5 seconds
+      this.notificationTimer = setTimeout(() => {
+        this.clearNotification()
+      }, 5000)
+    },
+
+    clearNotification() {
+      this.notification = null
+      if (this.notificationTimer) {
+        clearTimeout(this.notificationTimer)
+        this.notificationTimer = null
+      }
+    },
+
+    formatCurrency(amount, currency) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency || 'USD',
+      }).format(amount || 0)
+    },
+
+    getPlatformDomain(platform) {
+      const domains = {
+        'Bank of America': 'bankofamerica.com',
+        Chase: 'chase.com',
+        'Wells Fargo': 'wellsfargo.com',
+        Citibank: 'citibank.com',
+        HSBC: 'hsbc.com',
+        Barclays: 'barclays.co.uk',
+        'Deutsche Bank': 'db.com',
+        ING: 'ing.com',
+        N26: 'n26.com',
+        Revolut: 'revolut.com',
+        'Interactive Brokers': 'interactivebrokers.com',
+        Fidelity: 'fidelity.com',
+        'Charles Schwab': 'schwab.com',
+        'TD Ameritrade': 'tdameritrade.com',
+        'E*TRADE': 'etrade.com',
+        Robinhood: 'robinhood.com',
+        Webull: 'webull.com',
+        'Trading 212': 'trading212.com',
+        eToro: 'etoro.com',
+        Degiro: 'degiro.com',
+        Coinbase: 'coinbase.com',
+        Binance: 'binance.com',
+        Kraken: 'kraken.com',
+        'Crypto.com': 'crypto.com',
+        Gemini: 'gemini.com',
+        Bybit: 'bybit.com',
+        OKX: 'okx.com',
+        PayPal: 'paypal.com',
+        Wise: 'wise.com',
+        Stripe: 'stripe.com',
+        Venmo: 'venmo.com',
+        'Cash App': 'cash.app',
+        'Garanti BBVA': 'garantibbva.com.tr',
+        'İş Bankası': 'isbank.com.tr',
+        'Yapı Kredi': 'yapikredi.com.tr',
+        Akbank: 'akbank.com',
+        'QNB Finansbank': 'qnbfinansbank.com',
+        'Ziraat Bankası': 'ziraatbank.com.tr',
+        Midas: 'getmidas.com',
+      }
+      return domains[platform] || 'example.com'
+    },
+
+    getCurrencyFlag(currency) {
+      const flags = {
+        USD: '🇺🇸',
+        EUR: '🇪🇺',
+        GBP: '🇬🇧',
+        TRY: '🇹🇷',
+        JPY: '🇯🇵',
+        CAD: '🇨🇦',
+        AUD: '🇦🇺',
+        CHF: '🇨🇭',
+        CNY: '🇨🇳',
+        INR: '🇮🇳',
+        KRW: '🇰🇷',
+        SGD: '🇸🇬',
+        HKD: '🇭🇰',
+        SEK: '🇸🇪',
+        NOK: '🇳🇴',
+        DKK: '🇩🇰',
+        PLN: '🇵🇱',
+        BRL: '🇧🇷',
+        MXN: '🇲🇽',
+        RUB: '🇷🇺',
+        NZD: '🇳🇿',
+        ZAR: '🇿🇦',
+        THB: '🇹🇭',
+        MYR: '🇲🇾',
+        IDR: '🇮🇩',
+        PHP: '🇵🇭',
+        VND: '🇻🇳',
+        CZK: '🇨🇿',
+        HUF: '🇭🇺',
+        RON: '🇷🇴',
+        UAH: '🇺🇦',
+        SAR: '🇸🇦',
+        AED: '🇦🇪',
+        QAR: '🇶🇦',
+        KWD: '🇰🇼',
+        ILS: '🇮🇱',
+        EGP: '🇪🇬',
+        ARS: '🇦🇷',
+        CLP: '🇨🇱',
+        COP: '🇨🇴',
+        PEN: '🇵🇪',
+        NGN: '🇳🇬',
+        KES: '🇰🇪',
+        MAD: '🇲🇦',
+        BTC: '₿',
+        ETH: 'Ξ',
+      }
+      return flags[currency] || '💰'
+    },
+
+    getAccountInitial(name) {
+      return name ? name.charAt(0).toUpperCase() : '?'
+    },
+
+    getAccountColor(platform) {
+      const colors = {
+        paypal: 'linear-gradient(135deg, #003087 0%, #009cde 100%)',
+        stripe: 'linear-gradient(135deg, #635bff 0%, #a960ee 100%)',
+        wise: 'linear-gradient(135deg, #9fe870 0%, #37517e 100%)',
+        revolut: 'linear-gradient(135deg, #0075eb 0%, #191c1f 100%)',
+        default: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      }
+      const key = (platform || '').toLowerCase()
+      return colors[key] || colors.default
+    },
+  },
 }
 </script>
-
-<style scoped>
-.accounts-page {
-    padding: 1.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-/* Header */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-}
-
-.page-subtitle {
-    color: #6b7280;
-    margin: 0.25rem 0 0 0;
-    font-size: 0.875rem;
-}
-
-/* Inline Notification */
-.inline-notification {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 1rem 1.25rem;
-    border-radius: 0.75rem;
-    border: 1px solid;
-    margin-bottom: 1.5rem;
-}
-
-.notification-success {
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    border-color: #86efac;
-    color: #166534;
-}
-
-.notification-success .notification-icon {
-    color: #22c55e;
-}
-
-.notification-error {
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-    border-color: #fca5a5;
-    color: #991b1b;
-}
-
-.notification-error .notification-icon {
-    color: #ef4444;
-}
-
-.notification-icon {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 0.125rem;
-}
-
-.notification-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.notification-title {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    margin: 0;
-    line-height: 1.4;
-}
-
-.notification-description {
-    font-size: 0.8125rem;
-    margin: 0.25rem 0 0 0;
-    opacity: 0.9;
-    line-height: 1.4;
-}
-
-.notification-close {
-    flex-shrink: 0;
-    padding: 0.25rem;
-    background: transparent;
-    border: none;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    opacity: 0.5;
-    transition: all 0.2s;
-    color: inherit;
-}
-
-.notification-close:hover {
-    opacity: 1;
-    background: rgba(0, 0, 0, 0.05);
-}
-
-/* Buttons */
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-}
-
-.btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
-}
-
-.btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btn-secondary {
-    padding: 0.625rem 1.25rem;
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-    background: #e5e7eb;
-}
-
-.btn-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0.375rem;
-    color: #6b7280;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-icon:hover {
-    background: #f3f4f6;
-    color: #1f2937;
-}
-
-.btn-icon.btn-danger:hover {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: none;
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-danger:hover:not(:disabled) {
-    transform: translateY(-1px);
-}
-
-.btn-danger:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btn-close {
-    background: transparent;
-    border: none;
-    color: #6b7280;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 0.375rem;
-    transition: all 0.2s;
-}
-
-.btn-close:hover {
-    background: #f3f4f6;
-    color: #1f2937;
-}
-
-/* Error State */
-.error-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem;
-    color: #dc2626;
-    text-align: center;
-}
-
-.error-container svg {
-    margin-bottom: 1rem;
-}
-
-.error-container p {
-    margin-bottom: 1rem;
-}
-
-/* Empty State */
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    text-align: center;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 1.5rem;
-    border: 1px solid #e2e8f0;
-    position: relative;
-    overflow: hidden;
-}
-
-.empty-state::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.03) 0%, transparent 50%);
-    pointer-events: none;
-}
-
-.empty-state-illustration {
-    position: relative;
-    margin-bottom: 1.5rem;
-}
-
-.illustration-bg {
-    width: 120px;
-    height: 120px;
-    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-    border-radius: 50%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: pulse-soft 3s ease-in-out infinite;
-}
-
-.illustration-icon {
-    position: relative;
-    width: 100px;
-    height: 100px;
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-    border-radius: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.4);
-    transform: rotate(-6deg);
-    transition: transform 0.3s ease;
-}
-
-.empty-state:hover .illustration-icon {
-    transform: rotate(0deg) scale(1.05);
-}
-
-@keyframes pulse-soft {
-
-    0%,
-    100% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
-
-    50% {
-        transform: translate(-50%, -50%) scale(1.1);
-        opacity: 0.7;
-    }
-}
-
-.empty-state-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1e293b;
-    margin: 0 0 0.75rem 0;
-}
-
-.empty-state-description {
-    color: #64748b;
-    margin: 0 0 2rem 0;
-    font-size: 1rem;
-    line-height: 1.6;
-    max-width: 400px;
-}
-
-.btn-lg {
-    padding: 0.875rem 1.75rem;
-    font-size: 1rem;
-}
-
-/* Data Table */
-.table-container {
-    background: white;
-    border-radius: 1rem;
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.data-table thead {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.data-table th {
-    padding: 0.875rem 1rem;
-    text-align: left;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-}
-
-.data-table th.th-balance,
-.data-table th.th-actions {
-    text-align: right;
-}
-
-.data-table th.th-currency,
-.data-table th.th-status {
-    text-align: center;
-}
-
-.table-row {
-    border-bottom: 1px solid #f1f5f9;
-    transition: all 0.15s ease;
-}
-
-.table-row:last-child {
-    border-bottom: none;
-}
-
-.table-row:hover {
-    background: #f8fafc;
-}
-
-.table-row.is-excluded {
-    opacity: 0.7;
-    background: #fafafa;
-}
-
-.data-table td {
-    padding: 1rem;
-    vertical-align: middle;
-}
-
-/* Account Info */
-.account-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    min-width: 0;
-}
-
-.account-name {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: #1e293b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.account-description {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
-}
-
-/* Platform Badge */
-.platform-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    background: #f1f5f9;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: #475569;
-}
-
-.platform-badge svg {
-    opacity: 0.6;
-}
-
-/* Currency Badge */
-.td-currency {
-    text-align: center;
-}
-
-.currency-badge {
-    display: inline-block;
-    padding: 0.25rem 0.625rem;
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-    border-radius: 6px;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    color: white;
-    letter-spacing: 0.05em;
-}
-
-/* Balance */
-.td-balance {
-    text-align: right;
-}
-
-.balance-amount {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #059669;
-    font-variant-numeric: tabular-nums;
-}
-
-.balance-amount.negative {
-    color: #dc2626;
-}
-
-/* Status Toggle */
-.td-status {
-    text-align: center;
-}
-
-.status-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    background: transparent;
-    border: none;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.status-toggle:hover {
-    background: #f1f5f9;
-}
-
-.toggle-switch {
-    position: relative;
-    width: 36px;
-    height: 20px;
-    background: #cbd5e1;
-    border-radius: 10px;
-    transition: all 0.2s;
-}
-
-.status-toggle.is-active .toggle-switch {
-    background: #22c55e;
-}
-
-.status-toggle.is-inactive .toggle-switch {
-    background: #94a3b8;
-}
-
-.toggle-knob {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    background: white;
-    border-radius: 50%;
-    transition: all 0.2s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.status-toggle.is-active .toggle-knob {
-    left: 18px;
-}
-
-.status-text {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
-.status-toggle.is-active .status-text {
-    color: #16a34a;
-}
-
-.status-toggle.is-inactive .status-text {
-    color: #64748b;
-}
-
-/* Action Buttons */
-.td-actions {
-    text-align: right;
-}
-
-.action-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.375rem;
-}
-
-.btn-action {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-decoration: none;
-}
-
-.btn-view {
-    background: #f0f9ff;
-    color: #0284c7;
-}
-
-.btn-view:hover {
-    background: #e0f2fe;
-    color: #0369a1;
-    transform: scale(1.05);
-}
-
-.btn-edit {
-    background: #f1f5f9;
-    color: #64748b;
-}
-
-.btn-edit:hover {
-    background: #e0f2fe;
-    color: #0284c7;
-    transform: scale(1.05);
-}
-
-.btn-delete {
-    background: #f1f5f9;
-    color: #64748b;
-}
-
-.btn-delete:hover {
-    background: #fee2e2;
-    color: #dc2626;
-    transform: scale(1.05);
-}
-
-/* Table Footer */
-.table-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.875rem 1rem;
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
-}
-
-.table-count {
-    font-size: 0.8125rem;
-    color: #64748b;
-}
-
-/* Responsive Table */
-@media (max-width: 900px) {
-
-    .th-platform,
-    .td-platform,
-    .th-status,
-    .td-status {
-        display: none;
-    }
-}
-
-@media (max-width: 640px) {
-
-    .data-table th,
-    .data-table td {
-        padding: 0.75rem 0.625rem;
-    }
-
-    .account-avatar {
-        width: 36px;
-        height: 36px;
-        font-size: 0.875rem;
-    }
-
-    .account-name {
-        font-size: 0.875rem;
-    }
-
-    .account-description {
-        display: none;
-    }
-
-    .balance-amount {
-        font-size: 0.875rem;
-    }
-
-    .th-currency,
-    .td-currency {
-        display: none;
-    }
-}
-
-/* Modal */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-}
-
-.modal {
-    background: white;
-    border-radius: 1rem;
-    width: 100%;
-    max-width: 560px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.modal-delete {
-    max-width: 400px;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-header h2 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin: 0;
-}
-
-.modal-body {
-    padding: 1.5rem;
-}
-
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding-top: 1.5rem;
-    margin-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-}
-
-/* Form */
-.form-group {
-    margin-bottom: 1.25rem;
-}
-
-.form-group:last-of-type {
-    margin-bottom: 0;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.form-group label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 0.5rem;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 0.625rem 0.875rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    color: #1f2937;
-    background: white;
-    transition: all 0.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-group input.input-error,
-.form-group select.input-error,
-.form-group textarea.input-error {
-    border-color: #ef4444;
-}
-
-.form-group input.input-error:focus,
-.form-group select.input-error:focus,
-.form-group textarea.input-error:focus {
-    border-color: #ef4444;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
-
-.field-error {
-    display: block;
-    margin-top: 0.375rem;
-    font-size: 0.75rem;
-    color: #ef4444;
-}
-
-.form-group input::placeholder,
-.form-group textarea::placeholder {
-    color: #9ca3af;
-}
-
-.form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-.checkbox-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-weight: 400 !important;
-}
-
-.checkbox-label input[type="checkbox"] {
-    width: 1rem;
-    height: 1rem;
-    accent-color: #3b82f6;
-}
-
-.checkbox-hint {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-left: 1.5rem;
-}
-
-.form-error {
-    padding: 0.75rem;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 0.5rem;
-    color: #dc2626;
-    font-size: 0.875rem;
-    margin-top: 1rem;
-}
-
-.delete-warning {
-    color: #dc2626;
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-    .accounts-page {
-        padding: 1rem;
-    }
-
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .accounts-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-
-<!-- Dark Mode Styles (unscoped) -->
-<style>
-/* ==================== ACCOUNTS DARK MODE ==================== */
-
-/* Page Background */
-.dark .accounts-page {
-    background: #0f0f12;
-}
-
-/* Header */
-.dark .page-title {
-    color: #fafafa;
-}
-
-.dark .page-subtitle {
-    color: #a1a1aa;
-}
-
-/* Notifications */
-.dark .notification-success {
-    background: linear-gradient(135deg, #14532d 0%, #166534 100%);
-    border-color: #22c55e;
-    color: #dcfce7;
-}
-
-.dark .notification-error {
-    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
-    border-color: #ef4444;
-    color: #fef2f2;
-}
-
-/* Table Container */
-.dark .table-container {
-    background: #1a1a1f;
-    border-color: #2a2a30;
-}
-
-.dark .data-table th {
-    background: #0f0f12;
-    color: #a1a1aa;
-    border-bottom-color: #2a2a30;
-}
-
-.dark .data-table td {
-    border-bottom-color: #2a2a30;
-}
-
-.dark .table-row:hover {
-    background: #2a2a30;
-}
-
-.dark .table-row.is-excluded {
-    background: rgba(39, 39, 42, 0.5);
-}
-
-/* Account Info */
-.dark .account-name {
-    color: #fafafa;
-}
-
-.dark .account-description {
-    color: #71717a;
-}
-
-/* Badges */
-.dark .platform-badge {
-    background: #2a2a30;
-    color: #a1a1aa;
-}
-
-.dark .currency-badge {
-    background: #2a2a30;
-    color: #a1a1aa;
-}
-
-.dark .balance-amount {
-    color: #fafafa;
-}
-
-.dark .balance-amount.negative {
-    color: #f87171;
-}
-
-/* Status Toggle */
-.dark .status-toggle.is-active .toggle-switch {
-    background: #22c55e;
-}
-
-.dark .status-toggle.is-inactive .toggle-switch {
-    background: #42424a;
-}
-
-.dark .status-text {
-    color: #a1a1aa;
-}
-
-/* Action Buttons */
-.dark .btn-action {
-    background: #2a2a30;
-    color: #a1a1aa;
-}
-
-.dark .btn-action:hover {
-    background: #42424a;
-    color: #fafafa;
-}
-
-.dark .btn-view:hover {
-    color: #60a5fa;
-}
-
-.dark .btn-edit:hover {
-    color: #fbbf24;
-}
-
-.dark .btn-delete:hover {
-    color: #f87171;
-}
-
-/* Table Footer */
-.dark .table-footer {
-    background: #1a1a1f;
-    border-top-color: #2a2a30;
-}
-
-.dark .table-count {
-    color: #71717a;
-}
-
-/* Empty State */
-.dark .empty-state-illustration .illustration-bg {
-    background: linear-gradient(135deg, #2a2a30 0%, #1a1a1f 100%);
-}
-
-.dark .empty-state-illustration .illustration-icon {
-    background: #1a1a1f;
-    color: #555560;
-}
-
-.dark .empty-state-title {
-    color: #fafafa;
-}
-
-.dark .empty-state-description {
-    color: #71717a;
-}
-
-/* Error Container */
-.dark .error-container {
-    color: #f87171;
-}
-
-/* Modal */
-.dark .modal-overlay {
-    background: rgba(0, 0, 0, 0.8);
-}
-
-.dark .modal {
-    background: #1a1a1f;
-    border-color: #2a2a30;
-}
-
-.dark .modal-header {
-    border-bottom-color: #2a2a30;
-}
-
-.dark .modal-header h2 {
-    color: #fafafa;
-}
-
-.dark .btn-close {
-    color: #71717a;
-}
-
-.dark .btn-close:hover {
-    background: #2a2a30;
-    color: #a1a1aa;
-}
-
-/* Form */
-.dark .form-group label {
-    color: #a1a1aa;
-}
-
-.dark .form-group input,
-.dark .form-group select,
-.dark .form-group textarea {
-    background: #0f0f12;
-    border-color: #2a2a30;
-    color: #fafafa;
-}
-
-.dark .form-group input:focus,
-.dark .form-group select:focus,
-.dark .form-group textarea:focus {
-    border-color: #555560;
-    box-shadow: 0 0 0 3px rgba(82, 82, 91, 0.3);
-}
-
-.dark .form-group input::placeholder,
-.dark .form-group textarea::placeholder {
-    color: #555560;
-}
-
-.dark .form-group select option {
-    background: #1a1a1f;
-    color: #fafafa;
-}
-
-.dark .checkbox-hint {
-    color: #71717a;
-}
-
-.dark .form-error {
-    background: #450a0a;
-    border-color: #7f1d1d;
-    color: #fca5a5;
-}
-
-/* Modal Footer */
-.dark .modal-footer {
-    border-top-color: #2a2a30;
-}
-
-.dark .btn-secondary {
-    background: #2a2a30;
-    border-color: #42424a;
-    color: #fafafa;
-}
-
-.dark .btn-secondary:hover {
-    background: #42424a;
-}
-</style>

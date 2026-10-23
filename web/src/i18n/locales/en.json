@@ -19,7 +19,11 @@
         "inactive": "Inactive",
         "actions": "Actions",
         "view": "View",
-        "viewDetails": "View Details"
+        "viewDetails": "View Details",
+        "toggleMenu": "Toggle menu",
+        "closeMenu": "Close menu",
+        "dismiss": "Dismiss",
+        "noResults": "No results found"
     },
     "nav": {
         "dashboard": "Dashboard",
@@ -41,7 +45,12 @@
         "noAccount": "Don't have an account?",
         "hasAccount": "Already have an account?",
         "signIn": "Sign In",
-        "signUp": "Sign Up"
+        "signUp": "Sign Up",
+        "passwordRequirements": "Password must contain:",
+        "minLength": "At least 8 characters",
+        "uppercase": "One uppercase letter",
+        "lowercase": "One lowercase letter",
+        "number": "One number"
     },
     "profile": {
         "title": "Profile",
@@ -60,6 +69,9 @@
         "themeHint": "Choose your preferred appearance",
         "themeLight": "Light",
         "themeDark": "Dark",
+        "switchToLight": "Switch to light mode",
+        "switchToDark": "Switch to dark mode",
+        "themeSaveError": "Could not save your theme. Please try again.",
         "themeSystem": "System",
         "avatarHint": "Click to change your avatar",
         "chooseAvatar": "Choose Your Avatar"
@@ -111,7 +123,9 @@
         "activating": "Activating...",
         "account": "Account",
         "accounts_count": "account | accounts",
-        "general": "General"
+        "general": "General",
+        "selectPlatform": "Select a platform",
+        "searchPlatform": "Search platforms..."
     },
     "dashboard": {
         "title": "Dashboard",
@@ -160,5 +174,13 @@
         "actions": "Actions",
         "deleteHoldingTitle": "Delete Holding",
         "deleteHoldingMessage": "Are you sure you want to delete {symbol}? This action cannot be undone."
+    },
+    "holdings": {
+        "searchAsset": "Search asset",
+        "searchPlaceholder": "Search by symbol or name",
+        "editHolding": "Edit holding",
+        "formHint": "Manage the quantity and purchase details of your holding.",
+        "notes": "Notes",
+        "totalCost": "Total cost"
     }
 }
