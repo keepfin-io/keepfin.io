@@ -72,7 +72,7 @@ func (ctrl *AccountController) CreateAccount(c *fiber.Ctx) error {
 // @Success 200 {object} models.Account
 // @Router /api/v1/accounts/{id} [get]
 func (ctrl *AccountController) GetAccount(c *fiber.Ctx) error {
-	// Get user ID from context (set by JWT middleware)
+	// Get user ID from context (set by session middleware)
 	userID, err := utils.GetUserID(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -116,7 +116,7 @@ func (ctrl *AccountController) GetAccount(c *fiber.Ctx) error {
 // @Success 200 {array} models.Account
 // @Router /api/v1/accounts [get]
 func (ctrl *AccountController) GetUserAccounts(c *fiber.Ctx) error {
-	// Get user ID from context (set by JWT middleware)
+	// Get user ID from context (set by session middleware)
 	userID, err := utils.GetUserID(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -152,7 +152,7 @@ func (ctrl *AccountController) GetUserAccounts(c *fiber.Ctx) error {
 // @Success 200 {object} models.Account
 // @Router /api/v1/accounts/{id} [put]
 func (ctrl *AccountController) UpdateAccount(c *fiber.Ctx) error {
-	// Get user ID from context (set by JWT middleware)
+	// Get user ID from context (set by session middleware)
 	userID, err := utils.GetUserID(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -207,7 +207,7 @@ func (ctrl *AccountController) UpdateAccount(c *fiber.Ctx) error {
 // @Success 200 {string} string "Account deleted successfully"
 // @Router /api/v1/accounts/{id} [delete]
 func (ctrl *AccountController) DeleteAccount(c *fiber.Ctx) error {
-	// Get user ID from context (set by JWT middleware)
+	// Get user ID from context (set by session middleware)
 	userID, err := utils.GetUserID(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -252,7 +252,7 @@ func (ctrl *AccountController) DeleteAccount(c *fiber.Ctx) error {
 // @Success 200 {object} models.Account
 // @Router /api/v1/accounts/{id}/toggle-status [patch]
 func (ctrl *AccountController) ToggleAccountStatus(c *fiber.Ctx) error {
-	// Get user ID from context (set by JWT middleware)
+	// Get user ID from context (set by session middleware)
 	userID, err := utils.GetUserID(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

@@ -7,6 +7,8 @@ build-errors.log
 .env
 .env.local
 .env.*.local
+auth/.mail/
+.auth-mail/
 
 # Log files
 npm-debug.log*

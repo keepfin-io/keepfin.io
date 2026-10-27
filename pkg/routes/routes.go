@@ -1,8 +1,11 @@
 package routes
 
 import (
+	"os"
+
 	"keepnode/app/controllers"
 	"keepnode/app/services"
+	"keepnode/pkg/authsession"
 	"keepnode/pkg/middleware"
 	"keepnode/platform/database"
 
@@ -10,7 +13,15 @@ import (
 )
 
 // Register registers all routes
-func Register(app *fiber.App) {
+func Register(app *fiber.App) error {
+	client, err := authsession.NewClient(os.Getenv("AUTH_SERVICE_URL"))
+	if err != nil {
+		return err
+	}
+	originCheck, err := middleware.SameOrigin(os.Getenv("APP_ORIGIN"))
+	if err != nil {
+		return err
+	}
 	// Initialize services
 	db := database.GetDB()
 	userService := services.NewUserService(db)
@@ -20,23 +31,14 @@ func Register(app *fiber.App) {
 	activityService := services.NewActivityService(db, marketService)
 
 	// Initialize controllers
-	authController := controllers.NewAuthController(userService)
 	userController := controllers.NewUserController(userService)
 	accountController := controllers.NewAccountController(accountService)
 	marketController := controllers.NewMarketController(marketService)
 	holdingController := controllers.NewHoldingController(holdingService, accountService)
 	activityController := controllers.NewActivityController(activityService, accountService)
 
-	// Public routes (no auth required)
-	app.Post("/api/v1/user/signup", authController.UserSignUp)
-	app.Post("/api/v1/user/signin", authController.UserSignIn)
-
-	// Protected routes (JWT required)
-	api := app.Group("/api/v1")
-	api.Use(middleware.JWT())
-
-	// Auth routes
-	api.Post("/user/signout", authController.UserSignOut)
+	// All application routes use the server-verified Better Auth session.
+	api := app.Group("/api/v1", originCheck, middleware.Session(client, userService))
 
 	// User routes
 	api.Get("/user/me", userController.GetCurrentUser)
@@ -69,4 +71,5 @@ func Register(app *fiber.App) {
 	api.Post("/accounts/:id/activities", activityController.CreateActivity)
 	api.Get("/accounts/:id/activities", activityController.GetActivities)
 	api.Delete("/accounts/:accountId/activities/:activityId", activityController.DeleteActivity)
+	return nil
 }

@@ -30,11 +30,6 @@ func main() {
 	}
 	log.Println("Migrations completed successfully")
 
-	// Seed default user (only when env vars are set)
-	if err := database.SeedDefaultUser(db); err != nil {
-		log.Printf("Default user seed error: %v", err)
-	}
-
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:        "KeepNode API",
@@ -42,30 +37,13 @@ func main() {
 		ErrorHandler:   jsonErrorHandler,
 	})
 
-	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
-	if allowedOrigin == "" {
-		allowedOrigin = "http://localhost:8080"
-	}
-
-	// CORS middleware
-	app.Use(func(c *fiber.Ctx) error {
-		c.Set("Access-Control-Allow-Origin", allowedOrigin)
-		c.Set("Access-Control-Allow-Credentials", "true")
-		c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-
-		if c.Method() == "OPTIONS" {
-			return c.SendStatus(fiber.StatusNoContent)
-		}
-
-		return c.Next()
-	})
-
 	// Recovery middleware
 	app.Use(recover.New())
 
 	// Register routes
-	routes.Register(app)
+	if err := routes.Register(app); err != nil {
+		log.Fatalf("Auth configuration error: %v", err)
+	}
 
 	// Graceful shutdown
 	go func() {

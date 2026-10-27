@@ -25,78 +25,11 @@ func NewUserService(db *gorm.DB) *UserService {
 	}
 }
 
-func (s *UserService) SignUp(signUp *models.UserSignUp) (*models.User, error) {
-	if err := s.validate.Struct(signUp); err != nil {
-		return nil, errors.New(utils.ValidatorErrorsString(err))
-	}
-
-	// -----> GetUserByEmail returns nil user when no record exists
-	existingUser, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(context.Background(), signUp.Email)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.New("failed to check existing user")
-	}
-	if existingUser != nil {
-		return nil, errors.New("user with this email already exists")
-	}
-
-	user := &models.User{
-		Email:        signUp.Email,
-		PasswordHash: utils.GeneratePassword(signUp.Password),
-		UserStatus:   1,
-		UserRole:     "user",
-		Theme:        models.ThemeLight,
-		BaseCurrency: "USD",
-		Locale:       models.LocaleEnUS,
-	}
-
-	if err := s.validate.Struct(user); err != nil {
-		return nil, errors.New(utils.ValidatorErrorsString(err))
-	}
-
-	if err := (&queries.UserQueries{DB: s.DB}).CreateUser(context.Background(), user); err != nil {
-		return nil, err
-	}
-
-	user.PasswordHash = ""
-
-	return user, nil
-}
-
-func (s *UserService) SignIn(signIn *models.UserSignIn) (*models.User, string, error) {
-	if err := s.validate.Struct(signIn); err != nil {
-		return nil, "", errors.New(utils.ValidatorErrorsString(err))
-	}
-
-	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByEmail(context.Background(), signIn.Email)
-	if err != nil {
-		return nil, "", errors.New("user with the given email is not found")
-	}
-
-	if user.UserStatus != 1 {
-		return nil, "", errors.New("user account is blocked")
-	}
-
-	if !utils.ComparePasswords(user.PasswordHash, signIn.Password) {
-		return nil, "", errors.New("wrong email address or password")
-	}
-
-	token, err := utils.GenerateJWT(user.ID.String(), user.Email)
-	if err != nil {
-		return nil, "", errors.New("failed to generate authentication token")
-	}
-
-	user.PasswordHash = ""
-
-	return user, token, nil
-}
-
 func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	user, err := (&queries.UserQueries{DB: s.DB}).GetUserByID(ctx, id)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
-
-	user.PasswordHash = ""
 
 	return user, nil
 }
@@ -106,8 +39,6 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
-
-	user.PasswordHash = ""
 
 	return user, nil
 }
@@ -165,7 +96,6 @@ func (s *UserService) UpdateProfile(ctx context.Context, id uuid.UUID, req *mode
 		return nil, err
 	}
 
-	user.PasswordHash = ""
 	return user, nil
 }
 
@@ -185,7 +115,6 @@ func (s *UserService) UpdateUserBaseCurrency(ctx context.Context, id uuid.UUID, 
 		return nil, err
 	}
 
-	user.PasswordHash = ""
 	return user, nil
 }
 

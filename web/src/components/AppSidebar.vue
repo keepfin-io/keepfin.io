@@ -10,8 +10,8 @@
                 to="/"
                 class="font-semibold"
               >
-                <Wallet class="size-5" />
-                <span>Keepfin</span>
+                <BrandLogo class="h-8! w-28! group-data-[collapsible=icon]:hidden" />
+                <BrandLogo compact class="hidden group-data-[collapsible=icon]:inline-flex group-data-[collapsible=icon]:size-5" />
               </router-link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -58,6 +58,7 @@
       </SidebarGroup>
     </SidebarContent>
     <SidebarFooter>
+      <p v-if="error" data-testid="sidebar-auth-error" role="alert" class="px-2 text-xs text-destructive">{{ $t(`auth.${error}`) }}</p>
       <SidebarMenu>
         <SidebarMenuItem>
           <DropdownMenu>
@@ -130,7 +131,6 @@ import {
 import { watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  Wallet,
   LayoutDashboard,
   CreditCard,
   Folder,
@@ -141,8 +141,9 @@ import {
   X,
 } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import BrandLogo from '@/components/BrandLogo.vue'
 const route = useRoute()
-const { user, logout } = useAuth()
+const { user, logout, error } = useAuth()
 const { setOpenMobile } = useSidebar()
 watch(
   () => route.fullPath,

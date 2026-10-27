@@ -29,14 +29,16 @@ const (
 
 type User struct {
 	Base
-	ID           uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Email        string    `gorm:"uniqueIndex;not null" json:"email" validate:"required,email,lte=255"`
-	PasswordHash string    `gorm:"not null" json:"password_hash,omitempty" validate:"required,lte=255"`
-	UserStatus   int       `gorm:"not null;default:1" json:"user_status" validate:"required,len=1"`
-	UserRole     string    `gorm:"not null;default:'user'" json:"user_role" validate:"required,lte=25"`
-	Theme        string    `gorm:"type:varchar(10);not null;default:'light'" json:"theme" validate:"omitempty,oneof=light dark"`
-	BaseCurrency string    `gorm:"type:varchar(3);not null;default:'USD'" json:"base_currency" validate:"omitempty,currency"`
-	Locale       string    `gorm:"type:varchar(10);not null;default:'en-US'" json:"locale" validate:"omitempty,oneof=en-US en-GB tr-TR de-DE fr-FR es-ES pt-BR ja-JP zh-CN"`
+	ID    uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	Email string    `gorm:"uniqueIndex;not null" json:"email" validate:"required,email,lte=255"`
+	// Retained for migration compatibility; never used for authentication or exposed.
+	PasswordHash string  `gorm:"not null;default:''" json:"-"`
+	AuthUserID   *string `gorm:"uniqueIndex" json:"-"`
+	UserStatus   int     `gorm:"not null;default:1" json:"user_status" validate:"required,len=1"`
+	UserRole     string  `gorm:"not null;default:'user'" json:"user_role" validate:"required,lte=25"`
+	Theme        string  `gorm:"type:varchar(10);not null;default:'light'" json:"theme" validate:"omitempty,oneof=light dark"`
+	BaseCurrency string  `gorm:"type:varchar(3);not null;default:'USD'" json:"base_currency" validate:"omitempty,currency"`
+	Locale       string  `gorm:"type:varchar(10);not null;default:'en-US'" json:"locale" validate:"omitempty,oneof=en-US en-GB tr-TR de-DE fr-FR es-ES pt-BR ja-JP zh-CN"`
 }
 
 func (User) TableName() string {
@@ -44,15 +46,6 @@ func (User) TableName() string {
 }
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	return u.Base.BeforeCreate(tx)
-}
-
-type UserSignUp struct {
-	Email    string `json:"email" validate:"required,email,lte=255"`
-	Password string `json:"password" validate:"required,lte=255"`
-}
-type UserSignIn struct {
-	Email    string `json:"email" validate:"required,email,lte=255"`
-	Password string `json:"password" validate:"required,lte=255"`
 }
 
 type UpdateProfileRequest struct {

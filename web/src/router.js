@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from './pages/Login.vue'
-import Register from './pages/Register.vue'
+import AuthCallback from './pages/AuthCallback.vue'
+import { refreshSession } from './composables/useAuth'
 import Dashboard from './pages/Dashboard.vue'
 import Accounts from './pages/Accounts.vue'
 import AccountDetail from './pages/AccountDetail.vue'
@@ -9,6 +10,7 @@ import Settings from './pages/Settings.vue'
 import Profile from './pages/Profile.vue'
 
 const routes = [
+  { path: '/auth/callback', name: 'AuthCallback', component: AuthCallback },
   {
     path: '/login',
     name: 'Login',
@@ -17,9 +19,7 @@ const routes = [
   },
   {
     path: '/register',
-    name: 'Register',
-    component: Register,
-    meta: { requiresGuest: true }
+    redirect: '/login'
   },
   {
     path: '/',
@@ -64,26 +64,17 @@ const router = createRouter({
   routes
 })
 
-// Route guard
-router.beforeEach((to, from, next) => {
-  // Check if user is authenticated by checking if user data exists
-  // Since we're using HTTP-only cookies, we can't directly check the cookie
-  // We'll rely on the API to validate authentication
-  const userDataString = sessionStorage.getItem('keepnode_user')
-  const isAuthenticated = !!userDataString
-
-  // If route requires authentication and user is not authenticated
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login')
+// A cached browser profile must never authorize a route.
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth && !to.meta.requiresGuest) return true
+  try {
+    const authenticated = await refreshSession()
+    if (to.meta.requiresAuth && !authenticated) return '/login'
+    if (to.meta.requiresGuest && authenticated) return '/'
+  } catch {
+    if (to.meta.requiresAuth) return '/login'
   }
-  // If route requires guest (login/register) and user is authenticated
-  else if (to.meta.requiresGuest && isAuthenticated) {
-    next('/')
-  }
-  // Otherwise, proceed
-  else {
-    next()
-  }
+  return true
 })
 
 export default router

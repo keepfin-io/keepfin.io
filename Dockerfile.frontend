@@ -1,45 +1,12 @@
-# Stage 1: Build the Vue.js application
 FROM node:24-alpine AS builder
-
 WORKDIR /app
-
-# Copy package files
 COPY web/package*.json ./
-
-# Install dependencies
-RUN npm ci --only=production=false
-
-# Copy source code
+RUN npm ci
 COPY web/ .
-
-# Build argument for API URL (can be overridden at build time)
-ARG VUE_APP_API_URL=https://keepfin-api.tariksogukpinar.dev/api/v1
-ENV VUE_APP_API_URL=$VUE_APP_API_URL
-
-# Build the application
 RUN npm run build
 
-# Stage 2: Serve with Nginx
 FROM nginx:alpine
-
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    location / { \
-    root /usr/share/nginx/html; \
-    index index.html index.htm; \
-    try_files $uri $uri/ /index.html; \
-    } \
-    error_page 500 502 503 504 /50x.html; \
-    location = /50x.html { \
-    root /usr/share/nginx/html; \
-    } \
-    }' > /etc/nginx/conf.d/default.conf
-
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Expose port 80
 EXPOSE 80
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

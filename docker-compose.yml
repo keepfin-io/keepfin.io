@@ -1,30 +1,69 @@
 services:
   keepnode:
     build: .
-    ports:
-      - "3000:3000"
     environment:
-      - DB_HOST=localhost
-      - DB_PORT=5432
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=keepnode
-      - DB_SSL_MODE=disable
-      - ALLOWED_ORIGIN=http://localhost:8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      DB_NAME: keepnode
+      DB_SSL_MODE: disable
+      APP_ORIGIN: ${APP_ORIGIN:?Set the public HTTPS origin}
+      AUTH_SERVICE_URL: http://auth:3001
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      auth:
+        condition: service_started
+    restart: unless-stopped
+
+  auth-migrate:
+    build: ./auth
+    environment: &auth-env
+      NODE_ENV: production
+      APP_ORIGIN: ${APP_ORIGIN:?Set the public HTTPS origin}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a random auth secret}
+      DATABASE_URL: ${AUTH_DATABASE_URL:?Set the PostgreSQL connection URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      AUTH_MAIL_MODE: disabled
+    command: npm run migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  auth:
+    build: ./auth
+    environment: *auth-env
+    depends_on:
+      auth-migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - keepnode
+      - auth
     restart: unless-stopped
 
   postgres:
     image: postgres:18.6
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=keepnode
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: keepnode
     volumes:
       - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d keepnode"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
     restart: unless-stopped
 
 volumes:

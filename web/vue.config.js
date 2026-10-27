@@ -6,6 +6,18 @@ module.exports = defineConfig({
     port: 8080,
     hot: true,
     liveReload: true,
+    proxy: {
+      '/api/auth': {
+        target: process.env.AUTH_PROXY_TARGET || 'http://localhost:3001',
+        onProxyReq(proxyReq, req) {
+          // Never let clients choose the rate-limit identity.
+          proxyReq.setHeader('X-Real-IP', req.socket.remoteAddress)
+          proxyReq.removeHeader('X-Forwarded-For')
+          proxyReq.removeHeader('Forwarded')
+        }
+      },
+      '/api/v1': { target: process.env.API_PROXY_TARGET || 'http://localhost:3000' }
+    },
     watchFiles: {
       paths: ['src/**/*', 'public/**/*'],
       options: {

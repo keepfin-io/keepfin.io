@@ -1,4 +1,4 @@
-const API_URL = process.env.VUE_APP_API_URL || 'http://localhost:3000/api/v1'
+const API_URL = '/api/v1'
 
 // Fetch wrapper with default options
 async function apiFetch(endpoint, options = {}) {
@@ -23,17 +23,13 @@ async function apiFetch(endpoint, options = {}) {
     data = { message: text }
   }
 
-  // Handle 401 Unauthorized
-  if (response.status === 401) {
-    const path = window.location.pathname
-    if (path !== '/login' && path !== '/register') {
-      window.location.href = '/login'
-    }
-    throw new Error(data.message || 'Unauthorized')
-  }
-
   if (!response.ok) {
-    throw new Error(data.message || 'Request failed')
+    const error = new Error(data.message || 'Request failed')
+    error.status = response.status
+    if (response.status === 401 && !['/login', '/register', '/auth/callback'].includes(window.location.pathname)) {
+      window.location.assign('/login')
+    }
+    throw error
   }
 
   return data

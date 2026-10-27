@@ -18,6 +18,9 @@
           :aria-label="$t('common.toggleMenu')"
         />
         <Separator orientation="vertical" class="h-5!" />
+        <router-link to="/" data-testid="header-brand-link" aria-label="Keepfin">
+          <BrandLogo compact />
+        </router-link>
         <span
           data-testid="app-page-title"
           class="min-w-0 flex-1 truncate text-sm font-medium"
@@ -43,14 +46,22 @@ import {
   Separator,
   ThemeToggle,
 } from '@/components/ui'
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
+import BrandLogo from '@/components/BrandLogo.vue'
 import { useAuth } from '@/composables/useAuth'
 const route = useRoute()
-const { init } = useAuth()
-init()
-const isAuthPage = computed(() => ['/login', '/register'].includes(route.path))
+const router = useRouter()
+const { checkAuth } = useAuth()
+async function revalidateSession() {
+  if (document.hidden || !route.meta.requiresAuth) return
+  try { if (!await checkAuth()) await router.replace('/login') }
+  catch { await router.replace('/login') }
+}
+onMounted(() => document.addEventListener('visibilitychange', revalidateSession))
+onUnmounted(() => document.removeEventListener('visibilitychange', revalidateSession))
+const isAuthPage = computed(() => ['/login', '/register', '/auth/callback'].includes(route.path))
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const pageTitle = computed(() =>

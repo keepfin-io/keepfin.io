@@ -1,0 +1,9 @@
+.git
+**/node_modules
+**/.mail
+.auth-mail
+.env*
+!**/.env.example
+tmp
+bin
+web/dist
