@@ -4,7 +4,9 @@
   --sidebar-accent-foreground: var(--brand-accent);
   --sidebar-ring: var(--brand-accent);
 }
-.workspace-main { background: var(--brand-page); }
+.workspace-main, .auth-shell { display: flex; flex-direction: column; height: 100svh; height: 100dvh; min-height: 320px; background: var(--brand-page); }
+.workspace-content, .auth-content { flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable; }
+.workspace-content:focus-visible, .auth-content:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 .workspace-header { background: color-mix(in srgb, var(--brand-page) 94%, transparent); }
 .workspace-theme button { width: 44px; height: 44px; border-radius: 12px; }
 .workspace-sidebar [data-sidebar="menu-button"] { font-size: 13px; }

@@ -23,7 +23,38 @@
         "toggleMenu": "Menüyü aç/kapat",
         "closeMenu": "Menüyü kapat",
         "dismiss": "Kapat",
-        "noResults": "Sonuç bulunamadı"
+        "noResults": "Sonuç bulunamadı",
+        "mainContent": "Ana içerik"
+    },
+    "footer": {
+        "navigation": "Alt bilgi bağlantıları",
+        "openSource": "Açık kaynak",
+        "sourceLinkLabel": "GitHub'da açık kaynak kodunu incele",
+        "legalNotice": "Yasal bilgilendirme",
+        "summary": "Keepfin, hesaplarınızı ve yatırımlarınızı takip ve analiz etmenize yardımcı olur. Yatırım tavsiyesi veya danışmanlık sunmaz.",
+        "legalDescription": "Uygulamanın kullanım amacı, veri sınırlamaları ve yatırım riskleri hakkında bilgilendirme.",
+        "sections": {
+            "purpose": {
+                "title": "Bilgilendirme ve analiz amacı",
+                "body": "keepfin.io, finansal verilerinizi ve yatırımlarınızı takip etmenize, incelemenize ve analiz etmenize yardımcı olan açık kaynaklı bir araçtır. Sunulan bilgiler, grafikler ve hesaplamalar finansal veya yatırım danışmanlığı, kişiye özel öneri ya da alım-satım tavsiyesi değildir."
+            },
+            "data": {
+                "title": "Veriler ve hesaplamalar",
+                "body": "Üçüncü taraflardan veya kullanıcı girişlerinden elde edilen veriler gecikmeli, eksik ya da hatalı olabilir. Değerleme, getiri ve kâr/zarar hesaplamaları kullanılan verilere, yöntemlere ve varsayımlara bağlıdır; doğrulukları ve güncellikleri garanti edilmez. İşlem yapmadan önce bilgileri bağımsız ve güvenilir kaynaklardan doğrulayın."
+            },
+            "risk": {
+                "title": "Yatırım riskleri",
+                "body": "Geçmiş performans gelecekteki sonuçları garanti etmez. Yatırımlar, anaparanın bir kısmının veya tamamının kaybı dahil riskler içerir. Keepfin herhangi bir getiri veya zarardan korunma garantisi vermez."
+            },
+            "decisions": {
+                "title": "Karar ve işlem sorumluluğu",
+                "body": "Uygulamadaki bilgileri yatırım kararlarınızın tek dayanağı olarak kullanmayın. Kararlarınızı mali durumunuzu, hedeflerinizi ve risk tercihlerinizi değerlendirerek verin; gerektiğinde yetkili bir uzmandan destek alın. Yatırım kararlarınız ve gerçekleştirdiğiniz işlemler size aittir."
+            },
+            "rights": {
+                "title": "Yasal haklar",
+                "body": "Bu bilgilendirme, yürürlükteki mevzuatın tanıdığı hakları veya hukuken sınırlandırılamayan sorumlulukları ortadan kaldırmaz."
+            }
+        }
     },
     "nav": {
         "dashboard": "Kontrol Paneli",
@@ -61,10 +92,10 @@
         "signIn": "Giriş yap",
         "invalidCredentials": "Kullanıcı adı veya şifre hatalı.",
         "workspaceLabel": "Kişisel finans",
-        "storyEyebrow": "Finansına net bir bakış",
-        "storyTitle": "Tüm yatırımların.",
-        "storyAccent": "Tek bir bakışta.",
-        "storyDescription": "Hesaplarını, varlıklarını ve nakdini aynı yerde takip et. Portföyünü bütün olarak gör.",
+        "storyEyebrow": "Açık kaynak portföy takibi",
+        "storyTitle": "Yatırımlarını takip et.",
+        "storyAccent": "Büyük resmi gör.",
+        "storyDescription": "Hesaplarını, yatırımlarını ve nakdini tek yerde gör. Portföyünün toplam değerini ve zaman içindeki değişimini takip et.",
         "artInvestments": "Yatırımlar",
         "artOverview": "Tek bir görünüm",
         "artCash": "Nakit bakiyesi",

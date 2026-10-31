@@ -7,11 +7,15 @@
     </div>
 
     <div class="login-shell">
-      <aside class="login-story" :aria-label="$t('auth.storyTitle')">
+      <aside class="login-story" aria-labelledby="login-story-heading">
         <BrandLogo data-testid="login-brand" class="h-11! w-40!" />
         <div class="story-copy">
-          <p class="login-eyebrow"><span /> {{ $t('auth.storyEyebrow') }}</p>
-          <h2>{{ $t('auth.storyTitle') }}<br><span>{{ $t('auth.storyAccent') }}</span></h2>
+          <p class="login-eyebrow"><Code2 class="size-3.5" aria-hidden="true" />{{ $t('auth.storyEyebrow') }}</p>
+          <h2 id="login-story-heading">
+            <span>{{ $t('auth.storyTitle') }}</span>
+            <span class="story-accent">{{ $t('auth.storyAccent') }}</span>
+          </h2>
+          <span class="story-divider" aria-hidden="true" />
           <p class="story-description">{{ $t('auth.storyDescription') }}</p>
         </div>
 
@@ -32,7 +36,6 @@
         <BrandLogo data-testid="login-mobile-brand" class="mb-8 h-10! w-36! lg:hidden!" />
         <div class="login-form-content">
           <div class="login-heading">
-            <span class="welcome-icon"><ArrowRight class="size-5" /></span>
             <h1 id="login-heading">{{ $t('auth.loginTitle') }}</h1>
             <p>{{ $t('auth.loginHint') }}</p>
           </div>
@@ -90,7 +93,6 @@
         </div>
       </section>
     </div>
-    <footer class="login-page-footer"><span>keepfin.io</span><span></span></footer>
   </main>
 </template>
 <script setup>
@@ -98,7 +100,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { FeedbackAlert as Alert, Button, Input, Label } from '@/components/ui'
 import BrandLogo from '@/components/BrandLogo.vue'
-import { ArrowRight, ChartNoAxesCombined, ChevronDown, CircleCheck, Eye, EyeOff, FlaskConical, Layers3, LockKeyhole, Mail, Moon, Sun, WalletCards } from 'lucide-vue-next'
+import { ArrowRight, ChartNoAxesCombined, ChevronDown, CircleCheck, Code2, Eye, EyeOff, FlaskConical, Layers3, LockKeyhole, Mail, Moon, Sun, WalletCards } from 'lucide-vue-next'
 import { applyTheme, useTheme } from '@/composables/useTheme'
 import { authClient } from '@/lib/auth-client'
 import { useAuth, refreshSession } from '@/composables/useAuth'
@@ -179,18 +181,20 @@ onMounted(loadConfig)
 </script>
 
 <style scoped>
-.login-page { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 24px 40px; background: radial-gradient(ellipse at 15% 40%, var(--brand-glow), transparent 60%), var(--brand-page); }
-.login-topbar, .login-page-footer { width: 100%; max-width: 1100px; margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.login-page { min-height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 24px 40px; background: radial-gradient(ellipse at 15% 40%, var(--brand-glow), transparent 60%), var(--brand-page); }
+.login-topbar { width: 100%; max-width: 1100px; margin-inline: auto; display: flex; align-items: center; gap: 16px; }
 .login-topbar { justify-content: flex-end; margin-bottom: 20px; }
 .login-shell { width: 100%; max-width: 1100px; margin-inline: auto; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 1px solid var(--border); border-radius: 28px; background: var(--card); box-shadow: 0 24px 80px -48px var(--brand-shadow); }
-.login-story { position: relative; display: flex; min-width: 0; flex-direction: column; overflow: hidden; padding: 40px; background: var(--brand-panel); border-right: 1px solid var(--brand-line); }
-.story-copy { position: relative; z-index: 1; margin-top: 50px; }
-.login-eyebrow { display: flex; align-items: center; gap: 9px; color: var(--brand-accent); font-size: 10px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; }
-.login-eyebrow span { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.story-copy h2 { margin-top: 18px; font-size: clamp(32px, 3.4vw, 46px); font-weight: 500; line-height: 1.14; letter-spacing: -.055em; }
-.story-copy h2 span { color: var(--brand-accent); }
-.story-description { max-width: 340px; margin-top: 18px; color: var(--muted-foreground); font-size: 14px; line-height: 1.8; }
-.portfolio-art { position: relative; flex: 1; min-height: 222px; margin-top: 25px; isolation: isolate; }
+.login-story { position: relative; container-type: inline-size; display: flex; min-width: 0; flex-direction: column; overflow: hidden; padding: 40px; background: var(--brand-panel); border-right: 1px solid var(--brand-line); }
+.story-copy { position: relative; z-index: 1; margin-top: 42px; }
+.login-eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--brand-border); border-radius: 8px; background: var(--brand-soft); color: var(--brand-accent); font-size: 10px; font-weight: 500; line-height: 1.5; letter-spacing: .055em; }
+.login-eyebrow svg { flex-shrink: 0; }
+.story-copy h2 { margin-top: 22px; font-size: clamp(34px, 9cqw, 42px); font-weight: 500; line-height: 1.22; letter-spacing: -.03em; }
+.story-copy h2 > span { display: block; text-wrap: balance; }
+.story-copy h2 .story-accent { margin-top: 3px; color: var(--brand-accent); font-weight: 600; }
+.story-divider { display: block; width: 42px; height: 2px; margin-top: 22px; border-radius: 2px; background: var(--brand-accent); opacity: .6; }
+.story-description { max-width: 350px; margin-top: 16px; color: var(--muted-foreground); font-size: 14px; line-height: 1.8; text-wrap: pretty; }
+.portfolio-art { position: relative; flex: 1; min-height: 222px; margin-top: 48px; isolation: isolate; }
 .art-orbit { position: absolute; left: 50%; top: 50%; border: 1px solid var(--brand-border); border-radius: 50%; transform: translate(-50%, -50%); }
 .art-orbit-outer { width: 310px; height: 310px; border-style: dashed; opacity: .6; }
 .art-orbit-inner { width: 205px; height: 205px; }
@@ -206,12 +210,11 @@ onMounted(loadConfig)
 .art-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; color: var(--brand-accent); background: var(--brand-soft); }
 .art-icon svg { width: 16px; height: 16px; }
 .art-dot { width: 5px; height: 5px; margin-left: 6px; border-radius: 50%; background: var(--brand-accent); }.currency-dot { margin-inline: 3px; opacity: .4; }
-.story-footer { position: relative; display: flex; align-items: center; gap: 12px; margin-top: 42px; color: var(--muted-foreground); font-size: 10px; }
+.story-footer { position: relative; display: flex; align-items: center; gap: 12px; margin-top: 28px; color: var(--muted-foreground); font-size: 10px; }
 .story-footer-line { height: 1px; width: 26px; background: var(--brand-accent); }
 .login-form-panel { min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 44px clamp(32px, 4vw, 64px); }
 .login-form-content { width: 100%; max-width: 380px; margin-inline: auto; display: flex; flex-direction: column; gap: 20px; }
 .login-heading { margin-bottom: 7px; }
-.welcome-icon { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin-bottom: 20px; border: 1px solid var(--brand-border); border-radius: 12px; color: var(--brand-accent); background: var(--brand-soft); }
 .login-heading h1 { font-size: 25px; font-weight: 600; letter-spacing: -.045em; line-height: 1.3; }
 .login-heading > p { margin-top: 10px; font-size: 13px; line-height: 1.7; color: var(--muted-foreground); }
 .social-buttons { display: grid; gap: 10px; }
@@ -234,15 +237,13 @@ onMounted(loadConfig)
 .internal-login summary { display: flex; align-items: center; gap: 9px; padding: 13px 14px; color: var(--muted-foreground); cursor: pointer; list-style: none; font-size: 11px; }
 .internal-login summary::-webkit-details-marker { display: none; }.internal-login summary:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 3px; border-radius: 10px; }
 .internal-login[open] .internal-chevron { transform: rotate(180deg); }
-.login-page-footer { margin-top: 20px; color: var(--muted-foreground); font-size: 10px; }
-.login-page-footer > span:first-child { font-weight: 600; letter-spacing: -.02em; }
 @media (max-width: 1023px) {
-  .login-page { padding: 24px; }.login-topbar, .login-page-footer, .login-shell { max-width: 480px; }
+  .login-page { padding: 24px; }.login-topbar, .login-shell { max-width: 480px; }
   .login-shell { display: block; border-radius: 24px; }.login-story { display: none; }.login-form-panel { padding: 32px; }
-  .welcome-icon { display: none; }.login-heading { margin-bottom: 4px; }.login-form-content { max-width: none; }
+  .login-heading { margin-bottom: 4px; }.login-form-content { max-width: none; }
 }
 @media (max-width: 380px) {
   .login-page { padding: 16px 12px; }.login-form-panel { padding: 24px 20px; }
-  .login-heading h1 { font-size: 23px; }.social-button { gap: 8px; font-size: 11px; }.login-page-footer { flex-wrap: wrap; gap: 6px; }
+  .login-heading h1 { font-size: 23px; }.social-button { gap: 8px; font-size: 11px; }
 }
 </style>

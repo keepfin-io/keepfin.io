@@ -29,6 +29,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
   test(`dashboard controls, data views and sidebar behavior at simulated ${width}px`, async t => {
     const ui = await launch(t, { route: '/', authenticated: true, width, portfolioResponse: report(), measuredChartWidth: Math.max(220, width - 340) })
     await ui.until(() => ui.find('portfolio-stat-value'))
+    assert.ok(ui.find('footer-financial-notice'))
     assert.match(ui.find('portfolio-stat-value').textContent, /125,000.25/)
     assert.match(ui.find('portfolio-stat-cash').textContent, /25,000.25/)
     assert.match(ui.find('portfolio-stat-equity').textContent, /100,000.00/)
@@ -70,6 +71,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       assert.ok(ui.w.document.querySelector('[data-mobile="true"]'))
       ui.find('sidebar-nav-accounts').click()
       await ui.until(() => ui.w.location.pathname === '/accounts' && !ui.w.document.querySelector('[data-mobile="true"]'))
+      assert.ok(ui.find('footer-financial-notice'))
     } else {
       assert.ok(ui.find('sidebar-nav-accounts'))
       ui.find('sidebar-toggle').click()

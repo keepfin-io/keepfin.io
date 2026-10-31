@@ -23,7 +23,38 @@
         "toggleMenu": "Toggle menu",
         "closeMenu": "Close menu",
         "dismiss": "Dismiss",
-        "noResults": "No results found"
+        "noResults": "No results found",
+        "mainContent": "Main content"
+    },
+    "footer": {
+        "navigation": "Footer links",
+        "openSource": "Open source",
+        "sourceLinkLabel": "View the open-source code on GitHub",
+        "legalNotice": "Legal notice",
+        "summary": "Keepfin helps you track and analyze your accounts and investments. It does not provide financial or investment advice.",
+        "legalDescription": "Information about the application's purpose, data limitations and investment risks.",
+        "sections": {
+            "purpose": {
+                "title": "Information and analysis",
+                "body": "keepfin.io is an open-source tool that helps you track, review and analyze your finances and investments. Its information, charts and calculations are not financial or investment advice, personalized recommendations, or recommendations to buy or sell."
+            },
+            "data": {
+                "title": "Data and calculations",
+                "body": "Data from third parties or user entries may be delayed, incomplete or inaccurate. Valuations, returns and profit/loss calculations depend on the data, methods and assumptions used; their accuracy and timeliness are not guaranteed. Verify information with independent, reliable sources before making a transaction."
+            },
+            "risk": {
+                "title": "Investment risks",
+                "body": "Past performance does not guarantee future results. Investments involve risks, including the loss of some or all of your principal. Keepfin does not guarantee returns or protection against losses."
+            },
+            "decisions": {
+                "title": "Decisions and transactions",
+                "body": "Do not use information in the application as the sole basis for investment decisions. Consider your financial situation, objectives and risk preferences, and seek advice from an appropriately authorized professional when needed. Your investment decisions and transactions are your own."
+            },
+            "rights": {
+                "title": "Legal rights",
+                "body": "This notice does not remove rights granted by applicable law or exclude liabilities that cannot lawfully be limited."
+            }
+        }
     },
     "nav": {
         "dashboard": "Dashboard",
@@ -61,10 +92,10 @@
         "signIn": "Sign in",
         "invalidCredentials": "Incorrect username or password.",
         "workspaceLabel": "Personal finance",
-        "storyEyebrow": "A clearer view of your finances",
-        "storyTitle": "All your investments.",
-        "storyAccent": "One clear picture.",
-        "storyDescription": "Bring your accounts, assets and cash together. See your portfolio as a whole.",
+        "storyEyebrow": "Open-source portfolio tracking",
+        "storyTitle": "Track your investments.",
+        "storyAccent": "See the bigger picture.",
+        "storyDescription": "See your accounts, investments and cash in one place. Track your portfolio's total value and how it changes over time.",
         "artInvestments": "Investments",
         "artOverview": "One overview",
         "artCash": "Cash balance",

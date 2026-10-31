@@ -2,9 +2,12 @@
   <div
     data-testid="auth-layout"
     v-if="isAuthPage"
-    class="min-h-svh bg-background text-foreground"
+    class="auth-shell bg-background text-foreground"
   >
-    <router-view />
+    <div data-testid="auth-content" class="auth-content" tabindex="0" role="region" :aria-label="$t('common.mainContent')">
+      <router-view />
+    </div>
+    <AppFooter />
   </div>
   <SidebarProvider v-else-if="isAuthenticated && route.meta.requiresAuth" class="workspace-shell">
     <AppSidebar />
@@ -32,10 +35,16 @@
       </header>
       <div
         data-testid="app-content"
-        class="mx-auto w-full min-w-0 max-w-7xl p-4 sm:p-5 lg:p-8"
+        class="workspace-content w-full min-w-0"
+        tabindex="0"
+        role="region"
+        :aria-label="pageTitle"
       >
-        <router-view />
+        <div class="mx-auto w-full min-w-0 max-w-7xl p-4 sm:p-5 lg:p-8">
+          <router-view />
+        </div>
       </div>
+      <AppFooter />
     </SidebarInset>
   </SidebarProvider>
 </template>
@@ -50,6 +59,7 @@ import {
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
+import AppFooter from '@/components/AppFooter.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
 import { useAuth } from '@/composables/useAuth'
 import '@/styles/workspace.css'

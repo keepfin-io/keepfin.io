@@ -1,5 +1,5 @@
 <template>
-  <div data-testid="auth-callback" class="flex min-h-svh items-center justify-center p-4">
+  <div data-testid="auth-callback" class="flex min-h-full items-center justify-center p-4">
     <Card class="w-full max-w-md">
       <CardHeader class="items-center"><BrandLogo /><CardTitle>{{ $t('auth.completingSignIn') }}</CardTitle></CardHeader>
       <CardContent class="space-y-4">
