@@ -202,7 +202,7 @@
                         :class="
                           holding.profit_loss < 0
                             ? 'text-destructive'
-                            : 'text-emerald-700 dark:text-emerald-400'
+                            : 'text-brand'
                         "
                       >
                         {{

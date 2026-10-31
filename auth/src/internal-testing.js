@@ -27,9 +27,10 @@ export async function seedInternalTesting(auth, pool, config, { waitForSchema = 
     await client.query('BEGIN')
     await client.query("SELECT pg_advisory_xact_lock(hashtext('keepfin-internal-testing-seed'))")
     const { rows: identities } = await client.query('SELECT id, email, "emailVerified" FROM auth_user WHERE id = $1 OR lower(email) = $2 FOR UPDATE', [u.authID, u.email])
-    const { rows: users } = await client.query('SELECT id, email, auth_user_id, user_role, is_dummy, user_status, deleted_at FROM users WHERE id = $1 OR auth_user_id = $2 OR lower(email) = $3 FOR UPDATE', [u.applicationID, u.authID, u.email])
+    // Compare in SQL because pg returns GORM's bigint status as a string.
+    const { rows: users } = await client.query('SELECT id, email, auth_user_id, user_role, is_dummy, (user_status = 1) AS is_active, deleted_at FROM users WHERE id = $1 OR auth_user_id = $2 OR lower(email) = $3 FOR UPDATE', [u.applicationID, u.authID, u.email])
     if (identities.some(row => row.id !== u.authID || row.email !== u.email || !row.emailVerified) ||
-        users.some(row => row.id !== u.applicationID || row.email !== u.email || row.auth_user_id !== u.authID || row.user_role !== 'admin' || !row.is_dummy || row.user_status !== 1 || row.deleted_at)) {
+        users.some(row => row.id !== u.applicationID || row.email !== u.email || row.auth_user_id !== u.authID || row.user_role !== 'admin' || !row.is_dummy || !row.is_active || row.deleted_at)) {
       throw new Error('Internal testing seed conflicts with an existing identity; no accounts were changed')
     }
     if (!identities.length) {

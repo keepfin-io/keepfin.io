@@ -1,0 +1,41 @@
+/* Shared by the app and its startup screen; text accents adapt to each theme. */
+:root {
+  --brand-solid: #279fa3;
+  --brand-solid-hover: #39adb0;
+  --brand-on-solid: #052326;
+  --brand-accent: #006d73;
+  --brand-soft: #e8f3f3;
+  --brand-border: #c8dbdc;
+  --brand-line: #dce8e9;
+  --brand-glow: #279fa30a;
+  --brand-panel: linear-gradient(135deg, #f2f8f8, #e9f3f3);
+  --brand-art-surface: #f6fafa;
+  --brand-page: #f5f7f8;
+  --brand-surface: #ffffff;
+  --brand-sidebar: #fafcfc;
+  --brand-muted: #edf2f3;
+  --brand-text: #1c3035;
+  --brand-muted-text: #5c6e75;
+  --brand-ui-border: #dce4e6;
+  --brand-input-border: #c6d1d6;
+  --brand-shadow: #0c303812;
+}
+
+.dark {
+  --brand-accent: #4bb7bb;
+  --brand-soft: #1a3035;
+  --brand-border: #2c464c;
+  --brand-line: #293c43;
+  --brand-glow: #279fa308;
+  --brand-panel: radial-gradient(ellipse at 100% 100%, #279fa30a, transparent 75%), linear-gradient(135deg, #182b31, #16252d);
+  --brand-art-surface: #1a2d33;
+  --brand-page: #10171d;
+  --brand-surface: #172128;
+  --brand-sidebar: #131c23;
+  --brand-muted: #202d35;
+  --brand-text: #e0eaed;
+  --brand-muted-text: #9aabb2;
+  --brand-ui-border: #2b373f;
+  --brand-input-border: #35454e;
+  --brand-shadow: #00000026;
+}

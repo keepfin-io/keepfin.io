@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="<%= BASE_URL %>favicon.svg">
     <link rel="alternate icon" href="<%= BASE_URL %>favicon.ico">
     <title>Keepfin</title>
+    <link rel="stylesheet" href="<%= BASE_URL %>styles/brand.css">
     <script>
       try {
         const dark = localStorage.getItem('theme') !== 'light';
@@ -16,8 +17,7 @@
       } catch (_) { document.documentElement.classList.add('dark'); }
     </script>
     <style>
-      html, body { margin: 0; background: #f7faf9; }
-      html.dark, .dark body { background: #0f0f12; }
+      html, body { margin: 0; background: var(--brand-page); }
     </style>
     <link rel="stylesheet" href="<%= BASE_URL %>styles/loading.css">
   </head>

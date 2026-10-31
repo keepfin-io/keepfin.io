@@ -18,7 +18,7 @@ async function fixture(t) {
   await (await getMigrations(auth.options)).runMigrations()
   await pool.query(`CREATE TABLE users (
     id uuid PRIMARY KEY, hash_id text UNIQUE, is_dummy boolean, email text UNIQUE,
-    password_hash text, auth_user_id text UNIQUE, user_status int, user_role text,
+    password_hash text, auth_user_id text UNIQUE, user_status bigint, user_role text,
     theme text, base_currency text, locale text, created_at timestamptz, updated_at timestamptz, deleted_at timestamptz
   )`)
   return { auth, pool, config }
@@ -37,6 +37,8 @@ test('internal admin seed is atomic, idempotent and authenticates through Better
   await Promise.all([seedInternalTesting(auth, pool, config), seedInternalTesting(auth, pool, config)])
   const { rows: [appUser] } = await pool.query('SELECT * FROM users')
   assert.equal(appUser.user_role, 'admin')
+  // GORM creates bigint statuses, which pg returns as strings by default.
+  assert.equal(appUser.user_status, '1')
   assert.equal(appUser.auth_user_id, user.authID)
   assert.equal(appUser.id, user.applicationID)
   assert.equal(appUser.password_hash, '')
@@ -79,4 +81,15 @@ test('seed refuses email collisions and preserves existing identities and roles'
   assert.equal(retained.id, existing)
   assert.equal(retained.user_role, 'user')
   assert.equal(retained.auth_user_id, null)
+})
+
+test('seed refuses inactive existing test accounts without changing their status', { skip }, async t => {
+  const { auth, pool, config } = await fixture(t)
+  await seedInternalTesting(auth, pool, config)
+  for (const status of [0, 2]) {
+    await pool.query('UPDATE users SET user_status = $1 WHERE id = $2', [status, user.applicationID])
+    await assert.rejects(seedInternalTesting(auth, pool, config), /conflicts/)
+    const { rows: [retained] } = await pool.query('SELECT user_status FROM users WHERE id = $1', [user.applicationID])
+    assert.equal(retained.user_status, String(status))
+  }
 })
