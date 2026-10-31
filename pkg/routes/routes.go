@@ -37,6 +37,8 @@ func Register(app *fiber.App) error {
 	holdingController := controllers.NewHoldingController(holdingService, accountService)
 	activityController := controllers.NewActivityController(activityService, accountService)
 
+	portfolioController := controllers.NewPortfolioController(services.NewPortfolioService(db, marketService), activityService, accountService)
+
 	// All application routes use the server-verified Better Auth session.
 	api := app.Group("/api/v1", originCheck, middleware.Session(client, userService))
 
@@ -53,6 +55,11 @@ func Register(app *fiber.App) error {
 	api.Get("/market/live/:symbol", marketController.GetLivePrice)
 	api.Get("/market/search", marketController.SearchAssets)
 
+	api.Get("/portfolio", portfolioController.Report)
+	api.Post("/transfers", portfolioController.Transfer)
+	api.Post("/accounts/:id/activities/import", portfolioController.Import)
+	api.Get("/accounts/:id/activities/export", portfolioController.Export)
+	api.Put("/accounts/:id/activities/:activityId", portfolioController.UpdateActivity)
 	// Account routes
 	api.Post("/accounts/create", accountController.CreateAccount)
 	api.Get("/accounts", accountController.GetUserAccounts)

@@ -2,10 +2,13 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"keepnode/app/models"
@@ -13,7 +16,7 @@ import (
 
 const (
 	defaultBaseURL = "https://eodhd.com/api"
-	defaultTimeout = 30 * time.Second
+	defaultTimeout = 8 * time.Second
 )
 
 // EODHDClient handles HTTP requests to EODHD API
@@ -25,10 +28,7 @@ type EODHDClient struct {
 
 // NewEODHDClient creates a new EODHD API client
 func NewEODHDClient() *EODHDClient {
-	apiToken := "695125bfe5ad16.63343807"
-	if apiToken == "" {
-		apiToken = " 695125bfe5ad16.63343807" // Demo token for testing (limited symbols)
-	}
+	apiToken := os.Getenv("EODHD_API_TOKEN")
 
 	return &EODHDClient{
 		BaseURL:  defaultBaseURL,
@@ -41,9 +41,12 @@ func NewEODHDClient() *EODHDClient {
 
 // GetEODData fetches End-of-Day historical data for a symbol
 func (c *EODHDClient) GetEODData(symbol, exchange, from, to, period, order string) ([]models.EODData, error) {
+	if c.APIToken == "" {
+		return nil, errors.New("EODHD_API_TOKEN is not configured")
+	}
 	// Build symbol with exchange
 	fullSymbol := symbol
-	if exchange != "" {
+	if exchange != "" && !strings.Contains(symbol, ".") {
 		fullSymbol = fmt.Sprintf("%s.%s", symbol, exchange)
 	}
 
@@ -71,13 +74,12 @@ func (c *EODHDClient) GetEODData(symbol, exchange, from, to, period, order strin
 	// Make request
 	resp, err := c.HTTPClient.Get(fullURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch EOD data: %w", err)
+		return nil, errors.New("market data provider request failed")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("EODHD API error (status %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("market data provider returned status %d", resp.StatusCode)
 	}
 
 	// Parse response
@@ -91,9 +93,12 @@ func (c *EODHDClient) GetEODData(symbol, exchange, from, to, period, order strin
 
 // GetLivePrice fetches real-time (delayed) price for a symbol
 func (c *EODHDClient) GetLivePrice(symbol, exchange string) (*models.LivePrice, error) {
+	if c.APIToken == "" {
+		return nil, errors.New("EODHD_API_TOKEN is not configured")
+	}
 	// Build symbol with exchange
 	fullSymbol := symbol
-	if exchange != "" {
+	if exchange != "" && !strings.Contains(symbol, ".") {
 		fullSymbol = fmt.Sprintf("%s.%s", symbol, exchange)
 	}
 
@@ -108,13 +113,12 @@ func (c *EODHDClient) GetLivePrice(symbol, exchange string) (*models.LivePrice, 
 	// Make request
 	resp, err := c.HTTPClient.Get(fullURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch live price: %w", err)
+		return nil, errors.New("market data provider request failed")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("EODHD API error (status %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("market data provider returned status %d", resp.StatusCode)
 	}
 
 	// Parse response
@@ -128,6 +132,9 @@ func (c *EODHDClient) GetLivePrice(symbol, exchange string) (*models.LivePrice, 
 
 // GetMultipleLivePrices fetches real-time prices for multiple symbols
 func (c *EODHDClient) GetMultipleLivePrices(symbols []string) ([]models.LivePrice, error) {
+	if c.APIToken == "" {
+		return nil, errors.New("EODHD_API_TOKEN is not configured")
+	}
 	if len(symbols) == 0 {
 		return []models.LivePrice{}, nil
 	}
@@ -155,13 +162,12 @@ func (c *EODHDClient) GetMultipleLivePrices(symbols []string) ([]models.LivePric
 	// Make request
 	resp, err := c.HTTPClient.Get(fullURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch multiple live prices: %w", err)
+		return nil, errors.New("market data provider request failed")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("EODHD API error (status %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("market data provider returned status %d", resp.StatusCode)
 	}
 
 	// Parse response - can be single object or array
@@ -187,6 +193,9 @@ func (c *EODHDClient) GetMultipleLivePrices(symbols []string) ([]models.LivePric
 
 // SearchSymbol searches for stocks by query
 func (c *EODHDClient) SearchSymbol(query string, limit int) ([]models.SearchResult, error) {
+	if c.APIToken == "" {
+		return nil, errors.New("EODHD_API_TOKEN is not configured")
+	}
 	// Build URL
 	endpoint := fmt.Sprintf("%s/search/%s", c.BaseURL, url.PathEscape(query))
 	params := url.Values{}
@@ -201,13 +210,12 @@ func (c *EODHDClient) SearchSymbol(query string, limit int) ([]models.SearchResu
 	// Make request
 	resp, err := c.HTTPClient.Get(fullURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search symbols: %w", err)
+		return nil, errors.New("market data provider request failed")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("EODHD API error (status %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("market data provider returned status %d", resp.StatusCode)
 	}
 
 	// Parse response

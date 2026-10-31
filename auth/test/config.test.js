@@ -10,3 +10,11 @@ test('reject unsafe production configuration', () => {
   assert.throws(() => readConfig({ ...base, GOOGLE_CLIENT_ID: 'id' }), /Both/)
   assert.equal(readConfig(base).mailMode, 'disabled')
 })
+
+test('internal testing requires explicit development or test configuration', () => {
+  assert.equal(readConfig(base).internalTesting, false)
+  assert.equal(readConfig({ ...base, NODE_ENV: 'development', AUTH_INTERNAL_TESTING: 'true' }).internalTesting, true)
+  assert.equal(readConfig({ ...base, NODE_ENV: 'test', AUTH_INTERNAL_TESTING: 'true' }).internalTesting, true)
+  assert.throws(() => readConfig({ ...base, AUTH_INTERNAL_TESTING: 'true' }), /development\/test-only/)
+  assert.throws(() => readConfig({ ...base, NODE_ENV: 'production', APP_ORIGIN: 'https://example.com', AUTH_INTERNAL_TESTING: 'true' }), /development\/test-only/)
+})

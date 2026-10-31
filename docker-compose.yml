@@ -10,6 +10,7 @@ services:
       DB_SSL_MODE: disable
       APP_ORIGIN: ${APP_ORIGIN:?Set the public HTTPS origin}
       AUTH_SERVICE_URL: http://auth:3001
+      EODHD_API_TOKEN: ${EODHD_API_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy

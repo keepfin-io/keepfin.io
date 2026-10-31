@@ -6,15 +6,16 @@
   >
     <router-view />
   </div>
-  <SidebarProvider v-else>
+  <SidebarProvider v-else-if="isAuthenticated && route.meta.requiresAuth" class="workspace-shell">
     <AppSidebar />
-    <SidebarInset data-testid="app-layout" class="min-w-0">
+    <SidebarInset data-testid="app-layout" class="workspace-main min-w-0">
       <header
         data-testid="app-header"
-        class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur sm:px-6"
+        class="workspace-header sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur sm:px-6"
       >
         <SidebarTrigger
           data-testid="sidebar-toggle"
+          class="size-11 rounded-xl"
           :aria-label="$t('common.toggleMenu')"
         />
         <Separator orientation="vertical" class="h-5!" />
@@ -27,11 +28,11 @@
         >
           {{ pageTitle }}
         </span>
-        <ThemeToggle data-testid="header-theme" compact />
+        <ThemeToggle data-testid="header-theme" class="workspace-theme" compact />
       </header>
       <div
         data-testid="app-content"
-        class="mx-auto w-full min-w-0 max-w-7xl p-4 sm:p-6 lg:p-8"
+        class="mx-auto w-full min-w-0 max-w-7xl p-4 sm:p-5 lg:p-8"
       >
         <router-view />
       </div>
@@ -51,9 +52,10 @@ import { useRoute, useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
 import { useAuth } from '@/composables/useAuth'
+import '@/styles/workspace.css'
 const route = useRoute()
 const router = useRouter()
-const { checkAuth } = useAuth()
+const { checkAuth, isAuthenticated } = useAuth()
 async function revalidateSession() {
   if (document.hidden || !route.meta.requiresAuth) return
   try { if (!await checkAuth()) await router.replace('/login') }

@@ -1,17 +1,24 @@
 <template>
-  <Sidebar collapsible="icon">
+  <Sidebar collapsible="icon" class="workspace-sidebar">
     <SidebarHeader>
       <div class="flex items-center">
         <SidebarMenu class="min-w-0">
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" as-child>
+            <SidebarMenuButton
+              size="lg"
+              class="workspace-brand group-data-[collapsible=icon]:justify-center"
+              as-child
+            >
               <router-link
                 data-testid="sidebar-brand-link"
                 to="/"
                 class="font-semibold"
               >
-                <BrandLogo class="h-8! w-28! group-data-[collapsible=icon]:hidden" />
-                <BrandLogo compact class="hidden group-data-[collapsible=icon]:inline-flex group-data-[collapsible=icon]:size-5" />
+                <span class="flex min-w-0 flex-col gap-2 group-data-[collapsible=icon]:hidden">
+                  <BrandLogo class="workspace-brand-logo h-12! w-40! max-w-full" />
+                  <span class="workspace-brand-version text-[11px] leading-none tracking-widest text-muted-foreground tabular-nums">v2026.10.30</span>
+                </span>
+                <BrandLogo compact class="workspace-brand-logo hidden group-data-[collapsible=icon]:inline-flex group-data-[collapsible=icon]:size-6" />
               </router-link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -20,7 +27,7 @@
           data-testid="sidebar-close"
           variant="ghost"
           size="icon"
-          class="mr-2 shrink-0 md:hidden"
+          class="mr-2 size-11 shrink-0 md:hidden"
           :aria-label="$t('common.closeMenu')"
           @click="setOpenMobile(false)"
         >
@@ -34,12 +41,8 @@
           <SidebarMenu>
             <SidebarMenuItem v-for="item in navigation" :key="item.path">
               <SidebarMenuButton
+                class="min-h-11 rounded-xl group-data-[collapsible=icon]:min-h-8"
                 as-child
-                :is-active="
-                  item.path === '/'
-                    ? route.path === '/'
-                    : route.path.startsWith(item.path)
-                "
                 :tooltip="$t(item.label)"
               >
                 <router-link

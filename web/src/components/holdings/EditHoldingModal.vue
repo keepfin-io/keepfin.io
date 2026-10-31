@@ -40,7 +40,7 @@
               v-model.number="form.quantity"
               step="any"
               min="0.00000001"
-              :disabled="submitting"
+              :disabled="submitting || !holding?.can_edit_position"
               required
             />
           </div>
@@ -53,7 +53,7 @@
               v-model.number="form.buy_price"
               step="any"
               min="0"
-              :disabled="submitting"
+              :disabled="submitting || !holding?.can_edit_position"
               required
             />
           </div>
@@ -65,13 +65,15 @@
               id="edit-buyCurrency"
               data-testid="holding-edit-currency"
               v-model="form.buy_currency"
-              :disabled="submitting"
+              :disabled="submitting || !holding?.can_edit_position"
               :options="[
                 ...new Set([form.buy_currency, 'USD', 'EUR', 'GBP', 'TRY']),
               ]"
             />
           </div>
         </div>
+        <p class="text-xs text-muted-foreground">{{ $t('portfolio.classificationHint') }}</p>
+        <div class="grid gap-3 sm:grid-cols-3"><div v-for="field in ['asset_class', 'sector', 'country']" :key="field"><Label :for="`holding-${field}`">{{ $t(`portfolio.${field}`) }}</Label><Input :id="`holding-${field}`" v-model="form[field]" maxlength="100" :disabled="submitting" /></div></div>
         <div class="space-y-2">
           <Label for="edit-notes">{{ $t('holdings.notes') }}</Label>
           <Textarea
@@ -206,9 +208,10 @@ export default {
       this.formError = null
       this.form = {
         quantity: this.holding.quantity,
-        buy_price: this.holding.buy_price,
+        buy_price: this.holding.can_edit_position ? this.holding.entry_price : this.holding.buy_price,
         buy_currency: this.holding.buy_currency || 'USD',
         notes: this.holding.notes || '',
+        asset_class: this.holding.asset_class || '', sector: this.holding.sector || '', country: this.holding.country || '',
       }
     },
 
@@ -219,10 +222,11 @@ export default {
       this.formError = null
       try {
         await holdingAPI.updateHolding(this.accountId, this.holding.id, {
-          quantity: this.form.quantity,
-          buy_price: this.form.buy_price,
-          buy_currency: this.form.buy_currency,
+          quantity: this.holding.can_edit_position ? this.form.quantity : undefined,
+          buy_price: this.holding.can_edit_position ? this.form.buy_price : undefined,
+          buy_currency: this.holding.can_edit_position ? this.form.buy_currency : undefined,
           notes: this.form.notes,
+          asset_class: this.form.asset_class, sector: this.form.sector, country: this.form.country,
         })
         this.$emit('success')
         this.$emit('close')

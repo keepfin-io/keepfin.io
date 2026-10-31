@@ -1,6 +1,9 @@
 import { createServer } from 'node:http'
 import { toNodeHandler } from 'better-auth/node'
 import { auth, config, pool } from './runtime.js'
+import { seedInternalTesting } from './internal-testing.js'
+
+await seedInternalTesting(auth, pool, config, { waitForSchema: true })
 
 const handler = toNodeHandler(auth)
 const server = createServer(async (req, res) => {
@@ -11,7 +14,7 @@ const server = createServer(async (req, res) => {
     const path = new URL(req.url, config.baseURL).pathname
     if (req.method === 'GET' && path === '/api/auth/config') {
       res.setHeader('Content-Type', 'application/json')
-      res.end(JSON.stringify({ google: config.google, email: config.mailMode !== 'disabled', developmentMail: config.mailMode === 'file' }))
+      res.end(JSON.stringify({ google: config.google, apple: false, internalTesting: config.internalTesting, email: config.mailMode !== 'disabled', developmentMail: config.mailMode === 'file' }))
       return
     }
     if (path.startsWith('/api/auth/')) {

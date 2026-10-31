@@ -1,5 +1,9 @@
 export function readConfig(env = process.env) {
   const production = env.NODE_ENV === 'production'
+  const internalTesting = env.AUTH_INTERNAL_TESTING === 'true'
+  if (internalTesting && !['development', 'test'].includes(env.NODE_ENV)) {
+    throw new Error('Internal testing login is development/test-only')
+  }
   const baseURL = new URL(env.APP_ORIGIN || 'http://localhost:8080')
   if (baseURL.origin !== (env.APP_ORIGIN || 'http://localhost:8080') ||
       !['http:', 'https:'].includes(baseURL.protocol) || baseURL.username || baseURL.password) {
@@ -18,7 +22,7 @@ export function readConfig(env = process.env) {
     throw new Error('Both Google credentials are required')
   }
   return {
-    production, baseURL: baseURL.origin, secret: env.BETTER_AUTH_SECRET,
+    production, internalTesting, baseURL: baseURL.origin, secret: env.BETTER_AUTH_SECRET,
     databaseURL: env.DATABASE_URL, google,
     googleClientID: env.GOOGLE_CLIENT_ID, googleClientSecret: env.GOOGLE_CLIENT_SECRET,
     mailMode, mailDirectory: env.AUTH_MAIL_DIRECTORY || './.mail',

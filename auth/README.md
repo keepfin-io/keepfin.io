@@ -34,13 +34,36 @@ docker compose -p keepnode -f docker-compose.hot.yml up -d --force-recreate auth
 
 Configure the OAuth client as a web application with this redirect URI:
 `http://localhost:8080/api/auth/callback/google`. The authorized JavaScript origin
-is `http://localhost:8080`. The Google button appears only when both credentials
-are configured. Keep secrets out of `VUE_APP_*` variables and the frontend bundle.
+is `http://localhost:8080`. Google and Apple buttons are always visible. Google
+is disabled with a "Coming soon" label until configured; Apple is a disabled
+placeholder and has no OAuth integration yet. Keep secrets out of `VUE_APP_*` variables and the frontend bundle.
+
+### Internal testing admin
+
+The hot-development Compose stack sets `AUTH_INTERNAL_TESTING=true`. After the
+Go application migrations finish, auth startup atomically seeds one account:
+
+- Username: `internal-testing` (email alias: `internal-testing@keepfin.test`)
+- Password: `12345`
+- Application role: `admin`
+
+Open **Internal testing sign-in** on `/login`. This uses Better Auth credential
+verification and normal HttpOnly sessions; `/api/v1/user/me` resolves the seeded
+application UUID and admin role. Passwords are hashed with Better Auth's own
+hasher. Public password sign-up remains disabled and only this test identity can
+use password sign-in. Ordinary users continue using Magic Links or configured Google.
+
+The flag defaults off outside the hot stack and is accepted only with
+`NODE_ENV=development` or `test`. Production rejects it. Seed runs preserve IDs,
+passwords, preferences and financial data; any conflicting identity fails without
+automatically linking accounts by email. Email matching never grants admin access.
+To turn the development account off, set the Compose flag to `"false"` and
+recreate auth. To invalidate existing sessions too, sign out or revoke them.
 
 ## Existing users
 
-The previous password endpoints, demo password seed and hardcoded-secret JWT
-implementation are removed. Old `auth_token` cookies no longer authenticate.
+The previous Go password endpoints, legacy demo seed and hardcoded-secret JWT
+implementation are removed. The development test identity above is separate. Old `auth_token` cookies no longer authenticate.
 The old password column remains for migration compatibility but is unused and
 never serialized. Existing user UUIDs, account ownership and preferences remain.
 
@@ -89,8 +112,8 @@ tables persist rate limits across processes. OAuth tokens are encrypted at rest.
 Keep the encryption secret backed up and manage rotation deliberately.
 
 Automatic linking within Better Auth requires verified local email ownership;
-different-email linking is disabled. Password authentication and email changes
-are disabled. The separate legacy Go identity mapping remains explicit.
+different-email linking is disabled. Password authentication is disabled outside
+the explicit development test flow; email changes are disabled. The separate legacy Go identity mapping remains explicit.
 
 ## Two-factor follow-up
 
@@ -144,6 +167,7 @@ The auth service's installed dependency audit reported zero findings on
 References: [Node integration](https://better-auth.com/docs/integrations/express),
 [Vue client](https://better-auth.com/docs/concepts/client),
 [Magic Link](https://better-auth.com/docs/plugins/magic-link),
+[email/password options](https://better-auth.com/docs/authentication/email-password),
 [sessions](https://better-auth.com/docs/concepts/session-management),
 [database migrations](https://better-auth.com/docs/concepts/database),
 [security](https://better-auth.com/docs/reference/security),

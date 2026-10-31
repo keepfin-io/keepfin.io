@@ -1,64 +1,6 @@
-const { JSDOM, VirtualConsole } = require('jsdom')
 const assert = require('node:assert/strict')
-const fs = require('node:fs')
-const path = require('node:path')
 const { test } = require('node:test')
-const build = path.resolve(process.env.AUTH_UI_BUILD || path.join(__dirname, '../dist'))
-const pause = () => new Promise(resolve => setTimeout(resolve, 25))
-
-async function launch(t, { route = '/login', authenticated = false, outage = false, conflict = false, width = 320 } = {}) {
-  const errors = [], calls = []
-  const vc = new VirtualConsole()
-  vc.on('jsdomError', error => errors.push(error.message))
-  vc.on('error', (...args) => errors.push(args.join(' ')))
-  const dom = new JSDOM('<html><body><div id="app"></div></body></html>', {
-    url: `http://localhost:8080${route}`, runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole: vc,
-  })
-  t.after(() => dom.window.close())
-  const w = dom.window
-  const user = { id: 'app-uuid', email: 'test@example.com', theme: 'dark', base_currency: 'USD', locale: 'en-US', created_at: '2026-01-01T00:00:00Z' }
-  // A forged legacy profile must never unlock protected routes.
-  w.sessionStorage.setItem('keepnode_user', JSON.stringify(user))
-  w.matchMedia = query => ({ matches: query.includes('max-width') && width < 768, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} })
-  w.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
-  w.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} }
-  w.scrollTo = () => {}
-  w.HTMLElement.prototype.scrollIntoView = () => {}
-  for (const key of ['Request', 'Response', 'Headers', 'AbortController', 'AbortSignal', 'TextEncoder', 'TextDecoder']) w[key] = global[key]
-  const state = { authenticated, outage, conflict, failSignOut: false, rateLimited: false }
-  w.fetch = async (input, options = {}) => {
-    const endpoint = new URL(input.url || String(input), w.location.origin).pathname
-    const body = options.body ? JSON.parse(options.body) : null
-    calls.push({ endpoint, method: options.method || 'GET', body })
-    let data, status = 200
-    if (endpoint === '/api/auth/get-session') {
-      if (state.outage) { status = 503; data = { message: 'Unavailable' } }
-      else data = state.authenticated ? { user: { id: 'auth-uuid', email: user.email, emailVerified: true }, session: { id: 'session', userId: 'auth-uuid', expiresAt: '2099-01-01T00:00:00Z' } } : null
-    } else if (endpoint === '/api/auth/config') data = { google: true, email: true, developmentMail: true }
-    else if (endpoint === '/api/auth/sign-in/magic-link') {
-      status = state.rateLimited ? 429 : 200; data = state.rateLimited ? { message: 'Rate limited' } : { status: true }
-    } else if (endpoint === '/api/auth/sign-out') {
-      status = state.failSignOut ? 503 : 200
-      if (!state.failSignOut) state.authenticated = false
-      data = state.failSignOut ? { message: 'Unavailable' } : { success: true }
-    } else if (endpoint === '/api/v1/user/me') {
-      status = state.conflict ? 409 : 200
-      data = state.conflict ? { error: true } : { error: false, user: { ...user } }
-    } else if (endpoint === '/api/v1/user/theme') { user.theme = body.theme; data = { error: false } }
-    else if (endpoint === '/api/v1/accounts') data = { error: false, accounts: [] }
-    else throw new Error(`Unexpected request: ${endpoint}`)
-    return new global.Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
-  }
-  const html = fs.readFileSync(path.join(build, 'index.html'), 'utf8')
-  for (const [, src] of html.matchAll(/<script[^>]+src="([^"]+)"/g)) w.eval(fs.readFileSync(path.join(build, src.replace(/^\//, '')), 'utf8'))
-  const find = id => w.document.querySelector(`[data-testid="${id}"]`)
-  async function until(check) {
-    for (let i = 0; i < 80; i++) { if (check()) return; await pause() }
-    assert.ok(check(), `UI did not settle: ${w.document.body.textContent}; errors: ${errors}`)
-  }
-  await until(() => find('login-page') || find('app-layout') || find('auth-callback-error'))
-  return { w, find, state, calls, errors, until }
-}
+const { launch, pause } = require('./ui-harness')
 
 test('passwordless form, latest branding, no cached-identity access, no duplicate sends', async t => {
   const ui = await launch(t, { route: '/accounts' })
@@ -137,4 +79,104 @@ test('rate-limit errors are visible and permit retry', async t => {
   await ui.until(() => ui.find('login-error'))
   assert.match(ui.find('login-error').textContent, /Too many attempts/)
   assert.equal(ui.find('login-submit').disabled, false)
+})
+
+
+test('Google and Apple remain visible when not connected and do not send OAuth requests', async t => {
+  const ui = await launch(t, { google: false })
+  await ui.until(() => ui.find('login-email'))
+  assert.equal(ui.find('login-google').disabled, true)
+  assert.equal(ui.find('login-apple').disabled, true)
+  assert.match(ui.find('login-google').textContent, /Coming soon/)
+  assert.match(ui.find('login-apple').textContent, /Coming soon/)
+  ui.find('login-google').click(); ui.find('login-apple').click()
+  assert.equal(ui.calls.some(call => call.endpoint.includes('/sign-in/social')), false)
+  assert.equal(ui.find('login-internal'), null)
+  assert.deepEqual(ui.errors, [])
+})
+
+test('internal testing login reports invalid credentials then opens the verified admin session', async t => {
+  const ui = await launch(t, { internalTesting: true, google: false })
+  await ui.until(() => ui.find('login-internal'))
+  ui.find('login-internal').open = true
+  assert.equal(ui.find('login-username').value, 'internal-testing')
+  assert.equal(ui.find('login-password').type, 'password')
+  async function submit(value, duplicate = false) {
+    const input = ui.find('login-password'); input.value = value
+    input.dispatchEvent(new ui.w.Event('input', { bubbles: true }))
+    await pause()
+    const form = ui.find('login-internal-form')
+    if (duplicate) form.dispatchEvent(new ui.w.Event('submit', { bubbles: true, cancelable: true }))
+    form.dispatchEvent(new ui.w.Event('submit', { bubbles: true, cancelable: true }))
+  }
+  await submit('wrong')
+  await ui.until(() => ui.find('login-error'))
+  assert.match(ui.find('login-error').textContent, /Incorrect username or password/)
+  await submit('12345', true)
+  await ui.until(() => ui.find('dashboard-page'))
+  assert.equal(ui.w.location.pathname, '/')
+  const calls = ui.calls.filter(call => call.endpoint === '/api/auth/sign-in/email')
+  assert.equal(calls.length, 2)
+  assert.equal(calls[1].body.email, 'internal-testing@keepfin.test')
+  assert.equal(ui.w.sessionStorage.getItem('keepnode_user'), null)
+  assert.deepEqual(ui.errors, [])
+})
+
+
+for (const route of ['/login', '/accounts']) {
+  test(`no protected layout is painted while the initial guest session resolves: ${route}`, async t => {
+    let release
+    const sessionGate = new Promise(resolve => { release = resolve })
+    t.after(() => release())
+    const ui = await launch(t, { route, sessionGate, onBoot: async ({ find, until, calls, protectedPaints }) => {
+      await until(() => calls.some(call => call.endpoint === '/api/auth/get-session'))
+      await pause()
+      assert.equal(find('app-layout'), null)
+      assert.ok(find('app-startup'))
+      assert.equal(find('dashboard-page'), null)
+      assert.deepEqual(protectedPaints, [], 'protected layout must never be mounted before session verification')
+      assert.equal(calls.some(call => call.endpoint === '/api/v1/portfolio'), false)
+      release()
+    } })
+    await ui.until(() => ui.find('login-email'))
+    assert.equal(ui.w.location.pathname, '/login')
+    assert.deepEqual(ui.protectedPaints, [])
+    assert.deepEqual(ui.errors, [])
+  })
+}
+
+test('authenticated entry waits for the application profile before rendering the dashboard', async t => {
+  let release
+  const profileGate = new Promise(resolve => { release = resolve })
+  t.after(() => release())
+  const ui = await launch(t, { authenticated: true, profileGate, onBoot: async ({ find, until, calls, protectedPaints }) => {
+    await until(() => calls.some(call => call.endpoint === '/api/v1/user/me'))
+    await pause()
+    assert.equal(find('app-layout'), null)
+    assert.deepEqual(protectedPaints, [])
+    release()
+  } })
+  await ui.until(() => ui.find('dashboard-page'))
+  assert.equal(ui.w.location.pathname, '/')
+  assert.deepEqual(ui.errors, [])
+})
+
+
+test('Turkish login preserves theme choice and password visibility without sending requests', async t => {
+  const ui = await launch(t, { locale: 'tr-TR', internalTesting: true, google: false })
+  await ui.until(() => ui.find('login-email'))
+  assert.equal(ui.find('login-email').placeholder, 'ornek@eposta.com')
+  assert.match(ui.find('login-apple').textContent, /Yakında/)
+  assert.equal(ui.w.document.documentElement.classList.contains('dark'), true)
+  ui.find('login-theme').click()
+  await ui.until(() => !ui.w.document.documentElement.classList.contains('dark'))
+  assert.equal(ui.w.localStorage.getItem('theme'), 'light')
+  ui.find('login-internal').open = true
+  ui.find('login-password-toggle').click()
+  await ui.until(() => ui.find('login-password').type === 'text')
+  assert.equal(ui.find('login-password-toggle').getAttribute('aria-pressed'), 'true')
+  ui.find('login-password-toggle').click()
+  await ui.until(() => ui.find('login-password').type === 'password')
+  assert.equal(ui.calls.some(call => call.endpoint === '/api/v1/user/theme' || call.endpoint === '/api/auth/sign-in/email'), false)
+  assert.deepEqual(ui.errors, [])
 })

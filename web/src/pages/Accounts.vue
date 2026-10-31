@@ -102,9 +102,9 @@
             </p>
             <p
               class="mt-1 break-all text-2xl font-semibold tabular-nums"
-              :class="account.initial_balance < 0 && 'text-destructive'"
+              :class="account.cash_balance < 0 && 'text-destructive'"
             >
-              {{ formatCurrency(account.initial_balance, account.currency) }}
+              {{ formatCurrency(account.cash_balance, account.currency) }}
             </p>
           </CardContent>
           <CardFooter class="flex-wrap justify-between gap-3 border-t pt-4">
@@ -191,10 +191,10 @@
                 </TableCell>
                 <TableCell
                   class="text-right font-medium tabular-nums"
-                  :class="account.initial_balance < 0 && 'text-destructive'"
+                  :class="account.cash_balance < 0 && 'text-destructive'"
                 >
                   {{
-                    formatCurrency(account.initial_balance, account.currency)
+                    formatCurrency(account.cash_balance, account.currency)
                   }}
                 </TableCell>
                 <TableCell>
@@ -327,6 +327,11 @@
             >
               {{ fieldErrors.platform }}
             </p>
+          </div>
+          <div class="space-y-2">
+            <Label for="account-opening-date">{{ $t('portfolio.openingDate') }}</Label>
+            <Input id="account-opening-date" v-model="form.opening_date" type="date" :max="new Date().toISOString().slice(0, 10)" required />
+            <p class="text-xs text-muted-foreground">{{ $t('portfolio.openingHint') }}</p>
           </div>
           <div class="space-y-2">
             <Label for="description">{{ $t('accounts.description') }}</Label>
@@ -574,6 +579,7 @@ export default {
         account_name: '',
         currency: '',
         initial_balance: 0,
+        opening_date: new Date().toISOString().slice(0, 10),
         platform: '',
         description: '',
         is_excluded: false,
@@ -604,6 +610,7 @@ export default {
         account_name: '',
         currency: '',
         initial_balance: 0,
+        opening_date: new Date().toISOString().slice(0, 10),
         platform: '',
         description: '',
         is_excluded: false,
@@ -619,6 +626,7 @@ export default {
         account_name: account.account_name,
         currency: account.currency,
         initial_balance: account.initial_balance,
+        opening_date: account.opening_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
         platform: account.platform || '',
         description: account.description || '',
         is_excluded: account.is_excluded,
@@ -682,14 +690,14 @@ export default {
       this.formError = null
       try {
         if (this.editingAccount) {
-          await accountAPI.updateAccount(this.editingAccount.id, this.form)
+          await accountAPI.updateAccount(this.editingAccount.id, { ...this.form, opening_date: `${this.form.opening_date}T00:00:00Z` })
           this.showNotification(
             'success',
             'Account updated',
             `${this.form.account_name} has been updated successfully.`
           )
         } else {
-          await accountAPI.createAccount(this.form)
+          await accountAPI.createAccount({ ...this.form, opening_date: `${this.form.opening_date}T00:00:00Z` })
           this.showNotification(
             'success',
             'Account created',

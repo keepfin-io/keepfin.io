@@ -15,6 +15,10 @@ export const activityAPI = {
         })
     },
 
+    updateActivity(accountId, activityId, data) {
+        return apiFetch(`/accounts/${accountId}/activities/${activityId}`, { method: 'PUT', body: JSON.stringify(data) })
+    },
+
     deleteActivity(accountId, activityId) {
         return apiFetch(`/accounts/${accountId}/activities/${activityId}`, {
             method: 'DELETE'

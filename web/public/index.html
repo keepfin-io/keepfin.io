@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,12 +7,33 @@
     <link rel="icon" type="image/svg+xml" href="<%= BASE_URL %>favicon.svg">
     <link rel="alternate icon" href="<%= BASE_URL %>favicon.ico">
     <title>Keepfin</title>
+    <script>
+      try {
+        const dark = localStorage.getItem('theme') !== 'light';
+        document.documentElement.classList.toggle('dark', dark);
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        document.documentElement.lang = (localStorage.getItem('locale') || 'en-US').startsWith('tr') ? 'tr' : 'en';
+      } catch (_) { document.documentElement.classList.add('dark'); }
+    </script>
+    <style>
+      html, body { margin: 0; background: #f7faf9; }
+      html.dark, .dark body { background: #0f0f12; }
+    </style>
+    <link rel="stylesheet" href="<%= BASE_URL %>styles/loading.css">
   </head>
   <body>
     <noscript>
       <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>
-    <div id="app"></div>
+    <div id="app">
+      <div data-testid="app-startup" class="keepfin-loader-screen" role="status" aria-label="Keepfin">
+        <div class="keepfin-loader">
+          <img class="keepfin-loader-mark keepfin-loader-light" src="<%= BASE_URL %>brand/keepfin-mark.svg" alt="Keepfin">
+          <img class="keepfin-loader-mark keepfin-loader-dark" src="<%= BASE_URL %>brand/keepfin-mark-dark.svg" alt="Keepfin">
+          <span class="keepfin-loader-track" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
     <!-- built files will be auto injected -->
   </body>
 </html>

@@ -110,6 +110,7 @@
         >
           {{ $t('common.loading') }}
         </p>
+        <div class="grid gap-3 sm:grid-cols-2"><div><Label for="holding-date">{{ $t('portfolio.date') }}</Label><Input id="holding-date" v-model="form.date" type="date" :max="new Date().toISOString().slice(0, 10)" required /></div><div><Label for="holding-rate">{{ $t('portfolio.automaticRate') }}</Label><Input id="holding-rate" v-model.number="form.exchange_rate" type="number" min="0.0000000001" step="any" :placeholder="$t('portfolio.automaticRate')" /></div></div>
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-2">
             <Label for="add-quantity">{{ $t('accountDetail.quantity') }}</Label>
@@ -289,6 +290,7 @@ export default {
         fee: 0,
         buy_currency: 'USD',
         notes: '',
+        date: new Date().toISOString().slice(0, 10), exchange_rate: '',
       },
     }
   },
@@ -385,6 +387,7 @@ export default {
           fee: this.form.fee || 0,
           buy_currency: this.form.buy_currency,
           notes: this.form.notes,
+          date: this.form.date, exchange_rate: Number(this.form.exchange_rate) || 0,
         })
         this.$emit('success')
         this.$emit('close')
@@ -415,6 +418,7 @@ export default {
         fee: 0,
         buy_currency: 'USD',
         notes: '',
+        date: new Date().toISOString().slice(0, 10), exchange_rate: '',
       }
     },
 

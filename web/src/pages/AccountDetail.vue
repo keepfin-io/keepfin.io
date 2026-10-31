@@ -60,6 +60,7 @@
           </CardContent>
         </Card>
       </div>
+      <Alert v-if="holdingsSummary && !holdingsSummary.complete" variant="warning" :description="holdingsSummary.warnings.join('; ')" />
       <Tabs v-model="activeTab" class="min-w-0 space-y-4">
         <TabsList class="grid w-full grid-cols-2 sm:w-fit">
           <TabsTrigger data-testid="holdings-tab" value="holdings">
@@ -110,24 +111,24 @@
                       {
                         label: 'currentPrice',
                         value: formatCurrency(
-                          holding.current_price,
-                          account.currency
+                          holding.price_available ? holding.current_price : null,
+                          holding.buy_currency
                         ),
                       },
                       {
                         label: 'value',
-                        value: formatCurrency(holding.value, account.currency),
+                        value: formatCurrency(holding.price_available ? holding.value : null, holding.buy_currency),
                       },
                       {
                         label: 'profitLoss',
                         value: formatCurrency(
-                          holding.profit_loss,
-                          account.currency
+                          holding.price_available ? holding.profit_loss : null,
+                          holding.buy_currency
                         ),
                       },
                       {
                         label: 'performance',
-                        value: holding.performance?.toFixed(2) + '%',
+                        value: holding.price_available ? holding.performance?.toFixed(2) + '%' : '—',
                       },
                     ]"
                     :key="metric.label"
@@ -189,13 +190,13 @@
                       <TableCell>
                         {{
                           formatCurrency(
-                            holding.current_price,
-                            account.currency
+                            holding.price_available ? holding.current_price : null,
+                            holding.buy_currency
                           )
                         }}
                       </TableCell>
                       <TableCell>
-                        {{ formatCurrency(holding.value, account.currency) }}
+                        {{ formatCurrency(holding.price_available ? holding.value : null, holding.buy_currency) }}
                       </TableCell>
                       <TableCell
                         :class="
@@ -205,11 +206,11 @@
                         "
                       >
                         {{
-                          formatCurrency(holding.profit_loss, account.currency)
+                          formatCurrency(holding.price_available ? holding.profit_loss : null, holding.buy_currency)
                         }}
                       </TableCell>
                       <TableCell>
-                        {{ holding.performance?.toFixed(2) }}%
+                        {{ holding.price_available ? holding.performance?.toFixed(2) + '%' : '—' }}
                       </TableCell>
                       <TableCell>
                         <RecordActions
@@ -230,79 +231,7 @@
           value="activities"
           class="min-w-0 space-y-4"
         >
-          <Button
-            data-testid="activities-add"
-            disabled
-            :title="$t('projects.comingSoon')"
-          >
-            <Plus class="size-4" />
-            {{ $t('accountDetail.addActivity') }}
-          </Button>
-          <Card data-testid="activities-empty" v-if="!activities.length">
-            <CardContent
-              class="py-10 text-center text-sm text-muted-foreground"
-            >
-              {{ $t('accountDetail.noActivitiesRecorded') }}
-            </CardContent>
-          </Card>
-          <Card v-else class="min-w-0 overflow-hidden py-0">
-            <CardContent class="min-w-0 p-0">
-              <Table data-testid="activities-table">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead
-                      v-for="field in [
-                        'name',
-                        'type',
-                        'date',
-                        'quantity',
-                        'unitPrice',
-                        'fee',
-                        'value',
-                        'currency',
-                      ]"
-                      :key="field"
-                    >
-                      {{ $t('accountDetail.' + field) }}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow
-                    :data-testid="`activity-row-${activity.id}`"
-                    v-for="activity in activities"
-                    :key="activity.id"
-                  >
-                    <TableCell class="max-w-60">
-                      <p class="truncate font-medium">
-                        {{ activity.name || activity.symbol }}
-                      </p>
-                      <p class="text-xs text-muted-foreground">
-                        {{ activity.symbol }}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{{ activity.type }}</Badge>
-                    </TableCell>
-                    <TableCell>{{ formatDate(activity.date) }}</TableCell>
-                    <TableCell>{{ activity.quantity?.toFixed(2) }}</TableCell>
-                    <TableCell>
-                      {{
-                        formatCurrency(activity.unit_price, activity.currency)
-                      }}
-                    </TableCell>
-                    <TableCell>
-                      {{ formatCurrency(activity.fee, activity.currency) }}
-                    </TableCell>
-                    <TableCell>
-                      {{ formatCurrency(activity.total, activity.currency) }}
-                    </TableCell>
-                    <TableCell>{{ activity.currency }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <TransactionsPanel :account="account" :activities="activities" @changed="fetchAccountDetails" />
         </TabsContent>
       </Tabs>
     </template>
@@ -341,7 +270,6 @@
 <script>
 import {
   FeedbackAlert as Alert,
-  Badge,
   Button,
   Card,
   CardContent,
@@ -363,6 +291,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
+import TransactionsPanel from '@/components/portfolio/TransactionsPanel.vue'
 import AddHoldingModal from '@/components/holdings/AddHoldingModal.vue'
 import { ArrowLeft } from 'lucide-vue-next'
 import EditHoldingModal from '@/components/holdings/EditHoldingModal.vue'
@@ -375,10 +304,10 @@ export default {
   name: 'AccountDetailPage',
   components: {
     AddHoldingModal,
+    TransactionsPanel,
     Alert,
     ArrowLeft,
-    Badge,
-    Button,
+      Button,
     Card,
     CardContent,
     CardDescription,
@@ -432,7 +361,7 @@ export default {
         {
           label: 'cashBalance',
           value: this.formatCurrency(
-            this.account?.initial_balance,
+            this.account?.cash_balance,
             this.account?.currency
           ),
         },
@@ -442,18 +371,18 @@ export default {
         },
         {
           label: 'interest',
-          value: this.formatCurrency(0, this.account?.currency),
+          value: this.formatCurrency(this.holdingsSummary?.interest, this.account?.currency),
         },
         {
           label: 'dividend',
-          value: this.formatCurrency(0, this.account?.currency),
+          value: this.formatCurrency(this.holdingsSummary?.dividend, this.account?.currency),
         },
         { label: 'activities', value: this.activities.length },
         { label: 'currency', value: this.account?.currency },
       ]
     },
     totalEquity() {
-      return this.holdings.reduce((sum, h) => sum + (h.value || 0), 0)
+      return this.holdingsSummary?.complete ? this.holdingsSummary.total_value : null
     },
     spinnerMessage() {
       if (this.deleting) return this.$t('common.deleting')
@@ -487,6 +416,7 @@ export default {
       } catch (err) {
         console.error('Failed to fetch holdings:', err)
         this.holdings = []
+        this.holdingsSummary = { complete: false, warnings: [err.message] }
       }
     },
     async fetchActivities() {
@@ -499,8 +429,7 @@ export default {
       }
     },
     onHoldingAdded() {
-      this.fetchHoldings()
-      this.fetchActivities()
+      this.fetchAccountDetails()
       this.showAlert(
         'success',
         this.$t('common.success'),
@@ -518,8 +447,7 @@ export default {
     async onHoldingUpdated() {
       this.updating = true
       try {
-        await this.fetchHoldings()
-        await this.fetchActivities()
+        await this.fetchAccountDetails()
         this.showAlert(
           'success',
           this.$t('common.success'),
@@ -549,8 +477,7 @@ export default {
         )
         this.showDeleteConfirm = false
         this.holdingToDelete = null
-        await this.fetchHoldings()
-        await this.fetchActivities()
+        await this.fetchAccountDetails()
         this.showAlert(
           'success',
           this.$t('common.success'),
@@ -581,6 +508,7 @@ export default {
       }
     },
     formatCurrency(amount, currency) {
+      if (amount == null) return '—'
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency || 'USD',

@@ -57,7 +57,7 @@ func (q *AccountQueries) CreateAccount(account *models.Account) error {
 // UpdateAccount query for updating account by given ID.
 func (q *AccountQueries) UpdateAccount(accountID uuid.UUID, account *models.Account) error {
 	// Update account in database.
-	err := q.DB.Model(&models.Account{}).Where("id = ?", accountID).Updates(account).Error
+	err := q.DB.Model(&models.Account{}).Where("id = ?", accountID).Select("account_name", "initial_balance", "platform", "description", "is_excluded", "opening_date").Updates(account).Error
 	if err != nil {
 		// Return only error.
 		return err
