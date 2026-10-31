@@ -4,6 +4,8 @@ import AuthCallback from './pages/AuthCallback.vue'
 import { refreshSession } from './composables/useAuth'
 import Dashboard from './pages/Dashboard.vue'
 import Accounts from './pages/Accounts.vue'
+import AccountForm from './pages/AccountForm.vue'
+import AccountAction from './pages/AccountAction.vue'
 import AccountDetail from './pages/AccountDetail.vue'
 import Projects from './pages/Projects.vue'
 import Settings from './pages/Settings.vue'
@@ -34,10 +36,24 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/accounts/new',
+    name: 'AccountCreate',
+    component: AccountForm,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/accounts/:id',
     name: 'AccountDetail',
     component: AccountDetail,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
+    children: [
+      { path: 'edit', name: 'AccountEdit', component: AccountAction, meta: { accountAction: 'account-edit' } },
+      { path: 'holdings/new', name: 'HoldingCreate', component: AccountAction, meta: { accountAction: 'holding-create' } },
+      { path: 'holdings/:holdingId/edit', name: 'HoldingEdit', component: AccountAction, meta: { accountAction: 'holding-edit' } },
+      { path: 'activities/new', name: 'ActivityCreate', component: AccountAction, meta: { accountAction: 'activity-create' } },
+      { path: 'activities/:activityId/edit', name: 'ActivityEdit', component: AccountAction, meta: { accountAction: 'activity-edit' } },
+      { path: 'transfer', name: 'AccountTransfer', component: AccountAction, meta: { accountAction: 'transfer' } },
+    ]
   },
   {
     path: '/projects',

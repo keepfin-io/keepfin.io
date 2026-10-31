@@ -137,6 +137,8 @@
         "subtitle": "Manage your financial accounts",
         "addAccount": "Add Account",
         "createAccount": "Create Account",
+        "createHint": "Add your account details and opening balance.",
+        "saveError": "The account could not be saved. Please try again.",
         "editAccount": "Edit Account",
         "updateAccount": "Update Account",
         "deleteAccount": "Delete Account",
@@ -198,6 +200,9 @@
     "accountDetail": {
         "loadingDetails": "Loading account details...",
         "backToAccounts": "Back to Accounts",
+        "backToAccount": "Back to account",
+        "changesSaved": "Your changes have been saved.",
+        "actionUnavailable": "This record is unavailable or cannot be changed. Return to the account to check its current status.",
         "cashBalance": "Cash Balance",
         "equity": "Equity",
         "interest": "Interest",

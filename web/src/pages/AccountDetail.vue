@@ -1,7 +1,7 @@
 <template>
   <FullPageSpinner
     data-testid="account-detail-loading"
-    :visible="loading || deleting || updating"
+    :visible="loading || deleting"
     :message="spinnerMessage"
   />
   <section data-testid="account-detail-page" class="min-w-0 space-y-6">
@@ -41,6 +41,10 @@
       @dismiss="alert.show = false"
     />
     <template v-if="!loading && !error && account">
+      <router-view v-if="$route.meta.accountAction" v-slot="{ Component }">
+        <component :is="Component" :key="$route.path" :account="account" :holdings="holdings" :activities="activities" @saved="onActionSaved" />
+      </router-view>
+      <template v-else>
       <div class="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-6">
         <Card
           :data-testid="`account-summary-${stat.label}`"
@@ -78,7 +82,8 @@
           <Button
             data-testid="holdings-add"
             class="w-full sm:w-auto"
-            @click="showAddHoldingModal = true"
+            :disabled="!account.is_active"
+            @click="$router.push({ name: 'HoldingCreate', params: { id: account.id } })"
           >
             <Plus class="size-4" />
             {{ $t('accountDetail.addHolding') }}
@@ -234,23 +239,11 @@
           <TransactionsPanel :account="account" :activities="activities" @changed="fetchAccountDetails" />
         </TabsContent>
       </Tabs>
+      </template>
     </template>
-    <AddHoldingModal
-      :show="showAddHoldingModal"
-      :account-id="$route.params.id"
-      @close="showAddHoldingModal = false"
-      @success="onHoldingAdded"
-    />
-    <EditHoldingModal
-      :show="showEditHoldingModal"
-      :account-id="$route.params.id"
-      :holding="selectedHolding"
-      @close="showEditHoldingModal = false"
-      @success="onHoldingUpdated"
-    />
-    <ConfirmModal
-      data-testid="holding-delete-dialog"
-      :visible="showDeleteConfirm"
+    <InlineConfirmation
+      data-testid="holding-delete-confirmation"
+      :visible="showDeleteConfirm && !$route.meta.accountAction"
       variant="danger"
       :title="$t('accountDetail.deleteHoldingTitle')"
       :message="
@@ -278,7 +271,7 @@ import {
   CardHeader,
   CardTitle,
   RecordActions,
-  ConfirmModal,
+  InlineConfirmation,
   FullPageSpinner,
   Table,
   TableBody,
@@ -292,9 +285,7 @@ import {
   TabsTrigger,
 } from '@/components/ui'
 import TransactionsPanel from '@/components/portfolio/TransactionsPanel.vue'
-import AddHoldingModal from '@/components/holdings/AddHoldingModal.vue'
 import { ArrowLeft } from 'lucide-vue-next'
-import EditHoldingModal from '@/components/holdings/EditHoldingModal.vue'
 import { Plus } from 'lucide-vue-next'
 import { accountAPI } from '@/services/accountApi'
 import { holdingAPI } from '@/services/holdingApi'
@@ -303,20 +294,18 @@ import { activityAPI } from '@/services/activityApi'
 export default {
   name: 'AccountDetailPage',
   components: {
-    AddHoldingModal,
     TransactionsPanel,
     Alert,
     ArrowLeft,
-      Button,
+    Button,
     Card,
     CardContent,
     CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
-    ConfirmModal,
+    InlineConfirmation,
     RecordActions,
-    EditHoldingModal,
     FullPageSpinner,
     Plus,
     Table,
@@ -338,15 +327,10 @@ export default {
       activities: [],
       loading: true,
       error: null,
-      activeTab: 'holdings',
-      showAddHoldingModal: false,
-      showAddActivityModal: false,
-      showEditHoldingModal: false,
-      selectedHolding: null,
+      activeTab: this.$route.query.tab === 'activities' ? 'activities' : 'holdings',
       showDeleteConfirm: false,
       holdingToDelete: null,
       deleting: false,
-      updating: false,
       alert: {
         show: false,
         variant: 'success',
@@ -386,9 +370,12 @@ export default {
     },
     spinnerMessage() {
       if (this.deleting) return this.$t('common.deleting')
-      if (this.updating) return this.$t('common.updating')
       return this.$t('accountDetail.loadingDetails')
     },
+  },
+  watch: {
+    '$route.query.tab'(tab) { this.activeTab = tab === 'activities' ? 'activities' : 'holdings' },
+    '$route.path'() { this.showDeleteConfirm = false; this.holdingToDelete = null },
   },
   mounted() {
     this.fetchAccountDetails()
@@ -428,40 +415,15 @@ export default {
         this.activities = []
       }
     },
-    onHoldingAdded() {
-      this.fetchAccountDetails()
-      this.showAlert(
-        'success',
-        this.$t('common.success'),
-        this.$t('accountDetail.holdingAddedDesc')
-      )
-    },
-    onActivityAdded() {
-      this.fetchActivities()
-      this.showAlert(
-        'success',
-        this.$t('common.success'),
-        this.$t('accountDetail.activityAddedDesc')
-      )
-    },
-    async onHoldingUpdated() {
-      this.updating = true
-      try {
-        await this.fetchAccountDetails()
-        this.showAlert(
-          'success',
-          this.$t('common.success'),
-          this.$t('accountDetail.holdingUpdatedDesc')
-        )
-      } catch (err) {
-        console.error('Failed to refresh data:', err)
-      } finally {
-        this.updating = false
-      }
+    async onActionSaved(action) {
+      const activities = action.startsWith('activity') || action === 'transfer'
+      await this.$router.replace({ name: 'AccountDetail', params: { id: this.account.id }, query: activities ? { tab: 'activities' } : {} })
+      await this.fetchAccountDetails()
+      const message = { 'holding-create': 'accountDetail.holdingAddedDesc', 'holding-edit': 'accountDetail.holdingUpdatedDesc', 'account-edit': 'accounts.accountUpdatedDesc' }[action] || 'accountDetail.changesSaved'
+      this.showAlert('success', this.$t('common.success'), this.$t(message))
     },
     openEditHolding(holding) {
-      this.selectedHolding = holding
-      this.showEditHoldingModal = true
+      this.$router.push({ name: 'HoldingEdit', params: { id: this.account.id, holdingId: holding.id } })
     },
     confirmDeleteHolding(holding) {
       this.holdingToDelete = holding

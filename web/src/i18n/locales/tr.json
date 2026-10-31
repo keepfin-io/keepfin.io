@@ -137,6 +137,8 @@
         "subtitle": "Finansal hesaplarınızı yönetin",
         "addAccount": "Hesap Ekle",
         "createAccount": "Hesap Oluştur",
+        "createHint": "Hesabınızın temel bilgilerini ve açılış bakiyesini ekleyin.",
+        "saveError": "Hesap kaydedilemedi. Lütfen tekrar deneyin.",
         "editAccount": "Hesabı Düzenle",
         "updateAccount": "Hesabı Güncelle",
         "deleteAccount": "Hesabı Sil",
@@ -198,6 +200,9 @@
     "accountDetail": {
         "loadingDetails": "Hesap detayları yükleniyor...",
         "backToAccounts": "Hesaplara Dön",
+        "backToAccount": "Hesaba dön",
+        "changesSaved": "Değişiklikleriniz kaydedildi.",
+        "actionUnavailable": "Bu kayıt bulunamadı veya değiştirilemiyor. Güncel durumunu kontrol etmek için hesaba dönün.",
         "cashBalance": "Nakit Bakiye",
         "equity": "Öz Sermaye",
         "interest": "Faiz",

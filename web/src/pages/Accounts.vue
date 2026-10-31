@@ -1,7 +1,7 @@
 <template>
   <FullPageSpinner
     data-testid="accounts-loading"
-    :visible="loading || saving || deleting"
+    :visible="loading || deleting"
     :message="spinnerMessage"
   />
   <section data-testid="accounts-page" class="min-w-0 space-y-6">
@@ -19,10 +19,12 @@
       <Button
         data-testid="accounts-add"
         class="w-full sm:w-auto"
-        @click="openCreateModal"
+        as-child
       >
-        <Plus class="size-4" />
-        {{ $t('accounts.addAccount') }}
+        <router-link :to="{ name: 'AccountCreate' }">
+          <Plus class="size-4" />
+          {{ $t('accounts.addAccount') }}
+        </router-link>
       </Button>
     </div>
     <Alert
@@ -65,9 +67,11 @@
         <Button
           data-testid="accounts-create-first"
           class="max-w-full whitespace-normal"
-          @click="openCreateModal"
+          as-child
         >
-          {{ $t('accounts.createFirst') }}
+          <router-link :to="{ name: 'AccountCreate' }">
+            {{ $t('accounts.createFirst') }}
+          </router-link>
         </Button>
       </CardContent>
     </Card>
@@ -126,7 +130,7 @@
             <RecordActions
               :data-testid="`account-card-${account.id}-actions`"
               :view-to="`/accounts/${account.id}`"
-              @edit="openEditModal(account)"
+              @edit="openEditPage(account)"
               @delete="confirmDelete(account)"
             />
           </CardFooter>
@@ -219,7 +223,7 @@
                     :data-testid="`account-row-${account.id}-actions`"
                     class="justify-end"
                     :view-to="`/accounts/${account.id}`"
-                    @edit="openEditModal(account)"
+                    @edit="openEditPage(account)"
                     @delete="confirmDelete(account)"
                   />
                 </TableCell>
@@ -232,174 +236,9 @@
         {{ accounts.length }} {{ $t('accounts.accounts_count') }}
       </p>
     </template>
-    <Dialog :open="showModal" @update:open="!$event && !saving && closeModal()">
-      <DialogContent
-        data-testid="account-form-dialog"
-        :show-close-button="!saving"
-        @interact-outside="saving && $event.preventDefault()"
-        @escape-key-down="saving && $event.preventDefault()"
-      >
-        <DialogHeader>
-          <DialogTitle>
-            {{
-              editingAccount
-                ? $t('accounts.editAccount')
-                : $t('accounts.createAccount')
-            }}
-          </DialogTitle>
-          <DialogDescription>{{ $t('accounts.subtitle') }}</DialogDescription>
-        </DialogHeader>
-        <form
-          data-testid="account-form"
-          class="space-y-4"
-          @submit.prevent="saveAccount"
-        >
-          <div class="space-y-2">
-            <Label for="accountName">{{ $t('accounts.accountName') }} *</Label>
-            <Input
-              id="accountName"
-              data-testid="account-form-name"
-              v-model="form.account_name"
-              maxlength="100"
-              :placeholder="$t('accounts.accountNamePlaceholder')"
-              :aria-invalid="!!fieldErrors.account_name"
-            />
-            <p
-              data-testid="account-form-name-error"
-              v-if="fieldErrors.account_name"
-              class="text-sm text-destructive"
-            >
-              {{ fieldErrors.account_name }}
-            </p>
-          </div>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="currency">{{ $t('accounts.currency') }} *</Label>
-              <FormSelect
-                id="currency"
-                data-testid="account-form-currency"
-                v-model="form.currency"
-                :options="currencyOptions"
-                :placeholder="$t('accounts.selectCurrency')"
-                :invalid="!!fieldErrors.currency"
-              />
-              <p
-                data-testid="account-form-currency-error"
-                v-if="fieldErrors.currency"
-                class="text-sm text-destructive"
-              >
-                {{ fieldErrors.currency }}
-              </p>
-            </div>
-            <div class="space-y-2">
-              <Label for="initialBalance">
-                {{ $t('accounts.cashBalance') }}
-              </Label>
-              <Input
-                id="initialBalance"
-                data-testid="account-form-balance"
-                v-model.number="form.initial_balance"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                :aria-invalid="!!fieldErrors.initial_balance"
-              />
-              <p
-                data-testid="account-form-balance-error"
-                v-if="fieldErrors.initial_balance"
-                class="text-sm text-destructive"
-              >
-                {{ fieldErrors.initial_balance }}
-              </p>
-            </div>
-          </div>
-          <div class="space-y-2">
-            <Label for="platform">{{ $t('accounts.platform') }}</Label>
-            <PlatformSelect
-              id="platform"
-              data-testid="account-form-platform"
-              v-model="form.platform"
-            />
-            <p
-              data-testid="account-form-platform-error"
-              v-if="fieldErrors.platform"
-              class="text-sm text-destructive"
-            >
-              {{ fieldErrors.platform }}
-            </p>
-          </div>
-          <div class="space-y-2">
-            <Label for="account-opening-date">{{ $t('portfolio.openingDate') }}</Label>
-            <Input id="account-opening-date" v-model="form.opening_date" type="date" :max="new Date().toISOString().slice(0, 10)" required />
-            <p class="text-xs text-muted-foreground">{{ $t('portfolio.openingHint') }}</p>
-          </div>
-          <div class="space-y-2">
-            <Label for="description">{{ $t('accounts.description') }}</Label>
-            <Textarea
-              id="description"
-              data-testid="account-form-description"
-              v-model="form.description"
-              maxlength="255"
-              :placeholder="$t('accounts.descriptionPlaceholder')"
-            />
-            <p
-              data-testid="account-form-description-error"
-              v-if="fieldErrors.description"
-              class="text-sm text-destructive"
-            >
-              {{ fieldErrors.description }}
-            </p>
-          </div>
-          <div class="flex items-start gap-3 rounded-lg border p-3">
-            <Checkbox
-              id="excluded"
-              data-testid="account-form-excluded"
-              v-model="form.is_excluded"
-            />
-            <div class="space-y-1">
-              <Label for="excluded" class="leading-snug">
-                {{ $t('accounts.excludeFromTotals') }}
-              </Label>
-              <p class="text-xs text-muted-foreground">
-                {{ $t('accounts.excludeHint') }}
-              </p>
-            </div>
-          </div>
-          <Alert
-            data-testid="account-form-error"
-            v-if="formError"
-            variant="error"
-            :description="formError"
-          />
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              :disabled="saving"
-              data-testid="account-form-cancel"
-              @click="closeModal"
-            >
-              {{ $t('common.cancel') }}
-            </Button>
-            <Button
-              data-testid="account-form-submit"
-              type="submit"
-              :loading="saving"
-              :loading-text="$t('common.saving')"
-            >
-              {{
-                editingAccount
-                  ? $t('accounts.updateAccount')
-                  : $t('accounts.createAccount')
-              }}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-    <ConfirmModal
-      data-testid="account-delete-dialog"
-      :visible="showDeleteModal"
+    <InlineConfirmation
+      data-testid="account-delete-confirmation"
+      :visible="showDeleteConfirm"
       variant="danger"
       :title="$t('accounts.deleteConfirmTitle')"
       :message="`${$t('accounts.deleteConfirmMessage')} ${
@@ -412,22 +251,9 @@
       @confirm="deleteAccount"
       @cancel="cancelDelete"
     />
-    <ConfirmModal
-      data-testid="account-update-dialog"
-      :visible="showUpdateModal"
-      variant="warning"
-      :title="$t('accounts.updateConfirmTitle')"
-      :message="`${$t('accounts.updateConfirmMessage')} ${form.account_name}?`"
-      :confirm-text="$t('accounts.updateAccount')"
-      :cancel-text="$t('common.cancel')"
-      :loading-text="$t('common.updating')"
-      :loading="saving"
-      @confirm="confirmUpdateAccount"
-      @cancel="cancelUpdate"
-    />
-    <ConfirmModal
-      data-testid="account-status-dialog"
-      :visible="showStatusModal"
+    <InlineConfirmation
+      data-testid="account-status-confirmation"
+      :visible="showStatusConfirm"
       :title="
         accountToToggle?.is_active
           ? $t('accounts.deactivateAccount')
@@ -461,20 +287,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  Checkbox,
-  ConfirmModal,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  InlineConfirmation,
   Favicon,
-  FormSelect,
   FullPageSpinner,
-  Input,
-  Label,
-  PlatformSelect,
   Switch,
   Table,
   TableBody,
@@ -482,12 +297,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Textarea,
 } from '@/components/ui'
 import { CreditCard } from 'lucide-vue-next'
 import { Plus } from 'lucide-vue-next'
 import { accountAPI } from '@/services/accountApi'
-import { createAccountSchema, updateAccountSchema } from '@/schemas/account'
 
 export default {
   name: 'AccountsPage',
@@ -502,21 +315,10 @@ export default {
     CardFooter,
     CardHeader,
     CardTitle,
-    Checkbox,
-    ConfirmModal,
+    InlineConfirmation,
     CreditCard,
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
     Favicon,
-    FormSelect,
     FullPageSpinner,
-    Input,
-    Label,
-    PlatformSelect,
     Plus,
     Switch,
     Table,
@@ -525,12 +327,10 @@ export default {
     TableHead,
     TableHeader,
     TableRow,
-    Textarea,
   },
   computed: {
     spinnerMessage() {
       if (this.loading) return this.$t('accounts.loadingAccounts')
-      if (this.saving) return this.$t('accounts.savingAccount')
       if (this.deleting) return this.$t('accounts.deletingAccount')
       return ''
     },
@@ -538,53 +338,17 @@ export default {
   data() {
     return {
       accounts: [],
-      currencyOptions: [
-        'USD',
-        'EUR',
-        'GBP',
-        'TRY',
-        'JPY',
-        'CAD',
-        'AUD',
-        'CHF',
-        'CNY',
-        'INR',
-        'KRW',
-        'SGD',
-        'HKD',
-        'SEK',
-        'NOK',
-        'DKK',
-        'PLN',
-        'BRL',
-        'MXN',
-        'RUB',
-      ],
       loading: true,
       error: null,
-      showModal: false,
-      showDeleteModal: false,
-      editingAccount: null,
+      showDeleteConfirm: false,
       accountToDelete: null,
-      saving: false,
       deleting: false,
       formError: null,
       notification: null,
       notificationTimer: null,
-      showUpdateModal: false,
-      showStatusModal: false,
+      showStatusConfirm: false,
       accountToToggle: null,
       togglingStatus: false,
-      form: {
-        account_name: '',
-        currency: '',
-        initial_balance: 0,
-        opening_date: new Date().toISOString().slice(0, 10),
-        platform: '',
-        description: '',
-        is_excluded: false,
-      },
-      fieldErrors: {},
     }
   },
   mounted() {
@@ -597,6 +361,13 @@ export default {
       try {
         const response = await accountAPI.getAccounts()
         this.accounts = response.accounts || []
+        const created = this.accounts.find(account => account.id === this.$route.query.created)
+        if (created) {
+          this.showNotification('success', this.$t('accounts.accountCreated'), `${created.account_name} ${this.$t('accounts.accountCreatedDesc')}`)
+          const query = { ...this.$route.query }
+          delete query.created
+          await this.$router.replace({ name: 'Accounts', query })
+        }
       } catch (err) {
         this.error = err.message || 'Failed to load accounts'
       } finally {
@@ -604,128 +375,22 @@ export default {
       }
     },
 
-    openCreateModal() {
-      this.editingAccount = null
-      this.form = {
-        account_name: '',
-        currency: '',
-        initial_balance: 0,
-        opening_date: new Date().toISOString().slice(0, 10),
-        platform: '',
-        description: '',
-        is_excluded: false,
-      }
-      this.formError = null
-      this.fieldErrors = {}
-      this.showModal = true
-    },
-
-    openEditModal(account) {
-      this.editingAccount = account
-      this.form = {
-        account_name: account.account_name,
-        currency: account.currency,
-        initial_balance: account.initial_balance,
-        opening_date: account.opening_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-        platform: account.platform || '',
-        description: account.description || '',
-        is_excluded: account.is_excluded,
-      }
-      this.formError = null
-      this.fieldErrors = {}
-      this.showModal = true
-    },
-
-    closeModal() {
-      this.showModal = false
-      this.editingAccount = null
-      this.formError = null
-      this.fieldErrors = {}
-    },
-
-    validateForm() {
-      this.fieldErrors = {}
-      const schema = this.editingAccount
-        ? updateAccountSchema
-        : createAccountSchema
-      const result = schema.safeParse(this.form)
-
-      if (!result.success) {
-        const errors = result.error.flatten().fieldErrors
-        this.fieldErrors = {
-          account_name: errors.account_name?.[0],
-          currency: errors.currency?.[0],
-          initial_balance: errors.initial_balance?.[0],
-          platform: errors.platform?.[0],
-          description: errors.description?.[0],
-        }
-        return false
-      }
-      return true
-    },
-
-    async saveAccount() {
-      if (!this.validateForm()) return
-
-      // If editing, show confirmation modal first
-      if (this.editingAccount) {
-        this.showUpdateModal = true
-        return
-      }
-      // For create, proceed directly
-      await this.performSave()
-    },
-
-    cancelUpdate() {
-      this.showUpdateModal = false
-    },
-
-    async confirmUpdateAccount() {
-      this.showUpdateModal = false
-      await this.performSave()
-    },
-
-    async performSave() {
-      this.saving = true
-      this.formError = null
-      try {
-        if (this.editingAccount) {
-          await accountAPI.updateAccount(this.editingAccount.id, { ...this.form, opening_date: `${this.form.opening_date}T00:00:00Z` })
-          this.showNotification(
-            'success',
-            'Account updated',
-            `${this.form.account_name} has been updated successfully.`
-          )
-        } else {
-          await accountAPI.createAccount({ ...this.form, opening_date: `${this.form.opening_date}T00:00:00Z` })
-          this.showNotification(
-            'success',
-            'Account created',
-            `${this.form.account_name} has been created successfully.`
-          )
-        }
-        this.closeModal()
-        await this.fetchAccounts()
-      } catch (err) {
-        this.formError = err.message || 'Failed to save account'
-        this.showNotification('error', 'Error', this.formError)
-      } finally {
-        this.saving = false
-      }
+    openEditPage(account) {
+      this.$router.push({ name: 'AccountEdit', params: { id: account.id } })
     },
 
     toggleAccountStatus(account) {
       this.accountToToggle = account
-      this.showStatusModal = true
+      this.showStatusConfirm = true
     },
 
     cancelToggleStatus() {
-      this.showStatusModal = false
+      this.showStatusConfirm = false
       this.accountToToggle = null
     },
 
     async confirmToggleStatus() {
-      if (!this.accountToToggle) return
+      if (!this.accountToToggle || this.togglingStatus) return
       this.togglingStatus = true
       try {
         const response = await accountAPI.toggleAccountStatus(
@@ -739,7 +404,7 @@ export default {
             this.accountToToggle.is_active ? 'active' : 'inactive'
           }.`
         )
-        this.showStatusModal = false
+        this.showStatusConfirm = false
         this.accountToToggle = null
       } catch (err) {
         this.showNotification(
@@ -754,16 +419,16 @@ export default {
 
     confirmDelete(account) {
       this.accountToDelete = account
-      this.showDeleteModal = true
+      this.showDeleteConfirm = true
     },
 
     cancelDelete() {
-      this.showDeleteModal = false
+      this.showDeleteConfirm = false
       this.accountToDelete = null
     },
 
     async deleteAccount() {
-      if (!this.accountToDelete) return
+      if (!this.accountToDelete || this.deleting) return
       this.deleting = true
       const accountName = this.accountToDelete.account_name
       try {

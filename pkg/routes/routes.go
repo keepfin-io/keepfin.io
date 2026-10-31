@@ -3,13 +3,23 @@ package routes
 import (
 	"os"
 
-	"keepnode/app/controllers"
-	"keepnode/app/services"
+	"github.com/gofiber/fiber/v2"
+
+	accountcontroller "keepnode/app/controllers/account"
+	activitycontroller "keepnode/app/controllers/activity"
+	holdingcontroller "keepnode/app/controllers/holding"
+	marketcontroller "keepnode/app/controllers/market"
+	portfoliocontroller "keepnode/app/controllers/portfolio"
+	usercontroller "keepnode/app/controllers/user"
+	accountservice "keepnode/app/services/account"
+	activityservice "keepnode/app/services/activity"
+	holdingservice "keepnode/app/services/holding"
+	marketservice "keepnode/app/services/market"
+	portfolioservice "keepnode/app/services/portfolio"
+	userservice "keepnode/app/services/user"
 	"keepnode/pkg/authsession"
 	"keepnode/pkg/middleware"
 	"keepnode/platform/database"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 // Register registers all routes
@@ -24,20 +34,20 @@ func Register(app *fiber.App) error {
 	}
 	// Initialize services
 	db := database.GetDB()
-	userService := services.NewUserService(db)
-	accountService := services.NewAccountService(db)
-	marketService := services.NewMarketService()
-	holdingService := services.NewHoldingService(db, marketService)
-	activityService := services.NewActivityService(db, marketService)
+	userService := userservice.NewUserService(db)
+	accountService := accountservice.NewAccountService(db)
+	marketService := marketservice.NewMarketService()
+	holdingService := holdingservice.NewHoldingService(db, marketService)
+	activityService := activityservice.NewActivityService(db, marketService)
 
 	// Initialize controllers
-	userController := controllers.NewUserController(userService)
-	accountController := controllers.NewAccountController(accountService)
-	marketController := controllers.NewMarketController(marketService)
-	holdingController := controllers.NewHoldingController(holdingService, accountService)
-	activityController := controllers.NewActivityController(activityService, accountService)
+	userController := usercontroller.NewUserController(userService)
+	accountController := accountcontroller.NewAccountController(accountService)
+	marketController := marketcontroller.NewMarketController(marketService)
+	holdingController := holdingcontroller.NewHoldingController(holdingService, accountService)
+	activityController := activitycontroller.NewActivityController(activityService, accountService)
 
-	portfolioController := controllers.NewPortfolioController(services.NewPortfolioService(db, marketService), activityService, accountService)
+	portfolioController := portfoliocontroller.NewPortfolioController(portfolioservice.NewPortfolioService(db, marketService), activityService, accountService)
 
 	// All application routes use the server-verified Better Auth session.
 	api := app.Group("/api/v1", originCheck, middleware.Session(client, userService))

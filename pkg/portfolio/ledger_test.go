@@ -1,16 +1,18 @@
 package portfolio
 
 import (
-	"keepnode/app/models"
 	"math"
 	"testing"
 	"time"
+
+	accountmodel "keepnode/app/models/account"
+	activitymodel "keepnode/app/models/activity"
 )
 
 func TestReplay(t *testing.T) {
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	account := models.Account{Currency: "USD", InitialBalance: 1000, OpeningDate: &now}
-	events := []models.Activity{
+	account := accountmodel.Account{Currency: "USD", InitialBalance: 1000, OpeningDate: &now}
+	events := []activitymodel.Activity{
 		{Ledger: true, Type: "buy", Symbol: "ABC.US", Currency: "USD", Date: now, Quantity: 10, UnitPrice: 10, Fee: 2, ExchangeRate: 1},
 		{Ledger: true, Type: "buy", Symbol: "ABC.US", Currency: "USD", Date: now.Add(time.Hour), Quantity: 10, UnitPrice: 20, Fee: 2, ExchangeRate: 1},
 		{Ledger: true, Type: "sell", Symbol: "ABC.US", Currency: "USD", Date: now.Add(2 * time.Hour), Quantity: 5, UnitPrice: 30, Fee: 1, ExchangeRate: 1},
@@ -33,8 +35,8 @@ func TestReplay(t *testing.T) {
 
 func TestOpeningAndFX(t *testing.T) {
 	now := time.Now().UTC()
-	a := models.Account{Currency: "USD", InitialBalance: 100, OpeningDate: &now}
-	events := []models.Activity{
+	a := accountmodel.Account{Currency: "USD", InitialBalance: 100, OpeningDate: &now}
+	events := []activitymodel.Activity{
 		{Ledger: false, Type: "buy", Symbol: "ABC", Date: now, Quantity: 100, UnitPrice: 99},
 		{Ledger: true, Type: "opening", Symbol: "ABC", Currency: "EUR", Date: now, Quantity: 10, UnitPrice: 10, ExchangeRate: 1.2},
 		{Ledger: true, Type: "sell", Symbol: "ABC", Currency: "EUR", Date: now.Add(time.Second), Quantity: 5, UnitPrice: 12, ExchangeRate: 1.3},

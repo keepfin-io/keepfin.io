@@ -5,7 +5,7 @@ const path = require('node:path')
 const build = path.resolve(process.env.AUTH_UI_BUILD || path.join(__dirname, '../dist'))
 const pause = () => new Promise(resolve => setTimeout(resolve, 25))
 
-async function launch(t, { route = '/login', authenticated = false, outage = false, conflict = false, width = 320, internalTesting = false, google = true, sessionGate, profileGate, onBoot, locale = 'en-US', portfolioResponse, portfolioGate, measuredChartWidth } = {}) {
+async function launch(t, { route = '/login', authenticated = false, outage = false, conflict = false, width = 320, internalTesting = false, google = true, sessionGate, profileGate, onBoot, locale = 'en-US', portfolioResponse, portfolioGate, measuredChartWidth, accountsResponse = [], holdingsResponse = [], activitiesResponse = [] } = {}) {
   const errors = [], calls = []
   const vc = new VirtualConsole()
   vc.on('jsdomError', error => errors.push(error.message))
@@ -36,7 +36,8 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
   w.scrollTo = () => {}
   w.HTMLElement.prototype.scrollIntoView = () => {}
   for (const key of ['Request', 'Response', 'Headers', 'AbortController', 'AbortSignal', 'TextEncoder', 'TextDecoder']) w[key] = global[key]
-  const state = { authenticated, outage, conflict, failSignOut: false, rateLimited: false, portfolioFailure: false, portfolio: portfolioResponse || { currency: 'USD', summary: {}, holdings: [], history: [], income: [], allocations: {}, warnings: [], complete: true, from: '2026-01-01', to: '2026-01-01' } }
+  const state = { authenticated, outage, conflict, failSignOut: false, rateLimited: false, accountCreateFailure: false, accountCreateGate: null, accounts: accountsResponse.map(account => ({ ...account })), portfolioFailure: false, portfolio: portfolioResponse || { currency: 'USD', summary: {}, holdings: [], history: [], income: [], allocations: {}, warnings: [], complete: true, from: '2026-01-01', to: '2026-01-01' } }
+  Object.assign(state, { holdings: holdingsResponse.map(item => ({ ...item })), activities: activitiesResponse.map(item => ({ ...item })), mutationGate: null, mutationFailure: false })
   w.fetch = async (input, options = {}) => {
     const requestURL = new URL(input.url || String(input), w.location.origin)
     const endpoint = requestURL.pathname
@@ -70,7 +71,49 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
       status = state.portfolioFailure ? 503 : 200
       data = state.portfolioFailure ? { error: true, message: 'Portfolio service unavailable' } : { error: false, portfolio: state.portfolio }
     }
-    else if (endpoint === '/api/v1/accounts') data = { error: false, accounts: [] }
+    else if (endpoint === '/api/v1/accounts') data = { error: false, accounts: state.accounts }
+    else if (endpoint === '/api/v1/accounts/create' && options.method === 'POST') {
+      if (state.accountCreateGate) await state.accountCreateGate
+      if (state.accountCreateFailure) { status = 400; data = { error: true, message: 'Account creation failed' } }
+      else {
+        const account = { ...body, id: `account-${state.accounts.length + 1}`, cash_balance: body.initial_balance, is_active: true }
+        state.accounts.push(account)
+        status = 201; data = { error: false, account }
+      }
+    }
+    else if (/^\/api\/v1\/accounts\/[^/]+$/.test(endpoint) && options.method === 'PUT') {
+      const account = state.accounts.find(account => endpoint === `/api/v1/accounts/${account.id}`)
+      if (!account) throw new Error(`Unknown account: ${endpoint}`)
+      Object.assign(account, body)
+      data = { error: false, account }
+    }
+    else if (/^\/api\/v1\/accounts\/[^/]+$/.test(endpoint) && options.method === 'GET') {
+      const account = state.accounts.find(account => endpoint === `/api/v1/accounts/${account.id}`)
+      status = account ? 200 : 404; data = account ? { error: false, account } : { error: true, message: 'Account not found' }
+    }
+    else if (/^\/api\/v1\/accounts\/[^/]+\/(holdings|activities)(\/[^/]+)?$/.test(endpoint)) {
+      const [, accountId, collection, recordId] = endpoint.match(/^\/api\/v1\/accounts\/([^/]+)\/(holdings|activities)(?:\/([^/]+))?$/)
+      const records = state[collection]
+      if (options.method === 'GET') data = { error: false, [collection]: records.filter(item => !item.account_id || item.account_id === accountId), summary: { complete: true, total_value: 0, warnings: [] } }
+      else {
+        if (state.mutationGate) await state.mutationGate
+        if (state.mutationFailure) { status = 400; data = { error: true, message: 'Transaction rejected' } }
+        else {
+          if (options.method === 'POST') records.push({ ...body, id: `${collection}-new`, account_id: accountId, name: body.symbol, ledger: true, price_available: false })
+          else if (options.method === 'PUT') Object.assign(records.find(item => item.id === recordId), body)
+          else if (options.method === 'DELETE') state[collection] = records.filter(item => item.id !== recordId)
+          else throw new Error(`Unexpected method: ${options.method}`)
+          data = { error: false }
+        }
+      }
+    }
+    else if (endpoint === '/api/v1/market/search') data = { results: [{ Code: 'QQQM', Exchange: 'US', Name: 'Invesco NASDAQ 100 ETF', Currency: 'USD' }] }
+    else if (endpoint === '/api/v1/market/live/QQQM.US') data = { data: { close: 284.34, change_p: -3.46 } }
+    else if (endpoint === '/api/v1/transfers' && options.method === 'POST') {
+      if (state.mutationGate) await state.mutationGate
+      status = state.mutationFailure ? 400 : 200
+      data = state.mutationFailure ? { error: true, message: 'Transaction rejected' } : { error: false }
+    }
     else throw new Error(`Unexpected request: ${endpoint}`)
     return new global.Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
   }

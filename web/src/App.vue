@@ -41,7 +41,7 @@
         :aria-label="pageTitle"
       >
         <div class="mx-auto w-full min-w-0 max-w-7xl p-4 sm:p-5 lg:p-8">
-          <router-view />
+          <router-view :key="$route.params.id || $route.name" />
         </div>
       </div>
       <AppFooter />
@@ -82,6 +82,13 @@ const pageTitle = computed(() =>
       ({
         Dashboard: 'dashboard',
         Accounts: 'accounts',
+        AccountCreate: 'accounts',
+        AccountEdit: 'accounts',
+        HoldingCreate: 'accounts',
+        HoldingEdit: 'accounts',
+        ActivityCreate: 'accounts',
+        ActivityEdit: 'accounts',
+        AccountTransfer: 'accounts',
         AccountDetail: 'accounts',
         Profile: 'profile',
         Projects: 'projects',

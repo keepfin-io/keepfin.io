@@ -9,7 +9,8 @@
     "lint": "vue-cli-service lint",
     "test:auth": "node --test tests/auth-ui.js",
     "test:portfolio": "node --test tests/portfolio-ui.js",
-    "test:ui": "node --test tests/auth-ui.js tests/portfolio-ui.js"
+    "test:accounts": "node --test tests/accounts-ui.js",
+    "test:ui": "node --test tests/auth-ui.js tests/portfolio-ui.js tests/accounts-ui.js"
   },
   "dependencies": {
     "@vueuse/core": "^15.0.0",

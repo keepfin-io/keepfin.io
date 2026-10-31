@@ -3,9 +3,11 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"keepnode/app/models"
 
 	"github.com/go-playground/validator/v10"
+
+	currencymodel "keepnode/app/models/currency"
+	platformmodel "keepnode/app/models/platform"
 )
 
 // NewValidator func for create a new validator for model fields.
@@ -13,8 +15,8 @@ func NewValidator() *validator.Validate {
 	// Create a new validator for a User model.
 	validate := validator.New()
 
-	validate.RegisterValidation("currency", models.ValidateCurrency)
-	validate.RegisterValidation("platform", models.ValidatePlatform)
+	validate.RegisterValidation("currency", currencymodel.ValidateCurrency)
+	validate.RegisterValidation("platform", platformmodel.ValidatePlatform)
 
 	return validate
 }

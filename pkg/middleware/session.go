@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/url"
 
-	"keepnode/app/models"
-	"keepnode/app/services"
-	"keepnode/pkg/authsession"
-
 	"github.com/gofiber/fiber/v2"
+
+	usermodel "keepnode/app/models/user"
+	userservice "keepnode/app/services/user"
+	"keepnode/pkg/authsession"
 )
 
 type sessionVerifier interface {
@@ -17,7 +17,7 @@ type sessionVerifier interface {
 }
 
 type identityResolver interface {
-	ResolveIdentity(context.Context, *authsession.Identity) (*models.User, error)
+	ResolveIdentity(context.Context, *authsession.Identity) (*usermodel.User, error)
 }
 
 func Session(client sessionVerifier, users identityResolver) fiber.Handler {
@@ -34,10 +34,10 @@ func Session(client sessionVerifier, users identityResolver) fiber.Handler {
 			return fiber.NewError(503, "Authentication service unavailable")
 		}
 		user, err := users.ResolveIdentity(c.UserContext(), identity)
-		if errors.Is(err, services.ErrIdentityConflict) {
+		if errors.Is(err, userservice.ErrIdentityConflict) {
 			return fiber.NewError(409, "Existing account requires migration. Contact support.")
 		}
-		if errors.Is(err, services.ErrUserBlocked) {
+		if errors.Is(err, userservice.ErrUserBlocked) {
 			return fiber.NewError(403, "Account unavailable")
 		}
 		if err != nil {

@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"keepnode/app/models"
-	"keepnode/app/services"
-	"keepnode/pkg/authsession"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+
+	usermodel "keepnode/app/models/user"
+	userservice "keepnode/app/services/user"
+	"keepnode/pkg/authsession"
 )
 
 type fakeVerifier struct{ err error }
@@ -28,8 +28,8 @@ type fakeResolver struct {
 	err error
 }
 
-func (f fakeResolver) ResolveIdentity(context.Context, *authsession.Identity) (*models.User, error) {
-	return &models.User{ID: f.id}, f.err
+func (f fakeResolver) ResolveIdentity(context.Context, *authsession.Identity) (*usermodel.User, error) {
+	return &usermodel.User{ID: f.id}, f.err
 }
 
 func TestSessionBoundary(t *testing.T) {
@@ -43,8 +43,8 @@ func TestSessionBoundary(t *testing.T) {
 		{"bearer is not identity", "", nil, nil, 401},
 		{"revoked", "signed=value", authsession.ErrUnauthorized, nil, 401},
 		{"outage", "signed=value", errors.New("offline"), nil, 503},
-		{"blocked", "signed=value", nil, services.ErrUserBlocked, 403},
-		{"legacy collision", "signed=value", nil, services.ErrIdentityConflict, 409},
+		{"blocked", "signed=value", nil, userservice.ErrUserBlocked, 403},
+		{"legacy collision", "signed=value", nil, userservice.ErrIdentityConflict, 409},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			app := fiber.New()

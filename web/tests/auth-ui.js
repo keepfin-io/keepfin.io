@@ -126,7 +126,7 @@ test('internal testing login reports invalid credentials then opens the verified
 })
 
 
-for (const route of ['/login', '/accounts']) {
+for (const route of ['/login', '/accounts', '/accounts/new']) {
   test(`no protected layout is painted while the initial guest session resolves: ${route}`, async t => {
     let release
     const sessionGate = new Promise(resolve => { release = resolve })

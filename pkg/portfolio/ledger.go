@@ -2,12 +2,14 @@ package portfolio
 
 import (
 	"fmt"
-	"keepnode/app/models"
 	"math"
 	"math/big"
 	"sort"
 	"strconv"
 	"time"
+
+	accountmodel "keepnode/app/models/account"
+	activitymodel "keepnode/app/models/activity"
 )
 
 type Position struct {
@@ -48,14 +50,14 @@ func Day(t time.Time) time.Time {
 
 // Replay is the single source of truth for positions, weighted-average cost,
 // realized gains and settled cash. Archived pre-migration activities are inert.
-func Replay(account models.Account, activities []models.Activity, until time.Time) (*State, error) {
+func Replay(account accountmodel.Account, activities []activitymodel.Activity, until time.Time) (*State, error) {
 	s := &State{Positions: map[string]*Position{}}
 	if account.OpeningDate != nil && Day(until).Before(Day(*account.OpeningDate)) {
 		return s, nil
 	}
 	s.Cash = account.InitialBalance
 	s.NetDeposits = account.InitialBalance
-	events := append([]models.Activity(nil), activities...)
+	events := append([]activitymodel.Activity(nil), activities...)
 	sort.SliceStable(events, func(i, j int) bool {
 		if events[i].Date.Equal(events[j].Date) {
 			if events[i].Type == "opening" && events[j].Type != "opening" {
