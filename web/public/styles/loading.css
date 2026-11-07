@@ -1,0 +1,44 @@
+/* Shared by the pre-Vue startup screen and the UI loading components. */
+.keepfin-loader-screen {
+  box-sizing: border-box;
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: 24px;
+  background: var(--brand-page);
+  color: var(--brand-muted-text);
+}
+.keepfin-loader-overlay { position: fixed; inset: 0; z-index: 100; overflow: auto; overscroll-behavior: contain; }
+.keepfin-loader { display: flex; flex-direction: column; align-items: center; gap: 24px; max-width: 100%; text-align: center; }
+.keepfin-loader-mark { display: block; width: 44px; height: 44px; flex: none; }
+.keepfin-loader-dark { display: none; }
+.dark .keepfin-loader-dark { display: block; }
+.dark .keepfin-loader-light { display: none; }
+.keepfin-loader-track {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 2px;
+  flex: none;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--brand-soft);
+}
+.keepfin-loader-track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand-accent), var(--brand-solid), var(--brand-accent));
+  transform-origin: left center;
+  animation: keepfin-loader-progress 1.6s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.keepfin-loader-message { max-width: min(22rem, 100%); margin: 0; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+@keyframes keepfin-loader-progress {
+  0% { transform: translateX(-40%) scaleX(.2); }
+  45% { transform: translateX(15%) scaleX(.65); }
+  100% { transform: translateX(110%) scaleX(.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .keepfin-loader-track::after { animation: none; transform: translateX(25%) scaleX(.5); }
+}
