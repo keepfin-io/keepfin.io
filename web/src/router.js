@@ -7,11 +7,35 @@ import Accounts from './pages/Accounts.vue'
 import AccountForm from './pages/AccountForm.vue'
 import AccountAction from './pages/AccountAction.vue'
 import AccountDetail from './pages/AccountDetail.vue'
+import AccountAnalysis from './pages/AccountAnalysis.vue'
+import HoldingDetail from './pages/HoldingDetail.vue'
 import Projects from './pages/Projects.vue'
 import Settings from './pages/Settings.vue'
 import Profile from './pages/Profile.vue'
 
+import WealthLayout from './pages/wealth/WealthLayout.vue'
+import Watchlist from './pages/wealth/Watchlist.vue'
+import ManualAssets from './pages/wealth/ManualAssets.vue'
+import NetWorth from './pages/wealth/NetWorth.vue'
+import Activities from './pages/wealth/Activities.vue'
+import Planning from './pages/wealth/Planning.vue'
+import Sharing from './pages/wealth/Sharing.vue'
+import MarketData from './pages/wealth/MarketData.vue'
+import SharedPortfolio from './pages/wealth/SharedPortfolio.vue'
+
 const routes = [
+ {path:'/shared',name:'SharedPortfolio',component:SharedPortfolio},
+ {path:'/wealth',component:WealthLayout,meta:{requiresAuth:true},children:[
+  {path:'',redirect:'/wealth/watchlist'},
+  {path:'watchlist',name:'Watchlist',component:Watchlist},
+  {path:'assets',name:'ManualAssets',component:ManualAssets},
+  {path:'net-worth',name:'NetWorth',component:NetWorth},
+  {path:'activities',name:'Activities',component:Activities},
+  {path:'risk',name:'Risk',component:Planning,props:{mode:'risk'}},
+  {path:'fire',name:'Fire',component:Planning,props:{mode:'fire'}},
+  {path:'sharing',name:'Sharing',component:Sharing},
+  {path:'data',name:'MarketData',component:MarketData},
+ ]},
   { path: '/auth/callback', name: 'AuthCallback', component: AuthCallback },
   {
     path: '/login',
@@ -47,6 +71,8 @@ const routes = [
     component: AccountDetail,
     meta: { requiresAuth: true },
     children: [
+      { path: 'analysis', name: 'AccountAnalysis', component: AccountAnalysis, meta: { accountAction: 'account-analysis' } },
+      { path: 'holdings/:holdingId', name: 'HoldingDetail', component: HoldingDetail, meta: { accountAction: 'holding-detail' } },
       { path: 'edit', name: 'AccountEdit', component: AccountAction, meta: { accountAction: 'account-edit' } },
       { path: 'holdings/new', name: 'HoldingCreate', component: AccountAction, meta: { accountAction: 'holding-create' } },
       { path: 'holdings/:holdingId/edit', name: 'HoldingEdit', component: AccountAction, meta: { accountAction: 'holding-edit' } },

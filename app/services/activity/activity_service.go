@@ -16,6 +16,7 @@ import (
 	activitymodel "keepnode/app/models/activity"
 	currencymodel "keepnode/app/models/currency"
 	holdingmodel "keepnode/app/models/holding"
+	wealthmodel "keepnode/app/models/wealth"
 	accountquery "keepnode/app/queries/account"
 	activityquery "keepnode/app/queries/activity"
 	marketservice "keepnode/app/services/market"
@@ -68,6 +69,12 @@ func (s *ActivityService) PrepareActivity(
 	if err != nil {
 		return a, errors.New("invalid activity date")
 	}
+	a.SplitNumerator = req.SplitNumerator
+	a.SplitDenominator = req.SplitDenominator
+	if a.Type != "split" {
+		a.SplitNumerator = 0
+		a.SplitDenominator = 0
+	}
 	a.Date = portfolio.Day(d)
 	if a.Date.After(portfolio.Day(time.Now())) {
 		return a, errors.New("future activities are not supported")
@@ -80,6 +87,26 @@ func (s *ActivityService) PrepareActivity(
 	}
 	if !validCurrency(a.Currency) {
 		return a, errors.New("unsupported currency")
+	}
+	if strings.HasPrefix(a.Symbol, "MANUAL-") {
+		var asset wealthmodel.ManualAsset
+		if err := s.DB.Clauses(clause.Locking{Strength: "UPDATE"}).First(&asset, "symbol = ? AND user_id = ?", a.Symbol, account.UserID).Error; err != nil {
+			return a, errors.New("manual asset not found")
+		}
+		if a.Currency != asset.Currency {
+			return a, errors.New("use the manual asset currency")
+		}
+		a.Name = asset.Name
+	}
+	if len(a.Notes) > 2000 {
+		return a, errors.New("notes exceed the supported limit")
+	}
+	if a.Type == "split" {
+		if !symbolPattern.MatchString(a.Symbol) || a.SplitNumerator <= 0 || a.SplitDenominator <= 0 || a.SplitNumerator > 1000000000 || a.SplitDenominator > 1000000000 || a.Fee != 0 {
+			return a, errors.New("invalid split ratio or symbol")
+		}
+		a.Quantity, a.UnitPrice, a.ExchangeRate = 0, 0, 1
+		return a, nil
 	}
 	if !portfolio.ValidNumber(a.Quantity) || !portfolio.ValidNumber(a.UnitPrice) || !portfolio.ValidNumber(a.Fee) || !portfolio.ValidNumber(a.ExchangeRate) || a.Quantity <= 0 || (a.UnitPrice <= 0 && !(opening && a.UnitPrice == 0)) || a.Fee < 0 || a.ExchangeRate < 0 {
 		return a, errors.New("amounts must be finite and positive; fees cannot be negative")
@@ -148,6 +175,13 @@ func (s *ActivityService) RebuildLedger(tx *gorm.DB, account accountmodel.Accoun
 		if !exists {
 			h = holdingmodel.Holding{AccountID: account.ID, Symbol: symbol, Name: p.Name, BuyCurrency: p.Currency}
 		}
+		if strings.HasPrefix(symbol, "MANUAL-") {
+			var asset wealthmodel.ManualAsset
+			if err := tx.First(&asset, "symbol = ? AND user_id = ?", symbol, account.UserID).Error; err != nil {
+				return err
+			}
+			h.Name, h.AssetClass, h.Sector, h.Country = asset.Name, asset.AssetClass, asset.Sector, asset.Country
+		}
 		h.Quantity = p.Quantity
 		h.BuyPrice = portfolio.Div(p.Cost, p.Quantity)
 		h.BuyCurrency = p.Currency
@@ -159,7 +193,7 @@ func (s *ActivityService) RebuildLedger(tx *gorm.DB, account accountmodel.Accoun
 		if err != nil {
 			return err
 		}
-		if err = tx.Model(&activitymodel.Activity{}).Where("account_id = ? AND symbol = ? AND ledger = true AND type IN ?", account.ID, symbol, []string{"buy", "sell", "opening"}).Update("holding_id", h.ID).Error; err != nil {
+		if err = tx.Model(&activitymodel.Activity{}).Where("account_id = ? AND symbol = ? AND ledger = true AND type IN ?", account.ID, symbol, []string{"buy", "sell", "opening", "dividend", "split"}).Update("holding_id", h.ID).Error; err != nil {
 			return err
 		}
 		delete(bySymbol, symbol)
@@ -181,7 +215,7 @@ func (s *ActivityService) CreateActivity(accountID uuid.UUID, _ *uuid.UUID, req 
 		if !account.IsActive {
 			return errors.New("account is inactive")
 		}
-		result, err = s.PrepareActivity(account, req, false)
+		result, err = (&ActivityService{DB: tx, marketService: s.marketService}).PrepareActivity(account, req, false)
 		if err != nil {
 			return err
 		}
@@ -212,14 +246,14 @@ func (s *ActivityService) UpdateActivity(id, accountID uuid.UUID, req *activitym
 		if old.Type == "opening" && req.Type != "opening" {
 			return errors.New("opening positions must remain opening positions")
 		}
-		result, err = s.PrepareActivity(account, req, old.Type == "opening")
+		result, err = (&ActivityService{DB: tx, marketService: s.marketService}).PrepareActivity(account, req, old.Type == "opening")
 		if err != nil {
 			return err
 		}
 		result.ID = old.ID
 		result.Base = old.Base
 		result.ImportKey = old.ImportKey
-		if err = tx.Model(&old).Select("symbol", "type", "date", "quantity", "unit_price", "fee", "currency", "exchange_rate", "notes").Updates(&result).Error; err != nil {
+		if err = tx.Model(&old).Select("symbol", "type", "date", "quantity", "unit_price", "fee", "currency", "exchange_rate", "notes", "split_numerator", "split_denominator").Updates(&result).Error; err != nil {
 			return err
 		}
 		return s.RebuildLedger(tx, account)

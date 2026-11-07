@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -12,6 +13,7 @@ import (
 	accountmodel "keepnode/app/models/account"
 	activitymodel "keepnode/app/models/activity"
 	marketmodel "keepnode/app/models/market"
+	wealthmodel "keepnode/app/models/wealth"
 	"keepnode/pkg/portfolio"
 )
 
@@ -36,6 +38,23 @@ func (b *priceBook) load(symbol string) {
 		return
 	}
 	rows := []marketmodel.MarketPrice{}
+	if strings.HasPrefix(symbol, "MANUAL-") {
+		var asset wealthmodel.ManualAsset
+		if err := b.db.First(&asset, "symbol = ?", symbol).Error; err != nil {
+			b.failures[symbol] = err
+			b.series[symbol] = rows
+			return
+		}
+		vals := []wealthmodel.ManualValuation{}
+		if err := b.db.Where("asset_id = ? AND date <= ?", asset.ID, b.to.Format("2006-01-02")).Order("date").Find(&vals).Error; err != nil {
+			b.failures[symbol] = err
+		}
+		for _, v := range vals {
+			rows = append(rows, marketmodel.MarketPrice{Symbol: symbol, Date: v.Date, Close: v.Price})
+		}
+		b.series[symbol] = rows
+		return
+	}
 	if err := b.db.Where("symbol = ? AND date >= ? AND date <= ?", symbol, b.from.Format("2006-01-02"), b.to.Format("2006-01-02")).Order("date").Find(&rows).Error; err != nil {
 		b.failures[symbol] = err
 		b.series[symbol] = rows
@@ -70,6 +89,23 @@ func (b *priceBook) load(symbol string) {
 			}
 		}
 	}
+	// Explicit corrections take precedence over every provider and cached close.
+	overrides := []wealthmodel.PriceOverride{}
+	if err := b.db.Where("symbol = ? AND date >= ? AND date <= ?", symbol, b.from.Format("2006-01-02"), b.to.Format("2006-01-02")).Find(&overrides).Error; err != nil {
+		b.failures[symbol] = err
+	} else {
+		byDate := map[string]marketmodel.MarketPrice{}
+		for _, row := range rows {
+			byDate[row.Date] = row
+		}
+		for _, row := range overrides {
+			byDate[row.Date] = marketmodel.MarketPrice{Symbol: symbol, Date: row.Date, Close: row.Close}
+		}
+		rows = rows[:0]
+		for _, row := range byDate {
+			rows = append(rows, row)
+		}
+	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Date < rows[j].Date })
 	b.series[symbol] = rows
 }
@@ -82,7 +118,7 @@ func (b *priceBook) Price(symbol string, date time.Time) (float64, string, error
 	i := sort.Search(len(rows), func(i int) bool { return rows[i].Date > day }) - 1
 	if i >= 0 {
 		d, err := time.Parse("2006-01-02", rows[i].Date)
-		if err == nil && portfolio.Day(date).Sub(d) <= 7*24*time.Hour {
+		if err == nil && (strings.HasPrefix(symbol, "MANUAL-") || portfolio.Day(date).Sub(d) <= 7*24*time.Hour) {
 			return rows[i].Close, rows[i].Date, nil
 		}
 	}

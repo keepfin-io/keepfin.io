@@ -23,7 +23,7 @@ import (
 	"keepnode/pkg/portfolio"
 )
 
-var csvHeaders = []string{"reference", "date", "type", "symbol", "quantity", "unit_price", "fee", "currency", "exchange_rate", "notes"}
+var csvHeaders = []string{"reference", "date", "type", "symbol", "quantity", "unit_price", "fee", "currency", "exchange_rate", "notes", "split_numerator", "split_denominator"}
 
 type ImportRow struct {
 	Line     int                                 `json:"line"`
@@ -40,7 +40,11 @@ type ImportResult struct {
 }
 
 func activityKey(a activitymodel.Activity) string {
-	return fmt.Sprintf("%s|%s|%s|%.8f|%.4f|%.4f|%s|%.10f|%s", a.Date.UTC().Format("2006-01-02"), fmt.Sprintf("%t:%s", a.Ledger, a.Type), a.Symbol, a.Quantity, a.UnitPrice, a.Fee, a.Currency, a.ExchangeRate, a.Notes)
+	key := fmt.Sprintf("%s|%s|%s|%.8f|%.4f|%.4f|%s|%.10f|%s", a.Date.UTC().Format("2006-01-02"), fmt.Sprintf("%t:%s", a.Ledger, a.Type), a.Symbol, a.Quantity, a.UnitPrice, a.Fee, a.Currency, a.ExchangeRate, a.Notes)
+	if a.Type == activitymodel.ActivityTypeSplit {
+		return fmt.Sprintf("%d:%d|", a.SplitNumerator, a.SplitDenominator) + key
+	}
+	return key
 }
 func digest(s string) string { v := sha256.Sum256([]byte(s)); return hex.EncodeToString(v[:]) }
 func csvSafe(s string) string {
@@ -76,7 +80,7 @@ func (s *ActivityService) ExportCSV(accountID uuid.UUID) ([]byte, error) {
 		if !a.Ledger {
 			kind = "archived_" + kind
 		}
-		values := []string{a.ID.String(), a.Date.UTC().Format("2006-01-02"), kind, a.Symbol, strconv.FormatFloat(a.Quantity, 'f', 8, 64), strconv.FormatFloat(a.UnitPrice, 'f', 4, 64), strconv.FormatFloat(a.Fee, 'f', 4, 64), a.Currency, strconv.FormatFloat(a.ExchangeRate, 'f', 10, 64), csvSafe(a.Notes)}
+		values := []string{a.ID.String(), a.Date.UTC().Format("2006-01-02"), kind, a.Symbol, strconv.FormatFloat(a.Quantity, 'f', 8, 64), strconv.FormatFloat(a.UnitPrice, 'f', 4, 64), strconv.FormatFloat(a.Fee, 'f', 4, 64), a.Currency, strconv.FormatFloat(a.ExchangeRate, 'f', 10, 64), csvSafe(a.Notes), strconv.FormatInt(a.SplitNumerator, 10), strconv.FormatInt(a.SplitDenominator, 10)}
 		if err = w.Write(values); err != nil {
 			return nil, err
 		}
@@ -185,6 +189,18 @@ func (s *ActivityService) ImportCSV(accountID uuid.UUID, data string, commit boo
 				}
 				*n.target = v
 			}
+			for _, n := range []struct {
+				name   string
+				target *int64
+			}{{"split_numerator", &req.SplitNumerator}, {"split_denominator", &req.SplitDenominator}} {
+				if value := get(n.name); value != "" {
+					v, e := strconv.ParseInt(value, 10, 64)
+					if e != nil {
+						item.Error = "invalid " + n.name
+					}
+					*n.target = v
+				}
+			}
 			item.Activity = req
 			archived := strings.HasPrefix(req.Type, "archived_")
 			prepareAccount := account
@@ -201,7 +217,7 @@ func (s *ActivityService) ImportCSV(accountID uuid.UUID, data string, commit boo
 				req.Type = "withdrawal"
 				req.Notes = strings.TrimSpace(req.Notes + " [Imported transfer debit]")
 			}
-			a, e := s.PrepareActivity(prepareAccount, &req, archived || req.Type == "opening")
+			a, e := (&ActivityService{DB: tx, marketService: s.marketService}).PrepareActivity(prepareAccount, &req, archived || req.Type == "opening")
 			if archived {
 				a.Ledger = false
 				a.ExchangeRate = req.ExchangeRate

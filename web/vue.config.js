@@ -16,6 +16,7 @@ module.exports = defineConfig({
           proxyReq.removeHeader('Forwarded')
         }
       },
+      '/api/public': { target: process.env.API_PROXY_TARGET || 'http://localhost:3000' },
       '/api/v1': { target: process.env.API_PROXY_TARGET || 'http://localhost:3000' }
     },
     watchFiles: {

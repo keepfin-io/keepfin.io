@@ -50,7 +50,15 @@ func (ctrl *PortfolioController) Report(c *fiber.Ctx) error {
 		}
 		account = &id
 	}
-	report, err := ctrl.portfolio.Report(user, account, c.Query("range", "1m"), c.Query("benchmark"))
+	opts := portfolioservice.ReportOptions{Method: c.Query("method")}
+	if c.Query("tag_id") != "" {
+		id, e := uuid.Parse(c.Query("tag_id"))
+		if e != nil {
+			return fiber.NewError(400, "Invalid tag ID")
+		}
+		opts.TagID = &id
+	}
+	report, err := ctrl.portfolio.Report(user, account, c.Query("range", "1m"), c.Query("benchmark"), opts)
 	if err != nil {
 		return fiber.NewError(422, err.Error())
 	}
@@ -96,12 +104,18 @@ func (ctrl *PortfolioController) Import(c *fiber.Ctx) error {
 	}
 	var req struct {
 		CSV    string `json:"csv"`
+		JSON   string `json:"json"`
 		Commit bool   `json:"commit"`
 	}
 	if err = c.BodyParser(&req); err != nil {
 		return fiber.NewError(400, "Invalid CSV request")
 	}
-	result, err := ctrl.activities.ImportCSV(account, req.CSV, req.Commit)
+	var result *activityservice.ImportResult
+	if req.JSON != "" {
+		result, err = ctrl.activities.ImportJSON(account, req.JSON, req.Commit)
+	} else {
+		result, err = ctrl.activities.ImportCSV(account, req.CSV, req.Commit)
+	}
 	if err != nil {
 		return fiber.NewError(422, err.Error())
 	}
@@ -111,6 +125,15 @@ func (ctrl *PortfolioController) Export(c *fiber.Ctx) error {
 	account, err := ctrl.account(c)
 	if err != nil {
 		return err
+	}
+	if c.Query("format") == "json" {
+		data, e := ctrl.activities.ExportJSON(account)
+		if e != nil {
+			return fiber.NewError(500, "Unable to export activities")
+		}
+		c.Set("Content-Type", "application/json")
+		c.Set("Content-Disposition", "attachment; filename=keepfin-activities.json")
+		return c.Send(data)
 	}
 	data, err := ctrl.activities.ExportCSV(account)
 	if err != nil {

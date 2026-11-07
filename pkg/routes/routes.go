@@ -1,9 +1,14 @@
 package routes
 
 import (
+	"context"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
+	wealthcontroller "keepnode/app/controllers/wealth"
+	wealthservice "keepnode/app/services/wealth"
+	"time"
 
 	accountcontroller "keepnode/app/controllers/account"
 	activitycontroller "keepnode/app/controllers/activity"
@@ -19,6 +24,7 @@ import (
 	userservice "keepnode/app/services/user"
 	"keepnode/pkg/authsession"
 	"keepnode/pkg/middleware"
+	"keepnode/pkg/typesense"
 	"keepnode/platform/database"
 )
 
@@ -38,19 +44,39 @@ func Register(app *fiber.App) error {
 	accountService := accountservice.NewAccountService(db)
 	marketService := marketservice.NewMarketService()
 	holdingService := holdingservice.NewHoldingService(db, marketService)
+	searchClient, err := typesense.New(os.Getenv("TYPESENSE_URL"), os.Getenv("TYPESENSE_API_KEY"))
+	if err != nil {
+		return err
+	}
+	searchService := holdingservice.NewSearchService(db, searchClient, holdingservice.HoldingsCollection)
 	activityService := activityservice.NewActivityService(db, marketService)
 
 	// Initialize controllers
 	userController := usercontroller.NewUserController(userService)
 	accountController := accountcontroller.NewAccountController(accountService)
-	marketController := marketcontroller.NewMarketController(marketService)
-	holdingController := holdingcontroller.NewHoldingController(holdingService, accountService)
+	marketController := marketcontroller.NewMarketController(marketService, db)
+	holdingController := holdingcontroller.NewHoldingController(holdingService, accountService, searchService)
 	activityController := activitycontroller.NewActivityController(activityService, accountService)
 
-	portfolioController := portfoliocontroller.NewPortfolioController(portfolioservice.NewPortfolioService(db, marketService), activityService, accountService)
+	portfolioService := portfolioservice.NewPortfolioService(db, marketService)
+	portfolioController := portfoliocontroller.NewPortfolioController(portfolioService, activityService, accountService)
+	wealthService := wealthservice.New(db, marketService, activityService, portfolioService)
+	if err := wealthService.LoadProvider(); err != nil {
+		return err
+	}
+	wealthController := wealthcontroller.New(wealthService)
+	app.Post("/api/public/portfolio", originCheck, limiter.New(limiter.Config{Max: 20, Expiration: time.Minute}), wealthController.PublicReport)
 
 	// All application routes use the server-verified Better Auth session.
-	api := app.Group("/api/v1", originCheck, middleware.Session(client, userService))
+	api := app.Group("/api/v1", originCheck, middleware.Session(client, userService), middleware.HoldingSearchSync(searchService))
+	workerContext, stopWorker := context.WithCancel(context.Background())
+	workerDone := make(chan struct{})
+	go func() { defer close(workerDone); searchService.Run(workerContext) }()
+	marketDone := make(chan struct{})
+	go func() { defer close(marketDone); wealthService.RunMarketWorker(workerContext) }()
+	app.Hooks().OnShutdown(func() error { stopWorker(); <-workerDone; <-marketDone; return nil })
+
+	wealthController.Register(api)
 
 	// User routes
 	api.Get("/user/me", userController.GetCurrentUser)
@@ -81,6 +107,7 @@ func Register(app *fiber.App) error {
 	// Holding routes
 	api.Post("/accounts/:id/holdings", holdingController.AddHolding)
 	api.Get("/accounts/:id/holdings", holdingController.GetHoldings)
+	api.Get("/accounts/:id/holdings/search", holdingController.SearchHoldings)
 	api.Put("/accounts/:accountId/holdings/:id", holdingController.UpdateHolding)
 	api.Delete("/accounts/:accountId/holdings/:id", holdingController.DeleteHolding)
 

@@ -1,6 +1,6 @@
 # Keepfin authentication
 
-Vue uses the official `better-auth/vue` client. A private Node 24 service owns
+Vue uses the official `better-auth/vue` client. A private Node 26 service owns
 Google OAuth, Magic Links and opaque cookie sessions. The Go API calls that
 service's `/api/auth/get-session` on every protected request, then resolves the
 immutable auth user ID to the existing application UUID. Go remains responsible

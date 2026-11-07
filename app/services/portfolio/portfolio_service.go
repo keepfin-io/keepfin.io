@@ -46,6 +46,8 @@ type PortfolioHolding struct {
 	Accounts   []string `json:"accounts"`
 }
 type PortfolioSummary struct {
+	Liabilities      *float64 `json:"liabilities"`
+	NetWorth         *float64 `json:"net_worth"`
 	Value            float64  `json:"value"`
 	Equity           float64  `json:"equity"`
 	Cash             float64  `json:"cash"`
@@ -60,11 +62,14 @@ type PortfolioSummary struct {
 	DailyChange      *float64 `json:"daily_change"`
 }
 type HistoryPoint struct {
-	Date      string   `json:"date"`
-	Value     *float64 `json:"value"`
-	NetFlow   float64  `json:"net_flow"`
-	Return    *float64 `json:"return"`
-	Benchmark *float64 `json:"benchmark"`
+	NetWorth       *float64 `json:"net_worth"`
+	ValueWithoutFX *float64 `json:"value_without_fx"`
+	FlowWithoutFX  float64  `json:"flow_without_fx"`
+	Date           string   `json:"date"`
+	Value          *float64 `json:"value"`
+	NetFlow        float64  `json:"net_flow"`
+	Return         *float64 `json:"return"`
+	Benchmark      *float64 `json:"benchmark"`
 }
 type IncomePeriod struct {
 	Period    string  `json:"period"`
@@ -79,6 +84,7 @@ type Allocation struct {
 	Weight float64 `json:"weight"`
 }
 type PortfolioReport struct {
+	Performance Performance             `json:"performance"`
 	Currency    string                  `json:"currency"`
 	Summary     PortfolioSummary        `json:"summary"`
 	Holdings    []PortfolioHolding      `json:"holdings"`
@@ -128,9 +134,16 @@ func reportStart(period string, end, earliest time.Time) (time.Time, error) {
 		return time.Time{}, errors.New("invalid range")
 	}
 }
-func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period, benchmark string) (*PortfolioReport, error) {
+func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period, benchmark string, options ...ReportOptions) (*PortfolioReport, error) {
+	opts := ReportOptions{}
+	if len(options) > 0 {
+		opts = options[0]
+	}
+	if !validMethod(opts.Method) {
+		return nil, errors.New("invalid performance method")
+	}
 	r := &PortfolioReport{Holdings: []PortfolioHolding{}, History: []HistoryPoint{}, Income: []IncomePeriod{}, Allocations: map[string][]Allocation{}, Warnings: []string{}, Complete: true, Method: "daily-linked Modified Dietz (mid-day external cash flows)", Benchmark: benchmark}
-	currency, ledgers, err := s.loadLedgers(userID, accountID)
+	currency, ledgers, err := s.loadLedgers(userID, accountID, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +156,15 @@ func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period
 		}
 		if err = marketservice.ResolveOpeningRates(s.DB, s.market, l.account, l.events); err != nil {
 			return nil, err
+		}
+	}
+	if accountID == nil && len(opts.AccountIDs) == 0 && opts.TagID == nil {
+		var first string
+		if err := s.DB.Table("liability_balances b").Select("COALESCE(MIN(b.date),'')").Joins("JOIN liabilities l ON l.id = b.liability_id").Where("l.user_id = ?", userID).Scan(&first).Error; err != nil {
+			return nil, err
+		}
+		if day, e := time.Parse("2006-01-02", first); e == nil && day.Before(earliest) {
+			earliest = day
 		}
 	}
 	start, err := reportStart(period, end, earliest)
@@ -352,6 +374,8 @@ func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period
 	for day := start; !day.After(end); day = day.AddDate(0, 0, 1) {
 		point := HistoryPoint{Date: day.Format("2006-01-02")}
 		value := 0.0
+		frozenValue := 0.
+		frozenValid := true
 		valid := true
 		for _, l := range ledgers {
 			if l.account.OpeningDate != nil && day.Before(portfolio.Day(*l.account.OpeningDate)) {
@@ -367,8 +391,17 @@ func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period
 				continue
 			}
 			value += state.Cash * fx
+			frozenFX, fe := book.Rate(l.account.Currency, r.Currency, start)
+			if fe != nil {
+				frozenValid = false
+			} else {
+				frozenValue += state.Cash * frozenFX
+			}
 			if l.account.OpeningDate != nil && day.Equal(portfolio.Day(*l.account.OpeningDate)) {
 				point.NetFlow += l.account.InitialBalance * fx
+				if fe == nil {
+					point.FlowWithoutFX += l.account.InitialBalance * frozenFX
+				}
 			}
 			for _, p := range state.Positions {
 				if p.Quantity <= 0 {
@@ -381,6 +414,12 @@ func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period
 					continue
 				}
 				value += p.Quantity * price * rate
+				fixedRate, err := book.Rate(p.Currency, r.Currency, start)
+				if err != nil {
+					frozenValid = false
+				} else {
+					frozenValue += p.Quantity * price * fixedRate
+				}
 			}
 			for _, a := range l.events {
 				if !portfolio.Day(a.Date).Equal(day) {
@@ -400,8 +439,14 @@ func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period
 						continue
 					}
 					point.NetFlow += sign * a.Quantity * a.UnitPrice * a.ExchangeRate * rate
+					if fe == nil {
+						point.FlowWithoutFX += sign * a.Quantity * a.UnitPrice * a.ExchangeRate * frozenFX
+					}
 				}
 			}
+		}
+		if valid && frozenValid {
+			point.ValueWithoutFX = finitePtr(frozenValue)
 		}
 		if valid {
 			v := value
@@ -474,11 +519,15 @@ func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period
 			break
 		}
 	}
+	applyPerformance(r, opts.Method)
+	if err := s.netWorth(userID, r, book, accountID == nil && len(opts.AccountIDs) == 0 && opts.TagID == nil); err != nil {
+		return nil, err
+	}
 	return r, nil
 }
 
 // A single database snapshot prevents a transfer from appearing on only one side.
-func (s *PortfolioService) loadLedgers(userID uuid.UUID, accountID *uuid.UUID) (string, []accountLedger, error) {
+func (s *PortfolioService) loadLedgers(userID uuid.UUID, accountID *uuid.UUID, opts ReportOptions) (string, []accountLedger, error) {
 	currency := "USD"
 	ledgers := []accountLedger{}
 	err := s.DB.Transaction(func(tx *gorm.DB) error {
@@ -493,8 +542,13 @@ func (s *PortfolioService) loadLedgers(userID uuid.UUID, accountID *uuid.UUID) (
 		query := tx.Where("user_id = ?", userID)
 		if accountID != nil {
 			query = query.Where("id = ?", *accountID)
+		} else if len(opts.AccountIDs) > 0 {
+			query = query.Where("id IN ?", opts.AccountIDs)
 		} else {
 			query = query.Where("is_excluded = false")
+		}
+		if opts.TagID != nil {
+			query = query.Where("EXISTS (SELECT 1 FROM tag_assignments t WHERE t.kind = 'account' AND t.entity_id = accounts.id AND t.user_id = ? AND t.tag_id = ?)", userID, *opts.TagID)
 		}
 		if err := query.Order("id").Find(&accounts).Error; err != nil {
 			return err

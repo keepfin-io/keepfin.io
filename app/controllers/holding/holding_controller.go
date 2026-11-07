@@ -13,13 +13,68 @@ import (
 type HoldingController struct {
 	holdingService *holdingservice.HoldingService
 	accountService *accountservice.AccountService
+	searchService  *holdingservice.SearchService
 }
 
-func NewHoldingController(holdingService *holdingservice.HoldingService, accountService *accountservice.AccountService) *HoldingController {
+func NewHoldingController(
+	holdingService *holdingservice.HoldingService,
+	accountService *accountservice.AccountService,
+	searchService *holdingservice.SearchService,
+) *HoldingController {
 	return &HoldingController{
 		holdingService: holdingService,
 		accountService: accountService,
+		searchService:  searchService,
 	}
+}
+
+// SearchHoldings returns one account-scoped page. Ownership is checked in the
+// database before either Typesense or the outage fallback is consulted.
+func (ctrl *HoldingController) SearchHoldings(c *fiber.Ctx) error {
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		return fiber.NewError(401, "Authentication required")
+	}
+	accountID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return fiber.NewError(400, "Invalid account ID")
+	}
+	if _, err = ctrl.accountService.GetAccountByID(accountID, userID); err != nil {
+		return fiber.NewError(404, "Account not found")
+	}
+	params := holdingmodel.SearchParams{
+		Query: c.Query("q"), Currency: c.Query("currency"), Exchange: c.Query("exchange"),
+		AssetClass: c.Query("asset_class"), Sector: c.Query("sector"), Country: c.Query("country"),
+		Sort: c.Query("sort", "symbol"), Direction: c.Query("direction", "asc"),
+		Page: c.QueryInt("page", 1), PerPage: c.QueryInt("per_page", 10),
+	}
+	if err = params.Validate(); err != nil {
+		return fiber.NewError(400, err.Error())
+	}
+	page, err := ctrl.searchService.Search(c.UserContext(), userID, accountID, params)
+	if err != nil {
+		return fiber.NewError(503, "Holdings are temporarily unavailable")
+	}
+	rows := make([]holdingmodel.Holding, 0, len(page.Documents))
+	for _, doc := range page.Documents {
+		id, e := uuid.Parse(doc.ID)
+		if e != nil {
+			return fiber.NewError(503, "Invalid holding index")
+		}
+		rows = append(rows, holdingmodel.Holding{
+			ID: id, AccountID: accountID, Symbol: doc.Symbol, Name: doc.Name,
+			Quantity: doc.Quantity, BuyPrice: doc.BuyPrice, BuyCurrency: doc.Currency,
+			AssetClass: doc.AssetClass, Sector: doc.Sector, Country: doc.Country,
+		})
+	}
+	if len(rows) > 0 {
+		page.Holdings, _, err = ctrl.holdingService.ValueHoldings(accountID, rows)
+		if err != nil {
+			return fiber.NewError(503, "Unable to value holdings")
+		}
+	}
+	c.Set("Cache-Control", "no-store")
+	return c.JSON(page)
 }
 
 // AddHolding adds a new holding to an account

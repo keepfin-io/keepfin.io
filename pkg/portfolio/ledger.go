@@ -66,12 +66,36 @@ func Replay(account accountmodel.Account, activities []activitymodel.Activity, u
 			if events[j].Type == "opening" && events[i].Type != "opening" {
 				return false
 			}
+			if events[i].Type == "split" && events[j].Type != "split" {
+				return true
+			}
+			if events[j].Type == "split" && events[i].Type != "split" {
+				return false
+			}
 			return events[i].CreatedAt.Before(events[j].CreatedAt)
 		}
 		return events[i].Date.Before(events[j].Date)
 	})
+	splits := map[string]bool{}
 	for _, a := range events {
 		if !a.Ledger || a.Date.After(until) {
+			continue
+		}
+		if a.Type == "split" {
+			key := a.Symbol + "/" + Day(a.Date).Format("2006-01-02")
+			if splits[key] {
+				return nil, fmt.Errorf("duplicate split for %s on %s", a.Symbol, a.Date.Format("2006-01-02"))
+			}
+			splits[key] = true
+			p := s.Positions[a.Symbol]
+			if p == nil || p.Quantity <= 0 || p.Currency != a.Currency || a.SplitNumerator <= 0 || a.SplitDenominator <= 0 || a.SplitNumerator > 1000000000 || a.SplitDenominator > 1000000000 || a.Fee != 0 {
+				return nil, fmt.Errorf("invalid split for %s", a.Symbol)
+			}
+			quantity := Proportion(p.Quantity, float64(a.SplitNumerator), float64(a.SplitDenominator))
+			if quantity <= 0 || quantity >= 1e10 || !ValidNumber(quantity) {
+				return nil, fmt.Errorf("split quantity is outside the supported precision")
+			}
+			p.Quantity = quantity
 			continue
 		}
 		if !ValidNumber(a.Quantity) || !ValidNumber(a.UnitPrice) || !ValidNumber(a.Fee) || !ValidNumber(a.ExchangeRate) || a.Quantity <= 0 || a.UnitPrice < 0 || a.Fee < 0 || a.ExchangeRate <= 0 {

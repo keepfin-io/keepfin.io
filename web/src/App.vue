@@ -31,6 +31,7 @@
         >
           {{ pageTitle }}
         </span>
+        <ZenToggle />
         <ThemeToggle data-testid="header-theme" class="workspace-theme" compact />
       </header>
       <div
@@ -56,8 +57,10 @@ import {
   Separator,
   ThemeToggle,
 } from '@/components/ui'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ZenToggle from '@/components/wealth/ZenToggle.vue'
+import { loadZen } from '@/composables/useZen'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import BrandLogo from '@/components/BrandLogo.vue'
@@ -65,7 +68,8 @@ import { useAuth } from '@/composables/useAuth'
 import '@/styles/workspace.css'
 const route = useRoute()
 const router = useRouter()
-const { checkAuth, isAuthenticated } = useAuth()
+const { checkAuth, isAuthenticated, user } = useAuth()
+watch(() => user.value?.id, id => { loadZen(id).catch(() => {}) }, { immediate: true })
 async function revalidateSession() {
   if (document.hidden || !route.meta.requiresAuth) return
   try { if (!await checkAuth()) await router.replace('/login') }
@@ -73,7 +77,7 @@ async function revalidateSession() {
 }
 onMounted(() => document.addEventListener('visibilitychange', revalidateSession))
 onUnmounted(() => document.removeEventListener('visibilitychange', revalidateSession))
-const isAuthPage = computed(() => ['/login', '/register', '/auth/callback'].includes(route.path))
+const isAuthPage = computed(() => ['/login', '/register', '/auth/callback', '/shared'].includes(route.path))
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const pageTitle = computed(() =>
@@ -90,6 +94,8 @@ const pageTitle = computed(() =>
         ActivityEdit: 'accounts',
         AccountTransfer: 'accounts',
         AccountDetail: 'accounts',
+        AccountAnalysis: 'accounts',
+        HoldingDetail: 'accounts',
         Profile: 'profile',
         Projects: 'projects',
         Settings: 'settings',

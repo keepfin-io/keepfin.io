@@ -26,6 +26,7 @@ async function apiFetch(endpoint, options = {}) {
   if (!response.ok) {
     const error = new Error(data.message || 'Request failed')
     error.status = response.status
+    error.code = data.code
     if (response.status === 401 && !['/login', '/register', '/auth/callback'].includes(window.location.pathname)) {
       window.location.assign('/login')
     }

@@ -20,12 +20,15 @@ const (
 	ActivityTypeDeposit     = "deposit"
 	ActivityTypeWithdrawal  = "withdrawal"
 	ActivityTypeFee         = "fee"
+	ActivityTypeSplit       = "split"
 	ActivityTypeOpening     = "opening"
 	ActivityTypeTransferIn  = "transfer_in"
 	ActivityTypeTransferOut = "transfer_out"
 )
 
 type Activity struct {
+	SplitNumerator   int64 `json:"split_numerator"`
+	SplitDenominator int64 `json:"split_denominator"`
 	basemodel.Base
 	ID           uuid.UUID             `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	AccountID    uuid.UUID             `gorm:"type:uuid;not null;index;uniqueIndex:activity_import,priority:1" json:"account_id" validate:"required"`
@@ -65,15 +68,17 @@ func (a *Activity) AfterFind(tx *gorm.DB) error {
 }
 
 type CreateActivityRequest struct {
-	Symbol       string  `json:"symbol" validate:"required,lte=20"`
-	Type         string  `json:"type" validate:"required,oneof=buy sell dividend interest deposit withdrawal"`
-	Date         string  `json:"date" validate:"required"`
-	Quantity     float64 `json:"quantity" validate:"required"`
-	UnitPrice    float64 `json:"unit_price" validate:"required,gte=0"`
-	Fee          float64 `json:"fee"`
-	Currency     string  `json:"currency"`
-	Notes        string  `json:"notes"`
-	ExchangeRate float64 `json:"exchange_rate"`
+	SplitNumerator   int64   `json:"split_numerator"`
+	SplitDenominator int64   `json:"split_denominator"`
+	Symbol           string  `json:"symbol" validate:"required,lte=20"`
+	Type             string  `json:"type" validate:"required,oneof=buy sell dividend interest deposit withdrawal"`
+	Date             string  `json:"date" validate:"required"`
+	Quantity         float64 `json:"quantity" validate:"required"`
+	UnitPrice        float64 `json:"unit_price" validate:"required,gte=0"`
+	Fee              float64 `json:"fee"`
+	Currency         string  `json:"currency"`
+	Notes            string  `json:"notes"`
+	ExchangeRate     float64 `json:"exchange_rate"`
 }
 
 func ValidActivityTypes() []string {
@@ -85,5 +90,6 @@ func ValidActivityTypes() []string {
 		ActivityTypeDeposit,
 		ActivityTypeWithdrawal,
 		ActivityTypeFee,
+		ActivityTypeSplit,
 	}
 }

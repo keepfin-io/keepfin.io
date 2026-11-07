@@ -9,12 +9,13 @@ export const portfolioAPI = {
   importCSV(accountId, csv, commit = false) {
     return apiFetch(`/accounts/${accountId}/activities/import`, { method: 'POST', body: JSON.stringify({ csv, commit }) })
   },
-  async exportCSV(accountId) {
-    const response = await fetch(`/api/v1/accounts/${accountId}/activities/export`, { credentials: 'same-origin' })
+  importJSON(accountId, json, commit = false) {return apiFetch(`/accounts/${accountId}/activities/import`, {method:'POST',body:JSON.stringify({json,commit})})},
+  async exportCSV(accountId, format = 'csv') {
+    const response = await fetch(`/api/v1/accounts/${accountId}/activities/export?format=${format}`, { credentials: 'same-origin' })
     if (!response.ok) throw new Error('Unable to export activities')
     const url = URL.createObjectURL(await response.blob())
     const link = document.createElement('a')
-    link.href = url; link.download = 'keepfin-activities.csv'; link.click()
+    link.href = url; link.download = `keepfin-activities.${format}`; link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   },
 }

@@ -38,3 +38,47 @@ Run `go test ./...` and `go vet ./...` after package changes. PostgreSQL integra
 tests additionally use `AUTH_TEST_DATABASE_URL` and
 `PORTFOLIO_TEST_DATABASE_URL`. Point them at a local test database; each suite
 creates and removes its own temporary schema.
+
+## Holdings search
+
+Run `make search-init` once, then `make hot`. Compose starts Typesense 30.2 on
+the private application network. `TYPESENSE_API_KEY` is generated in the ignored
+`.env`; never expose it in Vue environment variables. Outside Compose, configure
+both `TYPESENSE_URL` and `TYPESENSE_API_KEY` on the Go server.
+
+PostgreSQL remains authoritative. Holding and account triggers update
+`holding_search_states` in the same transaction as each change. This covers
+ledger rebuilds, imports, position edits, closing positions and account deletion.
+After a successful mutation, middleware waits up to 2.5 seconds for the user's
+pending revisions to reach Typesense. Each bulk-import acknowledgement is checked.
+An account row in the outbox serializes concurrent index writers; document IDs
+are the persisted holding UUIDs.
+
+`GET /api/v1/accounts/:id/holdings/search` checks account ownership in PostgreSQL
+and supports `q`, `page`, `per_page` (10/25/50/100), `sort`, `direction`, and exact
+`currency`, `exchange`, `asset_class`, `sector`, `country` filters. It returns
+`holdings`, `total`, `pages`, `facets` and `source`. The displayed list uses this
+endpoint; account-wide financial summaries remain independent of pagination.
+The market asset discovery endpoint remains separate.
+
+If synchronization or search fails, reads use a fresh, ownership-scoped database
+snapshot (`source: database`). Exact filters and pagination remain available;
+typo tolerance is temporarily unavailable and the UI shows a notice. A committed
+financial write still succeeds with `X-Holdings-Search-Sync: pending`, so clients
+must not repeat it merely because indexing failed. Successful synchronization
+sets this header to `ready`. A worker retries persistent pending revisions every
+two seconds and reconciles acknowledged accounts after five minutes. Reads also
+try to synchronize before searching. Recreating a lost collection requeues all
+accounts. This provides immediate visibility through fallback, not an atomic
+transaction across PostgreSQL and Typesense.
+
+Integration tests require `PORTFOLIO_TEST_DATABASE_URL`,
+`HOLDINGS_SEARCH_TEST_URL`, and `TYPESENSE_API_KEY`:
+
+```sh
+go test -v ./app/services/holding ./pkg/typesense ./pkg/middleware
+```
+
+The tests create and clean up unique PostgreSQL schemas and Typesense collections;
+they cover persistence, filtering, pagination, ownership, outages, partial import
+failure and retry after restart. Existing financial records are not modified.

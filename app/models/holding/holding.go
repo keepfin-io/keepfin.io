@@ -75,6 +75,9 @@ type HoldingsSummary struct {
 
 type CreateHoldingRequest struct {
 	Symbol       string  `json:"symbol" validate:"required,lte=20"`
+	Name         string  `json:"name"`
+	AssetClass   string  `json:"asset_class"`
+	Country      string  `json:"country"`
 	Quantity     float64 `json:"quantity" validate:"required,gt=0"`
 	BuyPrice     float64 `json:"buy_price" validate:"required,gte=0"`
 	Fee          float64 `json:"fee"`

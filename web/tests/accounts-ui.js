@@ -157,9 +157,14 @@ for (const width of [320, 1280]) test(`holding search and purchase stay on a pag
   await ui.until(() => ui.find('holding-add-submit').disabled)
   const requests = ui.calls.filter(call => call.method === 'POST' && call.endpoint.endsWith('/holdings'))
   assert.equal(requests.length, 1)
-  assert.deepEqual(requests[0].body, { symbol: 'QQQM.US', quantity: 2, buy_price: 284.34, fee: 1, buy_currency: 'USD', notes: 'New position', date: '2026-02-02', exchange_rate: 1.1 })
+  assert.deepEqual(requests[0].body, { symbol: 'QQQM.US', name: 'Invesco NASDAQ 100 ETF', asset_class: 'ETF', country: '', quantity: 2, buy_price: 284.34, fee: 1, buy_currency: 'USD', notes: 'New position', date: '2026-02-02', exchange_rate: 1.1 })
   release()
   await ui.until(() => ui.find('holding-row-holdings-new'))
+  for (const container of ['holding-row-holdings-new', 'holding-card-holdings-new']) {
+    const logo = ui.find(container).querySelector('[data-testid="asset-icon"] img')
+    assert.equal(logo.src, 'https://eodhd.com/img/logos/US/QQQM.png')
+    assert.equal(logo.width, 32)
+  }
   assert.equal(ui.w.location.pathname, '/accounts/source'); assert.ok(ui.find('account-detail-notification')); noDialog(ui)
   assert.deepEqual(ui.errors, [])
 })

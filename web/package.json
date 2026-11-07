@@ -2,6 +2,7 @@
   "name": "keepfin.io",
   "version": "0.1.0",
   "private": true,
+  "engines": { "node": ">=26" },
   "scripts": {
     "serve": "vue-cli-service serve",
     "dev": "vue-cli-service serve",
@@ -10,9 +11,11 @@
     "test:auth": "node --test tests/auth-ui.js",
     "test:portfolio": "node --test tests/portfolio-ui.js",
     "test:accounts": "node --test tests/accounts-ui.js",
-    "test:ui": "node --test tests/auth-ui.js tests/portfolio-ui.js tests/accounts-ui.js"
+    "test:assets": "node --test tests/assets-ui.js",
+    "test:ui": "node --test tests/auth-ui.js tests/portfolio-ui.js tests/accounts-ui.js tests/assets-ui.js tests/holdings-ui.js tests/details-ui.js"
   },
   "dependencies": {
+    "@kalimahapps/vue-icons": "^1.9.7",
     "@vueuse/core": "^15.0.0",
     "better-auth": "1.7.12",
     "class-variance-authority": "^0.7.1",

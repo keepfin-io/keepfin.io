@@ -33,11 +33,37 @@ func (s *HoldingService) AddHolding(accountID uuid.UUID, req *holdingmodel.Creat
 	if date == "" {
 		date = time.Now().UTC().Format("2006-01-02")
 	}
-	_, err := activityservice.NewActivityService(s.DB, s.marketService).CreateActivity(accountID, nil, &activitymodel.CreateActivityRequest{Type: "buy", Date: date, Symbol: req.Symbol, Quantity: req.Quantity, UnitPrice: req.BuyPrice, Fee: req.Fee, Currency: req.BuyCurrency, ExchangeRate: req.ExchangeRate, Notes: req.Notes})
-	if err != nil {
-		return nil, err
+	if len(req.Name) > 100 || len(req.AssetClass) > 40 || len(req.Country) > 100 {
+		return nil, errors.New("asset description is too long")
 	}
-	h, err := (&holdingquery.HoldingQueries{DB: s.DB}).GetHoldingBySymbol(accountID, normalizeSymbol(req.Symbol))
+	var h holdingmodel.Holding
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
+		_, err := activityservice.NewActivityService(tx, s.marketService).CreateActivity(
+			accountID,
+			nil,
+			&activitymodel.CreateActivityRequest{
+				Type: "buy", Date: date, Symbol: req.Symbol, Quantity: req.Quantity, UnitPrice: req.BuyPrice,
+				Fee: req.Fee, Currency: req.BuyCurrency, ExchangeRate: req.ExchangeRate, Notes: req.Notes,
+			},
+		)
+		if err != nil {
+			return err
+		}
+		h, err = (&holdingquery.HoldingQueries{DB: tx}).GetHoldingBySymbol(accountID, normalizeSymbol(req.Symbol))
+		if err != nil {
+			return err
+		}
+		metadata := map[string]any{}
+		for key, value := range map[string]string{"name": req.Name, "asset_class": req.AssetClass, "country": req.Country} {
+			if strings.TrimSpace(value) != "" {
+				metadata[key] = strings.TrimSpace(value)
+			}
+		}
+		if len(metadata) > 0 {
+			return tx.Model(&h).Updates(metadata).Error
+		}
+		return nil
+	})
 	return &h, err
 }
 func (s *HoldingService) GetHoldingByID(id, accountID uuid.UUID) (*holdingmodel.Holding, error) {
@@ -75,7 +101,7 @@ func (s *HoldingService) UpdateHolding(id, accountID uuid.UUID, req *holdingmode
 		changed := (req.Quantity != nil && *req.Quantity != h.Quantity) || (req.BuyPrice != nil && *req.BuyPrice != h.BuyPrice) || (req.BuyCurrency != nil && *req.BuyCurrency != h.BuyCurrency)
 		if changed {
 			var events []activitymodel.Activity
-			if err = tx.Where("account_id = ? AND symbol = ? AND ledger = true AND type IN ?", accountID, h.Symbol, []string{"buy", "sell", "opening"}).Find(&events).Error; err != nil {
+			if err = tx.Where("account_id = ? AND symbol = ? AND ledger = true AND type IN ?", accountID, h.Symbol, []string{"buy", "sell", "opening", "split"}).Find(&events).Error; err != nil {
 				return err
 			}
 			if len(events) != 1 || (events[0].Type != "buy" && events[0].Type != "opening") {
@@ -129,7 +155,7 @@ func (s *HoldingService) DeleteHolding(id, accountID uuid.UUID) error {
 			return err
 		}
 		var events []activitymodel.Activity
-		if err = tx.Where("account_id = ? AND symbol = ? AND ledger = true AND type IN ?", accountID, h.Symbol, []string{"buy", "sell", "opening"}).Find(&events).Error; err != nil {
+		if err = tx.Where("account_id = ? AND symbol = ? AND ledger = true AND type IN ?", accountID, h.Symbol, []string{"buy", "sell", "opening", "split"}).Find(&events).Error; err != nil {
 			return err
 		}
 		if len(events) > 1 {
@@ -144,6 +170,19 @@ func (s *HoldingService) DeleteHolding(id, accountID uuid.UUID) error {
 	})
 }
 func (s *HoldingService) GetHoldingsWithLiveData(accountID uuid.UUID) ([]holdingmodel.HoldingWithLiveData, *holdingmodel.HoldingsSummary, error) {
+	holdings := []holdingmodel.Holding{}
+	if err := s.DB.Where("account_id = ? AND quantity > 0", accountID).Order("symbol").Find(&holdings).Error; err != nil {
+		return nil, nil, err
+	}
+	return s.ValueHoldings(accountID, holdings)
+}
+
+// ValueHoldings values only the requested page using the authoritative ledger.
+// The unpaged endpoint still computes the account-wide summary independently.
+func (s *HoldingService) ValueHoldings(
+	accountID uuid.UUID,
+	holdings []holdingmodel.Holding,
+) ([]holdingmodel.HoldingWithLiveData, *holdingmodel.HoldingsSummary, error) {
 	var a accountmodel.Account
 	if err := s.DB.First(&a, "id = ?", accountID).Error; err != nil {
 		return nil, nil, err
@@ -159,10 +198,6 @@ func (s *HoldingService) GetHoldingsWithLiveData(accountID uuid.UUID) ([]holding
 	if err != nil {
 		return nil, nil, err
 	}
-	holdings := []holdingmodel.Holding{}
-	if err = s.DB.Where("account_id = ? AND quantity > 0", accountID).Order("symbol").Find(&holdings).Error; err != nil {
-		return nil, nil, err
-	}
 	result := []holdingmodel.HoldingWithLiveData{}
 	summary := &holdingmodel.HoldingsSummary{CashBalance: state.Cash, RealizedProfitLoss: state.Realized, Dividend: state.Dividends, Interest: state.Interest, Fees: state.Fees, Complete: true, Warnings: []string{}}
 	now := time.Now().UTC()
@@ -176,7 +211,7 @@ func (s *HoldingService) GetHoldingsWithLiveData(accountID uuid.UUID) ([]holding
 		row.EntryPrice = h.BuyPrice
 		count := 0
 		for _, event := range events {
-			if event.Symbol == h.Symbol && (event.Type == "buy" || event.Type == "sell" || event.Type == "opening") {
+			if event.Symbol == h.Symbol && (event.Type == "buy" || event.Type == "sell" || event.Type == "opening" || event.Type == "split") {
 				count++
 				row.EntryPrice = event.UnitPrice
 			}

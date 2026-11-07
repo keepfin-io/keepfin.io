@@ -2,7 +2,7 @@
   "name": "keepfin-auth",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": { "node": ">=26" },
   "scripts": {
     "start": "node src/server.js",
     "migrate": "node src/migrate.js",

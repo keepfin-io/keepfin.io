@@ -1,0 +1,12 @@
+{
+  "id": "/",
+  "name": "Keepfin — Portfolio Tracker",
+  "short_name": "Keepfin",
+  "description": "Your accounts, investments, and cash in one place.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f181d",
+  "theme_color": "#248d94",
+  "icons": [{ "src": "/brand/keepfin-mark-dark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

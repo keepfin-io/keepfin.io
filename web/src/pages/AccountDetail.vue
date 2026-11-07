@@ -5,7 +5,7 @@
     :message="spinnerMessage"
   />
   <section data-testid="account-detail-page" class="min-w-0 space-y-6">
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-3">
       <Button variant="outline" size="icon" as-child>
         <router-link
           data-testid="account-detail-back"
@@ -26,6 +26,9 @@
           {{ account?.platform || $t('accounts.general') }}
         </p>
       </div>
+      <Button v-if="account && !$route.meta.accountAction" variant="outline" class="ml-auto" as-child>
+        <router-link data-testid="account-analysis-link" :to="{ name: 'AccountAnalysis', params: { id: account.id } }"><ChartNoAxesCombined class="size-4" />{{ $t('portfolio.accountAnalysis') }}</router-link>
+      </Button>
     </div>
     <Alert
       data-testid="account-detail-error"
@@ -42,9 +45,10 @@
     />
     <template v-if="!loading && !error && account">
       <router-view v-if="$route.meta.accountAction" v-slot="{ Component }">
-        <component :is="Component" :key="$route.path" :account="account" :holdings="holdings" :activities="activities" @saved="onActionSaved" />
+        <component :is="Component" :key="$route.path" :account="account" :holdings="holdings" :activities="activities" :holdings-error="holdingsError" :activities-error="activitiesError" @retry="fetchAccountDetails" @saved="onActionSaved" />
       </router-view>
       <template v-else>
+      <details @toggle="showTags = $event.target.open"><summary class="cursor-pointer text-sm text-primary">{{ $t('wealth.tags') }}</summary><EntityTags v-if="showTags" kind="account" :id="account.id" class="mt-3" /></details>
       <div class="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-6">
         <Card
           :data-testid="`account-summary-${stat.label}`"
@@ -53,8 +57,11 @@
           class="min-w-0 gap-2 py-4"
         >
           <CardHeader class="px-4">
-            <CardDescription class="break-words">
-              {{ $t('accountDetail.' + stat.label) }}
+            <CardDescription class="flex items-center gap-2">
+              <span class="inline-flex shrink-0 text-primary/80" aria-hidden="true">
+                <component :is="stat.icon" class="size-4" />
+              </span>
+              <span class="min-w-0 break-words">{{ $t('accountDetail.' + stat.label) }}</span>
             </CardDescription>
           </CardHeader>
           <CardContent
@@ -79,157 +86,9 @@
           value="holdings"
           class="min-w-0 space-y-4"
         >
-          <Button
-            data-testid="holdings-add"
-            class="w-full sm:w-auto"
-            :disabled="!account.is_active"
-            @click="$router.push({ name: 'HoldingCreate', params: { id: account.id } })"
-          >
-            <Plus class="size-4" />
-            {{ $t('accountDetail.addHolding') }}
-          </Button>
-          <Card data-testid="holdings-empty" v-if="!holdings.length">
-            <CardContent
-              class="py-10 text-center text-sm text-muted-foreground"
-            >
-              {{ $t('accountDetail.noHoldingsYet') }}
-            </CardContent>
-          </Card>
-          <template v-else>
-            <div data-testid="holdings-cards" class="grid gap-4 md:hidden">
-              <Card
-                :data-testid="`holding-card-${holding.id}`"
-                v-for="holding in holdings"
-                :key="holding.id"
-                class="min-w-0"
-              >
-                <CardHeader>
-                  <CardTitle class="break-words text-base">
-                    {{ holding.name || holding.symbol }}
-                  </CardTitle>
-                  <CardDescription>{{ holding.symbol }}</CardDescription>
-                </CardHeader>
-                <CardContent class="grid grid-cols-2 gap-4 text-sm">
-                  <div
-                    v-for="metric in [
-                      { label: 'quantity', value: holding.quantity },
-                      {
-                        label: 'currentPrice',
-                        value: formatCurrency(
-                          holding.price_available ? holding.current_price : null,
-                          holding.buy_currency
-                        ),
-                      },
-                      {
-                        label: 'value',
-                        value: formatCurrency(holding.price_available ? holding.value : null, holding.buy_currency),
-                      },
-                      {
-                        label: 'profitLoss',
-                        value: formatCurrency(
-                          holding.price_available ? holding.profit_loss : null,
-                          holding.buy_currency
-                        ),
-                      },
-                      {
-                        label: 'performance',
-                        value: holding.price_available ? holding.performance?.toFixed(2) + '%' : '—',
-                      },
-                    ]"
-                    :key="metric.label"
-                  >
-                    <p class="text-xs text-muted-foreground">
-                      {{ $t('accountDetail.' + metric.label) }}
-                    </p>
-                    <p class="mt-1 break-all font-medium tabular-nums">
-                      {{ metric.value }}
-                    </p>
-                  </div>
-                </CardContent>
-                <CardFooter class="justify-end gap-2 border-t pt-4">
-                  <RecordActions
-                    :data-testid="`holding-card-${holding.id}-actions`"
-                    :compact="false"
-                    @edit="openEditHolding(holding)"
-                    @delete="confirmDeleteHolding(holding)"
-                  />
-                </CardFooter>
-              </Card>
-            </div>
-            <Card class="hidden min-w-0 overflow-hidden py-0 md:block">
-              <CardContent class="min-w-0 p-0">
-                <Table data-testid="holdings-table">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead
-                        v-for="field in [
-                          'name',
-                          'quantity',
-                          'currentPrice',
-                          'value',
-                          'profitLoss',
-                          'performance',
-                          'actions',
-                        ]"
-                        :key="field"
-                      >
-                        {{ $t('accountDetail.' + field) }}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow
-                      :data-testid="`holding-row-${holding.id}`"
-                      v-for="holding in holdings"
-                      :key="holding.id"
-                    >
-                      <TableCell class="max-w-60">
-                        <p class="truncate font-medium">
-                          {{ holding.name || holding.symbol }}
-                        </p>
-                        <p class="text-xs text-muted-foreground">
-                          {{ holding.symbol }}
-                        </p>
-                      </TableCell>
-                      <TableCell>{{ holding.quantity }}</TableCell>
-                      <TableCell>
-                        {{
-                          formatCurrency(
-                            holding.price_available ? holding.current_price : null,
-                            holding.buy_currency
-                          )
-                        }}
-                      </TableCell>
-                      <TableCell>
-                        {{ formatCurrency(holding.price_available ? holding.value : null, holding.buy_currency) }}
-                      </TableCell>
-                      <TableCell
-                        :class="
-                          holding.profit_loss < 0
-                            ? 'text-destructive'
-                            : 'text-brand'
-                        "
-                      >
-                        {{
-                          formatCurrency(holding.price_available ? holding.profit_loss : null, holding.buy_currency)
-                        }}
-                      </TableCell>
-                      <TableCell>
-                        {{ holding.price_available ? holding.performance?.toFixed(2) + '%' : '—' }}
-                      </TableCell>
-                      <TableCell>
-                        <RecordActions
-                          :data-testid="`holding-row-${holding.id}-actions`"
-                          @edit="openEditHolding(holding)"
-                          @delete="confirmDeleteHolding(holding)"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </template>
+          <HoldingsList :account="account" :has-holdings="holdings.length > 0"
+            @add="$router.push({ name: 'HoldingCreate', params: { id: account.id } })"
+            @edit="openEditHolding" @delete="confirmDeleteHolding" />
         </TabsContent>
         <TabsContent
           data-testid="activities-panel"
@@ -267,26 +126,20 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
-  CardTitle,
-  RecordActions,
   InlineConfirmation,
   FullPageSpinner,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
+import EntityTags from '@/components/wealth/EntityTags.vue'
+import { zen } from '@/composables/useZen'
 import TransactionsPanel from '@/components/portfolio/TransactionsPanel.vue'
-import { ArrowLeft } from 'lucide-vue-next'
-import { Plus } from 'lucide-vue-next'
+import HoldingsList from '@/components/holdings/HoldingsList.vue'
+import { ArrowLeft, ChartNoAxesCombined } from 'lucide-vue-next'
+import { LuArrowLeftRight, LuBanknote, LuCoins, LuLayers, LuPercent, LuWallet } from '@kalimahapps/vue-icons/lu'
 import { accountAPI } from '@/services/accountApi'
 import { holdingAPI } from '@/services/holdingApi'
 import { activityAPI } from '@/services/activityApi'
@@ -295,34 +148,30 @@ export default {
   name: 'AccountDetailPage',
   components: {
     TransactionsPanel,
+    EntityTags,
+    HoldingsList,
     Alert,
     ArrowLeft,
+    ChartNoAxesCombined,
     Button,
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-    InlineConfirmation,
-    RecordActions,
-    FullPageSpinner,
-    Plus,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-    Tabs,
+      CardHeader,
+      InlineConfirmation,
+      FullPageSpinner,
+                Tabs,
     TabsContent,
     TabsList,
     TabsTrigger,
   },
   data() {
     return {
+      showTags: false,
       account: null,
       holdings: [],
+      holdingsError: '',
+      activitiesError: '',
       holdingsSummary: null,
       activities: [],
       loading: true,
@@ -344,6 +193,7 @@ export default {
       return [
         {
           label: 'cashBalance',
+          icon: LuWallet,
           value: this.formatCurrency(
             this.account?.cash_balance,
             this.account?.currency
@@ -351,18 +201,21 @@ export default {
         },
         {
           label: 'equity',
+          icon: LuLayers,
           value: this.formatCurrency(this.totalEquity, this.account?.currency),
         },
         {
           label: 'interest',
+          icon: LuPercent,
           value: this.formatCurrency(this.holdingsSummary?.interest, this.account?.currency),
         },
         {
           label: 'dividend',
+          icon: LuCoins,
           value: this.formatCurrency(this.holdingsSummary?.dividend, this.account?.currency),
         },
-        { label: 'activities', value: this.activities.length },
-        { label: 'currency', value: this.account?.currency },
+        { label: 'activities', icon: LuArrowLeftRight, value: this.activities.length },
+        { label: 'currency', icon: LuBanknote, value: this.account?.currency },
       ]
     },
     totalEquity() {
@@ -396,22 +249,24 @@ export default {
       }
     },
     async fetchHoldings() {
+      this.holdingsError = ''
       try {
         const response = await holdingAPI.getHoldings(this.$route.params.id)
         this.holdings = response.holdings || []
         this.holdingsSummary = response.summary || null
       } catch (err) {
-        console.error('Failed to fetch holdings:', err)
+        this.holdingsError = err.message || this.$t('holdingDetail.loadError')
         this.holdings = []
         this.holdingsSummary = { complete: false, warnings: [err.message] }
       }
     },
     async fetchActivities() {
+      this.activitiesError = ''
       try {
         const response = await activityAPI.getActivities(this.$route.params.id)
         this.activities = response.activities || []
       } catch (err) {
-        console.error('Failed to fetch activities:', err)
+        this.activitiesError = err.message || this.$t('holdingDetail.activitiesError')
         this.activities = []
       }
     },
@@ -471,6 +326,7 @@ export default {
     },
     formatCurrency(amount, currency) {
       if (amount == null) return '—'
+      if (zen.value) return '••••'
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency || 'USD',

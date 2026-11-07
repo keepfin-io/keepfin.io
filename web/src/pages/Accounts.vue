@@ -276,6 +276,7 @@
   </section>
 </template>
 <script>
+import { zen } from '@/composables/useZen'
 import {
   RecordActions,
   FeedbackAlert as Alert,
@@ -470,6 +471,7 @@ export default {
     },
 
     formatCurrency(amount, currency) {
+      if (zen.value) return '••••'
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency || 'USD',

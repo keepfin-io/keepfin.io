@@ -155,6 +155,7 @@ watch(
 const navigation = [
   { path: '/', label: 'nav.dashboard', icon: LayoutDashboard },
   { path: '/accounts', label: 'nav.accounts', icon: CreditCard },
+  { path: '/wealth', label: 'wealth.title', icon: Folder },
   { path: '/projects', label: 'nav.projects', icon: Folder },
   { path: '/settings', label: 'nav.settings', icon: Settings },
   { path: '/profile', label: 'nav.profile', icon: User },

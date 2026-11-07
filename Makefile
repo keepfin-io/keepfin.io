@@ -1,5 +1,5 @@
 
-.PHONY: hot down build build-go build-web clean test auth-init
+.PHONY: hot down build build-go build-web clean test auth-init search-init
 
 # Build everything (frontend + backend)
 build:
@@ -38,7 +38,10 @@ clean:
 auth-init:
 	@sh scripts/init-auth-env.sh
 
-hot: auth-init
+search-init:
+	@sh scripts/init-search-env.sh
+
+hot: auth-init search-init
 	@echo "Starting development environment with Docker Compose (Vue + Go)..."
 	@docker compose -p keepnode -f docker-compose.hot.yml up --build
 
