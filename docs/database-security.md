@@ -15,9 +15,9 @@ public tables and revoke public access.
 | `keepfin_security_owner` | Non-login function/table owner | Minimal linking privileges and ownership of the protected audit schema. |
 | PostgreSQL administrator | Bootstrap/permission jobs | Trusted provisioning authority; not a runtime credential. |
 
-The one-shot development `auth-seed` job also uses administrator credentials to
+The temporary development seed process also uses administrator credentials to
 create the explicitly enabled test identity. It has no HTTP listener and is absent
-from production Compose. Auth runtime does not seed users or run migrations.
+from production startup. Auth HTTP runtime does not seed users or run migrations.
 
 ## Install or upgrade
 
@@ -39,9 +39,19 @@ For an existing installation:
 5. Check `db-roles`, `keepnode-migrate`, `auth-migrate` and `db-security` exited with
    status 0 before accepting traffic.
 
-For development, run `make down` followed by `make hot`. The development file has
-local-only credentials and retains the existing `keepnode` project/volume names.
-Do not use its credentials for a public installation.
+For development, use `make hot`. It builds the auth/Go images, stops existing HTTP
+servers, waits for PostgreSQL, and runs role provisioning in the PostgreSQL
+container. It recreates auth/Go containers with their HTTP servers gated, runs
+migrations via `exec`, applies permissions in PostgreSQL, and seeds the test user
+via `exec` in auth. Only then does it release the servers and start Vue/Typesense.
+Migration/admin credentials are supplied to setup processes, not the HTTP process
+environment. Failures stop auth/Go/Vue; the database volumes are retained.
+
+Only five containers are created; old setup-job containers are removed as orphans.
+The development file has local-only credentials and retains the existing `keepnode`
+project/volume names. Use `make hot` instead of direct development `compose up`:
+fresh auth/Go containers wait for setup completion. `make down` stops/removes the
+containers while retaining named volumes. Do not use these credentials publicly.
 
 `db-roles` creates roles, transfers existing object ownership and configures default
 privileges. The two migrators then apply their own migrations. `db-security` applies

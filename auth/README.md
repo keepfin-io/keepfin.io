@@ -15,6 +15,11 @@ Browser → same-origin frontend proxy
 
 ## Development
 
+`src/config.ts` reads and validates environment variables with `readConfig` and
+builds all Better Auth options with `createBetterAuthOptions`, including sessions,
+cookies, providers, rate limits, hooks, and magic-link delivery. `src/auth.ts`
+combines these options with the database pool to create the instance.
+
 Run `make hot`. This creates a random secret in ignored `.env.auth.local`, runs
 additive auth migrations, and starts Vue, Go, auth and PostgreSQL. Open
 `http://localhost:8080/login`. `/register` redirects to `/login`.
@@ -41,9 +46,9 @@ placeholder and has no OAuth integration yet. Keep secrets out of `VUE_APP_*` va
 ### Internal testing admin
 
 The hot-development Compose stack sets `AUTH_INTERNAL_TESTING=true`. After the
-Go application migrations and permission setup finish, the one-shot `auth-seed`
-job atomically seeds one account. The auth HTTP service cannot access application
-user or financial tables:
+Go application migrations and permission setup finish, `make hot` runs a temporary
+seed process inside the auth container to atomically seed one account. The auth
+HTTP service cannot access application user or financial tables:
 
 - Username: `internal-testing` (email alias: `internal-testing@keepfin.test`)
 - Password: `12345`
@@ -165,8 +170,11 @@ password. Runtime containers never receive migration/admin credentials. All role
 use the same dedicated database, with table permissions separating `auth_*` from
 application data. Runtime roles cannot perform DDL.
 
-Startup order is `db-roles` → Go/auth migration jobs → `db-security` → services.
-Development adds `auth-seed` after permission setup. Go no longer runs migrations
+Production startup order is `db-roles` → Go/auth migration jobs → `db-security` → services.
+Development `make hot` runs the same preparation and test-account seed through
+`docker compose exec` inside the five application containers. Auth and Go wait
+until preparation succeeds before starting HTTP servers. Migration/admin credentials
+are passed only to the temporary setup processes. Go no longer runs migrations
 when its HTTP server starts; standalone deployments must run `keepnode migrate`
 with migration credentials before starting it with runtime credentials.
 

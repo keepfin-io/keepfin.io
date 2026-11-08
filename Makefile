@@ -1,6 +1,8 @@
 
 .PHONY: hot down build build-go build-web clean test auth-init search-init
 
+DEV_COMPOSE := docker compose -p keepnode -f docker-compose.hot.yml
+
 # Build everything (frontend + backend)
 build:
 	@echo "Building Vue frontend..."
@@ -43,12 +45,46 @@ search-init:
 
 hot: auth-init search-init
 	@echo "Starting development environment with Docker Compose (Vue + Go)..."
-	@docker compose -p keepnode -f docker-compose.hot.yml up --build
+	@$(DEV_COMPOSE) config --quiet
+	@$(DEV_COMPOSE) build keepnode auth
+	@set -eu; \
+		$(DEV_COMPOSE) stop vue keepnode auth; \
+		setup_complete=false; \
+		trap 'if [ "$$setup_complete" = false ]; then $(DEV_COMPOSE) stop vue keepnode auth >/dev/null 2>&1 || true; fi' EXIT; \
+		trap 'exit 130' INT; \
+		trap 'exit 143' TERM; \
+		$(DEV_COMPOSE) up --detach --wait --wait-timeout 60 --remove-orphans postgres; \
+		$(DEV_COMPOSE) exec -T \
+			-e PGUSER=postgres -e PGDATABASE=keepnode -e PGPASSWORD=postgres \
+			-e KEEPFIN_DB_PASSWORD=keepfin-dev-runtime \
+			-e KEEPFIN_MIGRATION_DB_PASSWORD=keepfin-dev-migrator \
+			-e AUTH_DB_PASSWORD=auth-dev-runtime \
+			-e AUTH_MIGRATION_DB_PASSWORD=auth-dev-migrator \
+			postgres sh /security/roles.sh; \
+		$(DEV_COMPOSE) up --detach --no-deps --force-recreate auth keepnode; \
+		$(DEV_COMPOSE) exec -T \
+			-e DB_USERNAME=keepfin_migrator -e DB_PASSWORD=keepfin-dev-migrator \
+			keepnode go run . migrate; \
+		$(DEV_COMPOSE) exec -T \
+			-e DATABASE_URL=postgres://auth_migrator@postgres:5432/keepnode \
+			-e PGPASSWORD=auth-dev-migrator -e AUTH_MAIL_MODE=disabled \
+			auth npm run migrate:dev; \
+		$(DEV_COMPOSE) exec -T \
+			-e PGUSER=postgres -e PGDATABASE=keepnode -e PGPASSWORD=postgres \
+			postgres psql -X --no-password -f /security/permissions.sql; \
+		$(DEV_COMPOSE) exec -T \
+			-e DATABASE_URL=postgres://postgres@postgres:5432/keepnode \
+			-e PGPASSWORD=postgres -e AUTH_MAIL_MODE=disabled \
+			auth node src/seed.ts; \
+		$(DEV_COMPOSE) exec -T auth touch /tmp/keepfin-ready; \
+		$(DEV_COMPOSE) exec -T keepnode touch /tmp/keepfin-ready; \
+		setup_complete=true; \
+		exec $(DEV_COMPOSE) up --no-build postgres typesense auth keepnode vue
 
 # Stop development environment
 down:
 	@echo "Stopping development environment..."
-	@docker compose -p keepnode -f docker-compose.hot.yml down
+	@$(DEV_COMPOSE) down
 
 # Rebuild and restart
 restart: down hot

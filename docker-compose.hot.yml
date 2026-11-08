@@ -1,91 +1,4 @@
-x-db-admin: &db-admin
-  PGHOST: postgres
-  PGPORT: 5432
-  PGUSER: postgres
-  PGPASSWORD: postgres
-  PGDATABASE: keepnode
-
 services:
-  db-roles:
-    image: postgres:18.6
-    environment:
-      <<: *db-admin
-      KEEPFIN_DB_PASSWORD: keepfin-dev-runtime
-      KEEPFIN_MIGRATION_DB_PASSWORD: keepfin-dev-migrator
-      AUTH_DB_PASSWORD: auth-dev-runtime
-      AUTH_MIGRATION_DB_PASSWORD: auth-dev-migrator
-    volumes:
-      - ./deploy/postgres:/security:ro
-    command: sh /security/roles.sh
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  keepnode-migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USERNAME: keepfin_migrator
-      DB_PASSWORD: keepfin-dev-migrator
-      DB_NAME: keepnode
-      DB_SSL_MODE: disable
-    command: go run . migrate
-    depends_on:
-      db-roles:
-        condition: service_completed_successfully
-    volumes:
-      - .:/app
-
-  auth-migrate:
-    build:
-      context: ./auth
-      target: development
-    env_file: .env.auth.local
-    environment:
-      NODE_ENV: development
-      APP_ORIGIN: http://localhost:8080
-      DATABASE_URL: postgres://auth_migrator@postgres:5432/keepnode
-      PGPASSWORD: auth-dev-migrator
-      AUTH_MAIL_MODE: disabled
-    command: npm run migrate:dev
-    depends_on:
-      db-roles:
-        condition: service_completed_successfully
-    volumes:
-      - ./auth/src:/app/src:ro
-
-  db-security:
-    image: postgres:18.6
-    environment: *db-admin
-    volumes:
-      - ./deploy/postgres:/security:ro
-    command: psql -X --no-password -f /security/permissions.sql
-    depends_on:
-      keepnode-migrate:
-        condition: service_completed_successfully
-      auth-migrate:
-        condition: service_completed_successfully
-
-  auth-seed:
-    build:
-      context: ./auth
-      target: development
-    env_file: .env.auth.local
-    environment:
-      NODE_ENV: development
-      APP_ORIGIN: http://localhost:8080
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/keepnode
-      AUTH_INTERNAL_TESTING: "true"
-    command: node src/seed.ts
-    volumes:
-      - ./auth/src:/app/src:ro
-    depends_on:
-      db-security:
-        condition: service_completed_successfully
-
   keepnode:
     build:
       context: .
@@ -111,13 +24,15 @@ services:
       default:
         ipv4_address: 172.30.81.11
     depends_on:
-      db-security:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
       auth:
         condition: service_started
       typesense:
         condition: service_started
     restart: unless-stopped
+    # A fresh container cannot serve requests before make hot finishes setup.
+    command: sh -c "until [ -f /tmp/keepfin-ready ]; do sleep 1; done; exec air"
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
@@ -141,10 +56,11 @@ services:
     volumes:
       - ./auth/src:/app/src:ro
       - ./.auth-mail:/app/.mail
-    command: sh -c "npm run typecheck && npm run dev"
+    # make hot releases this gate after migrations, permissions and seeding.
+    command: sh -c "until [ -f /tmp/keepfin-ready ]; do sleep 1; done; npm run typecheck && exec npm run dev"
     depends_on:
-      auth-seed:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   vue:
@@ -183,6 +99,7 @@ services:
       POSTGRES_DB: keepnode
     volumes:
       - postgres_data:/var/lib/postgresql
+      - ./deploy/postgres:/security:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d keepnode"]
       interval: 3s

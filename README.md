@@ -77,6 +77,10 @@ make hot
 Open **[localhost:8080](http://localhost:8080)**. The first start builds the
 services, installs frontend dependencies, and applies database migrations.
 `make hot` generates local authentication and search secrets in ignored files.
+It creates only five containers: Vue, Go, auth, PostgreSQL, and Typesense. Database
+roles, migrations, and the test-account seed run inside those containers before
+the HTTP servers start. A failed setup stops startup. Use `make hot` rather than
+calling the development Compose file directly so these steps run in order.
 
 For market data, add your own token to the generated `.env` file, then restart
 the development stack:

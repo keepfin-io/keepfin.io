@@ -23,8 +23,9 @@ scheduled market retries may run up to one fallback interval after becoming due.
 Shutdown cancels the listener and both workers and waits for them to finish.
 
 Apply the Go migration before starting the updated API to install notification
-triggers. Compose's migration service performs this step. The runtime role needs
-no new table grants, DDL privileges, or external queue service. With a connection
+triggers. Production Compose's migration service performs this step; development
+`make hot` runs it inside the Go container before releasing its HTTP server.
+The runtime role needs no new table grants, DDL privileges, or external queue service. With a connection
 pooler, the listener requires session pooling or a direct PostgreSQL connection.
 
 Run isolated PostgreSQL/Typesense and restricted-role integration tests with:
