@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readConfig } from '../src/config.js'
+import { readConfig } from '../src/config.ts'
 const base = { BETTER_AUTH_SECRET: 'a'.repeat(64), DATABASE_URL: 'postgres://localhost/test' }
 test('reject unsafe production configuration', () => {
   assert.throws(() => readConfig({ ...base, NODE_ENV: 'production' }), /HTTPS/)
@@ -9,6 +9,9 @@ test('reject unsafe production configuration', () => {
   assert.throws(() => readConfig({ ...base, NODE_ENV: 'production', APP_ORIGIN: 'https://example.com', AUTH_MAIL_MODE: 'file' }), /development-only/)
   assert.throws(() => readConfig({ ...base, GOOGLE_CLIENT_ID: 'id' }), /Both/)
   assert.equal(readConfig(base).mailMode, 'disabled')
+  assert.throws(() => readConfig({ ...base, AUTH_SESSION_RATE_LIMIT: '0' }), /AUTH_SESSION_RATE_LIMIT/)
+  assert.throws(() => readConfig({ ...base, AUTH_SESSION_RATE_LIMIT: 'invalid' }), /AUTH_SESSION_RATE_LIMIT/)
+  assert.throws(() => readConfig({ ...base, AUTH_TRUSTED_PROXY_CIDRS: 'invalid' }), /CIDR/)
 })
 
 test('internal testing requires explicit development or test configuration', () => {

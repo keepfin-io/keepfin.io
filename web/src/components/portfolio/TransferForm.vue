@@ -23,7 +23,7 @@ onBeforeUnmount(() => { active = false })
 const accounts = ref([]), busy = ref(false), error = ref(''), form = ref({})
 const today = new Date().toISOString().slice(0, 10)
 const target = computed(() => accounts.value.find(a => a.id === form.value.to_account_id))
-watch(() => props.account.id, async () => { error.value = ''; form.value = { to_account_id: '', date: today, amount: '', received_amount: '', fee: 0 }; try { const data = await accountAPI.getAccounts(); if (active) accounts.value = data.accounts.filter(a => a.id !== props.account.id && a.is_active) } catch (e) { error.value = e.message } }, { immediate: true })
+watch(() => props.account.id, async () => { error.value = ''; form.value = { to_account_id: '', date: today, amount: '', received_amount: '', fee: 0 }; try { const data = await accountAPI.getAccounts(); if (active) accounts.value = data.data.filter(a => a.id !== props.account.id && a.is_active) } catch (e) { error.value = e.message } }, { immediate: true })
 watch(busy, value => emit('busy', value))
 async function save() {
   if (busy.value || !target.value) return

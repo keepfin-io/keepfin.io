@@ -29,5 +29,8 @@ func AutoMigrate(db *gorm.DB) error {
 	if err := initializePortfolios(db); err != nil {
 		return err
 	}
-	return initializeHoldingSearch(db)
+	if err := initializeHoldingSearch(db); err != nil {
+		return err
+	}
+	return initializeWorkerNotifications(db)
 }

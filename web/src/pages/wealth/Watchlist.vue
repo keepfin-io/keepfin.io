@@ -36,8 +36,8 @@ const filtered = computed(() => items.value.filter(a => `${a.symbol} ${a.name}`.
 const pages = computed(() => Math.max(1, Math.ceil(filtered.value.length / 20)))
 const visible = computed(() => filtered.value.slice((page.value - 1) * 20, page.value * 20))
 const asAsset = item => ({ Code: item.symbol.split('.')[0], Exchange: item.symbol.split('.').slice(1).join('.'), Name: item.name, Currency: item.currency, Type: item.asset_class })
-async function load() { items.value = (await wealthAPI.get('/watchlist')).items; page.value = Math.min(page.value, pages.value) }
-function search() { run(async () => { results.value = []; results.value = (await marketAPI.searchAssets(query.value.trim(), 20)).results }) }
+async function load() { items.value = (await wealthAPI.get('/watchlist')).data; page.value = Math.min(page.value, pages.value) }
+function search() { run(async () => { results.value = []; results.value = (await marketAPI.searchAssets(query.value.trim(), 20)).data }) }
 function add(a) { run(async () => { await wealthAPI.save('/watchlist', { symbol: `${a.Code}.${a.Exchange}`, name: a.Name, currency: a.Currency, asset_class: a.Type }); await load() }, true) }
 function remove(item) { run(async () => { await wealthAPI.remove(`/watchlist/${item.id}`); await load() }) }
 function refreshQuotes() { run(async () => { quotes.value = {}; const data = await marketAPI.getMultipleLivePrices(visible.value.map(a => a.symbol)); quotes.value = Object.fromEntries(data.data.map(a => [a.code, a])) }) }

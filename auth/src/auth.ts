@@ -1,12 +1,14 @@
 import { betterAuth } from 'better-auth'
 import { magicLink } from 'better-auth/plugins'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
-import { internalTestingUser } from './internal-testing.js'
+import { internalTestingUser } from './internal-testing.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { resolve } from 'node:path'
+import type { Pool } from 'pg'
+import type { AuthConfig } from './types/config.ts'
 
-export function createAuth(config, pool) {
+export function createAuth(config: AuthConfig, pool: Pool) {
   return betterAuth({
     appName: 'Keepfin',
     baseURL: config.baseURL,
@@ -28,8 +30,10 @@ export function createAuth(config, pool) {
       before: createAuthMiddleware(async (ctx) => {
         // The development credential flow is reserved for the explicitly seeded
         // identity; it does not re-enable passwords for ordinary accounts.
-        if (ctx.path === '/sign-in/email' && (!config.internalTesting ||
-            ctx.body?.email?.toLowerCase() !== internalTestingUser.email)) {
+        if (ctx.path !== '/sign-in/email') return
+        const body: unknown = ctx.body
+        const email = typeof body === 'object' && body !== null && 'email' in body ? body.email : undefined
+        if (!config.internalTesting || typeof email !== 'string' || email.toLowerCase() !== internalTestingUser.email) {
           throw new APIError('UNAUTHORIZED', { message: 'Invalid email or password' })
         }
       }),
@@ -52,7 +56,7 @@ export function createAuth(config, pool) {
     rateLimit: {
       enabled: true, storage: 'database', modelName: 'auth_rate_limit',
       window: 60, max: 100,
-      customRules: { '/get-session': false, '/sign-in/social': { window: 60, max: 10 }, '/sign-in/email': { window: 60, max: 5 } },
+      customRules: { '/get-session': { window: 60, max: config.sessionRateLimit }, '/sign-in/social': { window: 60, max: 10 }, '/sign-in/email': { window: 60, max: 5 } },
     },
     advanced: {
       useSecureCookies: config.baseURL.startsWith('https:'),
@@ -78,3 +82,4 @@ export function createAuth(config, pool) {
     })] : [],
   })
 }
+

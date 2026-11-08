@@ -55,7 +55,9 @@ func (q *UserQueries) CreateUser(ctx context.Context, user *usermodel.User) erro
 }
 
 func (q *UserQueries) UpdateUser(ctx context.Context, id uuid.UUID, user *usermodel.User) error {
-	err := q.DB.WithContext(ctx).Model(&usermodel.User{}).Where("id = ?", id).Updates(user).Error
+	// Identity mappings, roles and account status are privileged operations.
+	err := q.DB.WithContext(ctx).Model(&usermodel.User{}).Where("id = ?", id).
+		Select("theme", "base_currency", "locale").Updates(user).Error
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}

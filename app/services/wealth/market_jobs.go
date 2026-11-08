@@ -3,15 +3,19 @@ package wealth
 import (
 	"context"
 	"errors"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	holdingmodel "keepnode/app/models/holding"
 	marketmodel "keepnode/app/models/market"
 	usermodel "keepnode/app/models/user"
 	model "keepnode/app/models/wealth"
-	"strings"
-	"time"
+	"keepnode/pkg/worker"
 )
 
 func (s *Service) IsAdmin(user uuid.UUID) bool {
@@ -25,15 +29,44 @@ func (s *Service) MarketConfiguration() (map[string]any, error) {
 	return map[string]any{"provider": s.Market.Provider(), "providers": []map[string]any{{"id": "eodhd", "configured": s.Market.Configured("eodhd")}, {"id": "alpha-vantage", "configured": s.Market.Configured("alpha-vantage")}}}, nil
 }
 func (s *Service) LoadProvider() error {
-	var config model.MarketConfig
-	err := s.DB.First(&config, "id = 1").Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	return s.loadProvider(context.Background())
+}
+
+func (s *Service) loadProvider(ctx context.Context) error {
+	s.providerMu.Lock()
+	defer s.providerMu.Unlock()
+	if time.Since(s.providerLoadedAt) < worker.ReconcileInterval {
 		return nil
 	}
-	if err != nil {
+	var config model.MarketConfig
+	result := s.DB.WithContext(ctx).Where("id = 1").Limit(1).Find(&config)
+	if result.Error != nil {
+		return result.Error
+	}
+	provider := s.defaultProvider
+	if provider == "" {
+		provider = "eodhd"
+	}
+	if result.RowsAffected > 0 {
+		provider = config.Provider
+	}
+	if err := s.Market.SetProvider(provider); err != nil {
 		return err
 	}
-	return s.Market.SetProvider(config.Provider)
+	s.providerLoadedAt = time.Now()
+	return nil
+}
+
+// InvalidateProvider refreshes settings on this replica after a committed change.
+func (s *Service) InvalidateProvider() {
+	s.providerMu.Lock()
+	s.providerLoadedAt = time.Time{}
+	s.providerMu.Unlock()
+	s.WakeMarketWorker()
+}
+
+func (s *Service) WakeMarketWorker() {
+	s.marketWake.Notify()
 }
 func (s *Service) SetProvider(user uuid.UUID, name string) error {
 	if !s.IsAdmin(user) {
@@ -45,10 +78,16 @@ func (s *Service) SetProvider(user uuid.UUID, name string) error {
 	if name != "eodhd" && name != "alpha-vantage" {
 		return errors.New("invalid provider")
 	}
+	s.providerMu.Lock()
+	defer s.providerMu.Unlock()
 	if err := s.DB.Save(&model.MarketConfig{ID: 1, Provider: name}).Error; err != nil {
 		return err
 	}
-	return s.Market.SetProvider(name)
+	if err := s.Market.SetProvider(name); err != nil {
+		return err
+	}
+	s.providerLoadedAt = time.Now()
+	return nil
 }
 func (s *Service) Jobs(user uuid.UUID) ([]model.MarketJob, error) {
 	rows := []model.MarketJob{}
@@ -84,14 +123,14 @@ func (s *Service) QueueJob(user uuid.UUID, symbol, from, to string) (*model.Mark
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&owner, "id = ?", user).Error; err != nil {
 			return err
 		}
-		e := tx.Where("user_id = ? AND symbol = ? AND \"from\" = ? AND \"to\" = ?", user, symbol, from, to).Order("created_at desc").First(&job).Error
-		if e == nil {
+		existing := tx.Where("user_id = ? AND symbol = ? AND \"from\" = ? AND \"to\" = ?", user, symbol, from, to).Order("created_at desc").Limit(1).Find(&job)
+		if existing.Error != nil {
+			return existing.Error
+		}
+		if existing.RowsAffected > 0 {
 			return nil
 		}
-		if !errors.Is(e, gorm.ErrRecordNotFound) {
-			return e
-		}
-		if e = tx.Model(&model.MarketJob{}).Where("user_id = ? AND status IN ?", user, []string{"queued", "running"}).Count(&n).Error; e != nil {
+		if e := tx.Model(&model.MarketJob{}).Where("user_id = ? AND status IN ?", user, []string{"queued", "running"}).Count(&n).Error; e != nil {
 			return e
 		}
 		if n >= 20 {
@@ -100,6 +139,9 @@ func (s *Service) QueueJob(user uuid.UUID, symbol, from, to string) (*model.Mark
 		job = model.MarketJob{UserID: user, Symbol: symbol, From: from, To: to, Status: "queued", AvailableAt: time.Now().UTC()}
 		return tx.Create(&job).Error
 	})
+	if err == nil && job.Status == "queued" {
+		s.WakeMarketWorker()
+	}
 	return &job, err
 }
 func (s *Service) RetryJob(user, id uuid.UUID) error {
@@ -110,25 +152,38 @@ func (s *Service) RetryJob(user, id uuid.UUID) error {
 	if result.RowsAffected == 0 {
 		return errors.New("only failed jobs can be retried")
 	}
+	s.WakeMarketWorker()
 	return nil
 }
 func (s *Service) RunMarketJob(ctx context.Context) error {
+	if err := s.recoverMarketJobs(ctx); err != nil {
+		return err
+	}
+	_, err := s.runMarketJob(ctx)
+	return err
+}
+
+func (s *Service) recoverMarketJobs(ctx context.Context) error {
+	// Recovery must commit even when there is no ready job to claim.
+	return s.DB.WithContext(ctx).Model(&model.MarketJob{}).
+		Where("status = 'running' AND updated_at < ?", time.Now().Add(-5*time.Minute)).
+		Updates(map[string]any{"status": gorm.Expr("CASE WHEN attempts >= 3 THEN 'failed' ELSE 'queued' END"), "available_at": time.Now().UTC()}).Error
+}
+
+func (s *Service) runMarketJob(ctx context.Context) (bool, error) {
 	db := s.DB.WithContext(ctx)
 	var job model.MarketJob
 	err := db.Transaction(func(tx *gorm.DB) error {
-		if e := tx.Model(&model.MarketJob{}).Where("status = 'running' AND updated_at < ?", time.Now().Add(-5*time.Minute)).Updates(map[string]any{"status": gorm.Expr("CASE WHEN attempts >= 3 THEN 'failed' ELSE 'queued' END"), "available_at": time.Now().UTC()}).Error; e != nil {
-			return e
-		}
-		if e := tx.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).Where("status = 'queued' AND available_at <= ?", time.Now().UTC()).Order("available_at,id").First(&job).Error; e != nil {
-			return e
+		result := tx.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
+			Where("status = 'queued' AND available_at <= ?", time.Now().UTC()).
+			Order("available_at,id").Limit(1).Find(&job)
+		if result.Error != nil || result.RowsAffected == 0 {
+			return result.Error
 		}
 		return tx.Model(&job).Updates(map[string]any{"status": "running", "attempts": job.Attempts + 1}).Error
 	})
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil
-	}
-	if err != nil {
-		return err
+	if err != nil || job.ID == uuid.Nil {
+		return false, err
 	}
 	data, fetchErr := s.Market.GetHistoricalData(&marketmodel.EODRequest{Symbol: job.Symbol, From: job.From, To: job.To, Period: "d", Order: "a"})
 	if fetchErr == nil && len(data) == 0 {
@@ -156,21 +211,29 @@ func (s *Service) RunMarketJob(ctx context.Context) error {
 			update["available_at"] = time.Now().Add(time.Duration(job.Attempts*job.Attempts) * time.Minute)
 		}
 	}
-	return db.Model(&model.MarketJob{}).Where("id = ? AND status = 'running'", job.ID).Updates(update).Error
+	return true, db.Model(&model.MarketJob{}).Where("id = ? AND status = 'running'", job.ID).Updates(update).Error
 }
 func (s *Service) RunMarketWorker(ctx context.Context) {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if s.LoadProvider() == nil {
-				_ = s.RunMarketJob(ctx)
-			}
+	var recoveredAt time.Time
+	process := func(ctx context.Context) (bool, error) {
+		if err := s.loadProvider(ctx); err != nil {
+			return false, err
 		}
+		if time.Since(recoveredAt) >= worker.ReconcileInterval {
+			if err := s.recoverMarketJobs(ctx); err != nil {
+				return false, err
+			}
+			recoveredAt = time.Now()
+		}
+		return s.runMarketJob(ctx)
 	}
+	worker.Run(
+		ctx,
+		s.marketWake.C(),
+		worker.ReconcileInterval,
+		process,
+		func(err error) { log.Printf("Market job retry pending: %v", err) },
+	)
 }
 func (s *Service) Overrides(user uuid.UUID) ([]model.PriceOverride, error) {
 	if !s.IsAdmin(user) {

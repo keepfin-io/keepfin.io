@@ -32,9 +32,9 @@ export function refreshSession() {
     if (!result.data) { setUser(null); return false }
     const data = await userAPI.getMe()
     if (sessionVersion !== sessionRevision) return false
-    if (!data.user || data.error !== false) throw new Error('sessionUnavailable')
-    if (revision !== themeRevision && data.user.id === user.value?.id) data.user.theme = user.value.theme
-    setUser(data.user)
+    if (!data.data || data.error !== null) throw new Error('sessionUnavailable')
+    if (revision !== themeRevision && data.data.id === user.value?.id) data.data.theme = user.value.theme
+    setUser(data.data)
     return true
   })().catch((err) => {
     if (sessionVersion !== sessionRevision) return false
@@ -54,7 +54,7 @@ export function useAuth() {
     isSavingTheme.value = true
     try {
       const data = await userAPI.updateTheme(theme)
-      if (data.error !== false) throw new Error('Failed to save theme')
+      if (data.error !== null) throw new Error('Failed to save theme')
       if (user.value?.id === userID) {
         themeRevision += 1
         setUser({ ...user.value, theme })

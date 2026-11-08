@@ -22,7 +22,7 @@ const props = defineProps({ mode: { type: String, required: true } })
 const { t, busy, error, notice, run, money } = useWealthPage()
 const preferences = ref(null), report = ref(null)
 const fields = computed(() => props.mode === 'risk' ? ['max_asset_weight','max_account_weight','max_currency_weight','max_fee_ratio','emergency_fund','monthly_expenses','emergency_months'] : ['annual_expenses','monthly_contribution','annual_return','withdrawal_rate','horizon_years','emergency_fund'])
-async function calculate() { report.value = (await wealthAPI.get(`/${props.mode}`)).report }
-function save() { run(async () => { preferences.value = (await wealthAPI.save('/preferences', preferences.value, 'PUT')).preferences; await calculate() }, true) }
-watch(() => props.mode, () => run(async () => { report.value = null; preferences.value = (await wealthAPI.get('/preferences')).preferences; await calculate() }), { immediate: true })
+async function calculate() { report.value = (await wealthAPI.get(`/${props.mode}`)).data }
+function save() { run(async () => { preferences.value = (await wealthAPI.save('/preferences', preferences.value, 'PUT')).data; await calculate() }, true) }
+watch(() => props.mode, () => run(async () => { report.value = null; preferences.value = (await wealthAPI.get('/preferences')).data; await calculate() }), { immediate: true })
 </script>

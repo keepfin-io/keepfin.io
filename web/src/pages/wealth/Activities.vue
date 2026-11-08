@@ -26,8 +26,12 @@ const { t, busy, error, run, money, today } = useWealthPage()
 const filters = ref({ q: '', account_id: 'all', tag_id: 'all', type: 'all', from: '', to: '', direction: 'desc' })
 const page = ref(1), size = ref('25'), result = ref(null), accounts = ref([]), tags = ref([]), editingTags = ref('')
 const types = ['buy','sell','deposit','withdrawal','dividend','interest','fee','split','opening','transfer_in','transfer_out']
-async function load() { const params = Object.fromEntries(Object.entries(filters.value).map(([k,v]) => [k, v === 'all' ? '' : v])); result.value = (await wealthAPI.get('/activities', { ...params, page: page.value, per_page: size.value })).result }
+async function load() {
+  const params = Object.fromEntries(Object.entries(filters.value).map(([k, v]) => [k, v === 'all' ? '' : v]))
+  const { data, meta } = await wealthAPI.get('/activities', { ...params, page: page.value, per_page: size.value })
+  result.value = { activities: data, total: meta.pagination.total, pages: meta.pagination.total_pages }
+}
 function apply() { page.value = 1; run(load) }
 function go(value) { page.value = value; run(load) }
-onMounted(() => run(async () => { const [a, t] = await Promise.all([accountAPI.getAccounts(), wealthAPI.get('/tags')]); accounts.value = a.accounts; tags.value = t.items; await load() }))
+onMounted(() => run(async () => { const [a, t] = await Promise.all([accountAPI.getAccounts(), wealthAPI.get('/tags')]); accounts.value = a.data; tags.value = t.data; await load() }))
 </script>

@@ -1,17 +1,20 @@
 import { createServer } from 'node:http'
 import { toNodeHandler } from 'better-auth/node'
-import { auth, config, pool } from './runtime.js'
-import { seedInternalTesting } from './internal-testing.js'
+import { auth, config, pool } from './runtime.ts'
+import { createClientIPResolver } from './proxy.ts'
+import { authHTTPHandler } from './http-handler.ts'
 
-await seedInternalTesting(auth, pool, config, { waitForSchema: true })
-
-const handler = toNodeHandler(auth)
+const handler = toNodeHandler(authHTTPHandler(auth))
+const clientIP = createClientIPResolver(config.trustedProxyCIDRs)
 const server = createServer(async (req, res) => {
+  req.headers['x-real-ip'] = clientIP(req.socket.remoteAddress, req.headers['x-real-ip'])
+  delete req.headers['x-forwarded-for']
+  delete req.headers.forwarded
   res.setHeader('Cache-Control', 'no-store')
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('X-Content-Type-Options', 'nosniff')
   try {
-    const path = new URL(req.url, config.baseURL).pathname
+    const path = new URL(req.url ?? '/', config.baseURL).pathname
     if (req.method === 'GET' && path === '/api/auth/config') {
       res.setHeader('Content-Type', 'application/json')
       res.end(JSON.stringify({ google: config.google, apple: false, internalTesting: config.internalTesting, email: config.mailMode !== 'disabled', developmentMail: config.mailMode === 'file' }))

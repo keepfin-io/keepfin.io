@@ -16,7 +16,7 @@ import { wealthAPI } from '@/services/wealthApi'
 import { installPrompt, installApp } from '@/composables/useInstall'
 const { t, busy, error, notice, run } = useWealthPage()
 const tags = ref([]), name = ref(''), names = ref({}), deleting = ref(null)
-async function load() { tags.value=(await wealthAPI.get('/tags')).items;names.value=Object.fromEntries(tags.value.map(t => [t.id,t.name])) }
+async function load() { tags.value=(await wealthAPI.get('/tags')).data;names.value=Object.fromEntries(tags.value.map(t => [t.id,t.name])) }
 function add(){run(async()=>{await wealthAPI.save('/tags',{name:name.value});name.value='';await load()},true)}
 function rename(tag){run(async()=>{await wealthAPI.save(`/tags/${tag.id}`,{name:names.value[tag.id]},'PUT');await load()},true)}
 function remove(){run(async()=>{await wealthAPI.remove(`/tags/${deleting.value.id}`);deleting.value=null;await load()},true)}

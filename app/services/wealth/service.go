@@ -2,9 +2,15 @@ package wealth
 
 import (
 	"errors"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	accountmodel "keepnode/app/models/account"
 	activitymodel "keepnode/app/models/activity"
 	currencymodel "keepnode/app/models/currency"
@@ -14,23 +20,28 @@ import (
 	marketservice "keepnode/app/services/market"
 	portfolioservice "keepnode/app/services/portfolio"
 	"keepnode/pkg/portfolio"
-	"regexp"
-	"strings"
-	"time"
+	"keepnode/pkg/worker"
 )
 
 var ErrNotFound = errors.New("record not found")
 var symbolPattern = regexp.MustCompile(`^[A-Z0-9.^=\-]{1,20}$`)
 
 type Service struct {
-	DB         *gorm.DB
-	Market     *marketservice.MarketService
-	Activities *activityservice.ActivityService
-	Portfolio  *portfolioservice.PortfolioService
+	DB               *gorm.DB
+	Market           *marketservice.MarketService
+	Activities       *activityservice.ActivityService
+	Portfolio        *portfolioservice.PortfolioService
+	marketWake       worker.Signal
+	providerMu       sync.Mutex
+	providerLoadedAt time.Time
+	defaultProvider  string
 }
 
 func New(db *gorm.DB, market *marketservice.MarketService, activities *activityservice.ActivityService, report *portfolioservice.PortfolioService) *Service {
-	return &Service{db, market, activities, report}
+	return &Service{
+		DB: db, Market: market, Activities: activities, Portfolio: report,
+		defaultProvider: market.Provider(),
+	}
 }
 func validCurrency(v string) bool {
 	for _, c := range currencymodel.SupportedCurrencies {

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +12,8 @@ import (
 
 	usermodel "keepnode/app/models/user"
 	userservice "keepnode/app/services/user"
+	"keepnode/pkg/apiresponse"
+	"keepnode/pkg/authhandler"
 	"keepnode/pkg/authsession"
 )
 
@@ -43,17 +46,21 @@ func TestSessionBoundary(t *testing.T) {
 		{"bearer is not identity", "", nil, nil, 401},
 		{"revoked", "signed=value", authsession.ErrUnauthorized, nil, 401},
 		{"outage", "signed=value", errors.New("offline"), nil, 503},
+		{"rate limited", "signed=value", &authsession.RateLimitError{RetryAfter: "30"}, nil, 429},
 		{"blocked", "signed=value", nil, userservice.ErrUserBlocked, 403},
 		{"legacy collision", "signed=value", nil, userservice.ErrIdentityConflict, 409},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			app := fiber.New()
-			app.Get("/", Session(fakeVerifier{tt.upstream}, fakeResolver{id, tt.resolve}), func(c *fiber.Ctx) error {
-				if c.Locals("user_id") != id {
+			app := fiber.New(fiber.Config{ErrorHandler: apiresponse.ErrorHandler})
+			called := false
+			handler := authhandler.WithUser(func(c *fiber.Ctx, userID uuid.UUID) error {
+				called = true
+				if userID != id {
 					t.Error("did not use mapped application UUID")
 				}
-				return c.SendStatus(200)
+				return apiresponse.RespondOK(c, userID)
 			})
+			app.Get("/", Session(fakeVerifier{err: tt.upstream}, fakeResolver{id: id, err: tt.resolve}), handler)
 			req := httptest.NewRequest("GET", "/", nil)
 			req.Header.Set("Cookie", tt.cookie)
 			req.Header.Set("Authorization", "Bearer legacy-forged-token")
@@ -65,6 +72,23 @@ func TestSessionBoundary(t *testing.T) {
 			defer res.Body.Close()
 			if res.StatusCode != tt.status {
 				t.Fatalf("got %d want %d", res.StatusCode, tt.status)
+			}
+			if tt.status == 429 && res.Header.Get("Retry-After") != "30" {
+				t.Fatal("lost upstream retry delay")
+			}
+			if called != (tt.status == 200) {
+				t.Fatalf("controller called=%t for status %d", called, tt.status)
+			}
+			var envelope apiresponse.Envelope[*uuid.UUID]
+			if err := json.NewDecoder(res.Body).Decode(&envelope); err != nil {
+				t.Fatal(err)
+			}
+			if tt.status == 200 {
+				if envelope.Error != nil || envelope.Data == nil || *envelope.Data != id {
+					t.Fatalf("invalid authenticated response: %+v", envelope)
+				}
+			} else if envelope.Data != nil || envelope.Error == nil {
+				t.Fatalf("invalid error envelope: %+v", envelope)
 			}
 			if tt.status == 200 && len(res.Header.Values("Set-Cookie")) != 2 {
 				t.Fatal("lost renewed cookies")

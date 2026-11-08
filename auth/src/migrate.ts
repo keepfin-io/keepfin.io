@@ -1,5 +1,5 @@
 import { getMigrations } from 'better-auth/db/migration'
-import { auth, pool } from './runtime.js'
+import { auth, pool } from './runtime.ts'
 
 try {
   const { runMigrations } = await getMigrations(auth.options)

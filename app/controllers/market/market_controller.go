@@ -2,9 +2,11 @@ package market
 
 import (
 	"gorm.io/gorm"
+	"keepnode/pkg/apiresponse"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 
 	marketmodel "keepnode/app/models/market"
 	marketservice "keepnode/app/services/market"
@@ -24,16 +26,13 @@ func NewMarketController(marketService *marketservice.MarketService, databases .
 }
 
 // GetEODData retrieves End-of-Day historical data
-func (ctrl *MarketController) GetEODData(c *fiber.Ctx) error {
+func (ctrl *MarketController) GetEODData(c *fiber.Ctx, userID uuid.UUID) error {
 	symbolParam := c.Params("symbol")
 	if strings.HasPrefix(symbolParam, "MANUAL-") {
-		return ctrl.manual(c, symbolParam)
+		return ctrl.manual(c, userID, symbolParam)
 	}
 	if symbolParam == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Symbol is required",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Symbol is required")
 	}
 
 	symbol, exchange := parseSymbol(symbolParam)
@@ -52,25 +51,17 @@ func (ctrl *MarketController) GetEODData(c *fiber.Ctx) error {
 		return marketErrorResponse(c, err)
 	}
 
-	return c.JSON(fiber.Map{
-		"error":  false,
-		"symbol": symbolParam,
-		"count":  len(data),
-		"data":   data,
-	})
+	return apiresponse.RespondOK(c, data)
 }
 
 // GetLivePrice retrieves real-time (delayed) price
-func (ctrl *MarketController) GetLivePrice(c *fiber.Ctx) error {
+func (ctrl *MarketController) GetLivePrice(c *fiber.Ctx, userID uuid.UUID) error {
 	symbolParam := c.Params("symbol")
 	if strings.HasPrefix(symbolParam, "MANUAL-") {
-		return ctrl.manual(c, symbolParam)
+		return ctrl.manual(c, userID, symbolParam)
 	}
 	if symbolParam == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Symbol is required",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Symbol is required")
 	}
 
 	symbol, exchange := parseSymbol(symbolParam)
@@ -85,20 +76,14 @@ func (ctrl *MarketController) GetLivePrice(c *fiber.Ctx) error {
 		return marketErrorResponse(c, err)
 	}
 
-	return c.JSON(fiber.Map{
-		"error": false,
-		"data":  data,
-	})
+	return apiresponse.RespondOK(c, data)
 }
 
 // GetMultipleLivePrices retrieves real-time prices for multiple symbols
-func (ctrl *MarketController) GetMultipleLivePrices(c *fiber.Ctx) error {
+func (ctrl *MarketController) GetMultipleLivePrices(c *fiber.Ctx, _ uuid.UUID) error {
 	symbolsParam := c.Query("symbols")
 	if symbolsParam == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Symbols parameter is required",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Symbols parameter is required")
 	}
 
 	symbols := strings.Split(symbolsParam, ",")
@@ -119,21 +104,14 @@ func (ctrl *MarketController) GetMultipleLivePrices(c *fiber.Ctx) error {
 		return marketErrorResponse(c, err)
 	}
 
-	return c.JSON(fiber.Map{
-		"error": false,
-		"count": len(data),
-		"data":  data,
-	})
+	return apiresponse.RespondOK(c, data)
 }
 
 // SearchAssets searches for assets by query
-func (ctrl *MarketController) SearchAssets(c *fiber.Ctx) error {
+func (ctrl *MarketController) SearchAssets(c *fiber.Ctx, _ uuid.UUID) error {
 	query := c.Query("q")
 	if query == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Search query 'q' is required",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Search query 'q' is required")
 	}
 
 	limit := c.QueryInt("limit", 10)
@@ -148,12 +126,7 @@ func (ctrl *MarketController) SearchAssets(c *fiber.Ctx) error {
 		return marketErrorResponse(c, err)
 	}
 
-	return c.JSON(fiber.Map{
-		"error":   false,
-		"query":   query,
-		"count":   len(results),
-		"results": results,
-	})
+	return apiresponse.RespondOK(c, results)
 }
 
 func parseSymbol(symbolParam string) (symbol, exchange string) {

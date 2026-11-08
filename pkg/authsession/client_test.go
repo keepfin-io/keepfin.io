@@ -35,6 +35,9 @@ func TestVerify(t *testing.T) {
 				if r.Header.Get("Cookie") != "keepfin.session_token=signed" {
 					t.Error("cookie missing")
 				}
+				if r.Header.Get("X-Real-IP") != "198.51.100.2" {
+					t.Error("verified client IP missing")
+				}
 				if r.URL.Path != "/api/auth/get-session" || r.URL.Query().Get("disableCookieCache") != "true" {
 					t.Error("incorrect session endpoint")
 				}
@@ -48,7 +51,7 @@ func TestVerify(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			identity, cookies, err := client.Verify(context.Background(), "keepfin.session_token=signed")
+			identity, cookies, err := client.Verify(WithClientIP(context.Background(), "198.51.100.2"), "keepfin.session_token=signed")
 			if errors.Is(err, ErrUnauthorized) != tt.unauthorized {
 				t.Fatalf("unauthorized: %v", err)
 			}
@@ -78,5 +81,33 @@ func TestRejectEmptyCookieAndInvalidConfiguration(t *testing.T) {
 	cancel()
 	if _, _, err := client.Verify(ctx, "cookie=value"); err == nil || errors.Is(err, ErrUnauthorized) {
 		t.Fatal("outage must fail closed")
+	}
+}
+
+func TestSessionRateLimitRetainsRetryDelay(t *testing.T) {
+	for _, header := range []string{"30", "invalid", "-1", "999999"} {
+		t.Run(header, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Retry-After", header)
+				w.WriteHeader(http.StatusTooManyRequests)
+			}))
+			defer server.Close()
+			client, err := NewClient(server.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, _, err = client.Verify(context.Background(), "session=value")
+			var limited *RateLimitError
+			if !errors.As(err, &limited) {
+				t.Fatalf("expected rate limit, got %v", err)
+			}
+			want := "60"
+			if header == "30" {
+				want = header
+			}
+			if limited.RetryAfter != want {
+				t.Fatalf("retry %s, want %s", limited.RetryAfter, want)
+			}
+		})
 	}
 }

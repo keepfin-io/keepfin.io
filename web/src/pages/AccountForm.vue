@@ -124,7 +124,7 @@ async function save() {
       if (mounted) emit('saved')
     } else {
       const response = await accountAPI.createAccount(payload)
-      if (mounted) await router.replace({ name: 'Accounts', query: { created: response.account.id } })
+      if (mounted) await router.replace({ name: 'Accounts', query: { created: response.data.id } })
     }
   } catch (error) {
     formError.value = error.message || t('accounts.saveError')

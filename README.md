@@ -128,7 +128,9 @@ docker compose up --build -d
 
 The frontend binds to `127.0.0.1:8080`; place a TLS reverse proxy in front of it.
 The database, auth service, Go API, and Typesense stay on the private Compose
-network. PostgreSQL and Typesense data use persistent Docker volumes.
+network. PostgreSQL and Typesense data use persistent Docker volumes. Runtime and
+migration database credentials are separate. Existing installations must follow
+the [database security upgrade steps](docs/database-security.md) before restarting.
 
 **Production email delivery is not implemented yet.** Configure Google sign-in
 for production use. Apple sign-in is currently a placeholder. Read the
@@ -166,6 +168,7 @@ go vet ./...
 
 npm --prefix auth ci
 npm --prefix auth test
+npm --prefix auth run build
 
 npm --prefix web ci
 npm --prefix web run lint -- --no-fix

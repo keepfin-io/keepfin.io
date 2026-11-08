@@ -7,14 +7,13 @@ import BrandLogo from '@/components/BrandLogo.vue'
 import PortfolioReport from '@/components/portfolio/PortfolioReport.vue'
 import { refreshSession } from '@/composables/useAuth'
 import { wealthAPI } from '@/services/wealthApi'
+import { readAPIResponse } from '@/services/api'
 async function load(options) {
   const token = window.location.hash.slice(1)
   let authenticated = false
   try { authenticated = await refreshSession() } catch { /* Public links do not require an auth service. */ }
   if (authenticated) return wealthAPI.save('/shared/report', { token, range:options.range })
   const response = await fetch('/api/public/portfolio', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token, range:options.range }) })
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.message || 'This link is unavailable. It may be private, expired or revoked.')
-  return data
+  return readAPIResponse(response)
 }
 </script>

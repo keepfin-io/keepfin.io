@@ -8,11 +8,12 @@
     "dev": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
+    "test:api": "node --test tests/api-client.js",
     "test:auth": "node --test tests/auth-ui.js",
     "test:portfolio": "node --test tests/portfolio-ui.js",
     "test:accounts": "node --test tests/accounts-ui.js",
     "test:assets": "node --test tests/assets-ui.js",
-    "test:ui": "node --test tests/auth-ui.js tests/portfolio-ui.js tests/accounts-ui.js tests/assets-ui.js tests/holdings-ui.js tests/details-ui.js"
+    "test:ui": "node --test tests/api-client.js tests/auth-ui.js tests/portfolio-ui.js tests/accounts-ui.js tests/assets-ui.js tests/holdings-ui.js tests/details-ui.js tests/envelope-ui.js"
   },
   "dependencies": {
     "@kalimahapps/vue-icons": "^1.9.7",

@@ -23,12 +23,17 @@ type identityResolver interface {
 func Session(client sessionVerifier, users identityResolver) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Set("Cache-Control", "no-store")
-		identity, cookies, err := client.Verify(c.UserContext(), c.Get("Cookie"))
+		identity, cookies, err := client.Verify(authsession.WithClientIP(c.UserContext(), ClientIP(c)), c.Get("Cookie"))
 		for _, cookie := range cookies {
 			c.Response().Header.Add("Set-Cookie", cookie)
 		}
 		if errors.Is(err, authsession.ErrUnauthorized) {
 			return fiber.NewError(401, "Authentication required")
+		}
+		var rateLimit *authsession.RateLimitError
+		if errors.As(err, &rateLimit) {
+			c.Set("Retry-After", rateLimit.RetryAfter)
+			return fiber.NewError(fiber.StatusTooManyRequests, "Too many requests; try again later")
 		}
 		if err != nil {
 			return fiber.NewError(503, "Authentication service unavailable")

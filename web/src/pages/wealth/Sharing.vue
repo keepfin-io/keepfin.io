@@ -16,9 +16,9 @@ const { t, busy, error, notice, run } = useWealthPage()
 const accounts = ref([]), shares = ref([]), link = ref('')
 const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10), maxExpiry = new Date(Date.now()+364*86400000).toISOString().slice(0,10)
 const form = ref({ name:'', expires: new Date(Date.now()+30*86400000).toISOString().slice(0,10), recipient_email:'', account_ids:[] })
-async function load() { shares.value = (await wealthAPI.get('/shares')).items }
-function create() { run(async () => { const data = await wealthAPI.save('/shares',{ name:form.value.name, account_ids:form.value.account_ids, recipient_email:form.value.recipient_email, expires_at:`${form.value.expires}T23:59:59Z` }); link.value = `${window.location.origin}/shared#${data.share.token}`; await load() },true) }
+async function load() { shares.value = (await wealthAPI.get('/shares')).data }
+function create() { run(async () => { const data = await wealthAPI.save('/shares',{ name:form.value.name, account_ids:form.value.account_ids, recipient_email:form.value.recipient_email, expires_at:`${form.value.expires}T23:59:59Z` }); link.value = `${window.location.origin}/shared#${data.data.token}`; await load() },true) }
 function revoke(item) { run(async () => { await wealthAPI.remove(`/shares/${item.id}`); link.value=''; await load() },true) }
 function copy() { run(async () => { await navigator.clipboard.writeText(link.value) },true) }
-onMounted(() => run(async () => { accounts.value=(await accountAPI.getAccounts()).accounts; await load() }))
+onMounted(() => run(async () => { accounts.value=(await accountAPI.getAccounts()).data; await load() }))
 </script>

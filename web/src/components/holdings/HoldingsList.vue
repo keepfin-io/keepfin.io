@@ -112,11 +112,11 @@ async function fetchPage(request) {
   try {
     const result = await holdingAPI.searchHoldings(props.account.id, { ...params })
     if (!active || request !== revision) return
-    pages.value = result.pages; total.value = result.total
-    if (params.page > result.pages) { params.page = result.pages; return }
-    rows.value = result.holdings; source.value = result.source
-    facets.value = { ...facets.value, ...result.facets }
-    if (result.source === 'database') recoveryTimer = setTimeout(() => fetchPage(++revision), 10000)
+    pages.value = result.meta.pagination.total_pages; total.value = result.meta.pagination.total
+    if (params.page > result.meta.pagination.total_pages) { params.page = result.meta.pagination.total_pages; return }
+    rows.value = result.data.holdings; source.value = result.data.source
+    facets.value = { ...facets.value, ...result.data.facets }
+    if (result.data.source === 'database') recoveryTimer = setTimeout(() => fetchPage(++revision), 10000)
   } catch (e) {
     if (active && request === revision) { error.value = e.message; rows.value = []; total.value = 0 }
   } finally { if (active && request === revision) loading.value = false }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	marketservice "keepnode/app/services/market"
+	"keepnode/pkg/apiresponse"
 )
 
 func TestMarketErrorResponse(t *testing.T) {
@@ -26,21 +27,18 @@ func TestMarketErrorResponse(t *testing.T) {
 		{"invalid input", errors.New("symbol is required"), 400, "invalid_market_request"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			app := fiber.New()
+			app := fiber.New(fiber.Config{ErrorHandler: apiresponse.ErrorHandler})
 			app.Get("/", func(c *fiber.Ctx) error { return marketErrorResponse(c, tc.err) })
 			response, err := app.Test(httptest.NewRequest("GET", "/", nil))
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer response.Body.Close()
-			var body struct {
-				Code  string `json:"code"`
-				Error bool   `json:"error"`
-			}
+			var body apiresponse.Envelope[any]
 			if err = json.NewDecoder(response.Body).Decode(&body); err != nil {
 				t.Fatal(err)
 			}
-			if response.StatusCode != tc.status || body.Code != tc.code || !body.Error {
+			if response.StatusCode != tc.status || body.Error == nil || body.Error.Code != tc.code || body.Data != nil {
 				t.Fatalf("unexpected error: %d %+v", response.StatusCode, body)
 			}
 		})

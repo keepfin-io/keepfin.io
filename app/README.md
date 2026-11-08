@@ -3,6 +3,18 @@
 Each layer is grouped by business area. Keep a feature's implementation and its
 tests in the same package.
 
+JSON endpoints share the [API response contract](../docs/api-responses.md).
+Use `pkg/apiresponse` for success responses and the central Fiber error handler.
+
+Protected controllers receive the mapped application user ID as a `uuid.UUID`
+parameter. Register them with `authhandler.WithUser(controller.Method)` under
+the existing `middleware.Session` route group. `Session` verifies authentication;
+`WithUser` reads its request-local identity and returns an enveloped `401` when
+it is missing, has the wrong type, or is the zero UUID. Never derive this identity
+from a request header, query, or body. Account/asset ownership checks still belong
+in controllers and services. Public portfolio sharing uses its existing token
+validation and is registered without `WithUser`.
+
 ```text
 app/
   controllers/
@@ -66,8 +78,9 @@ snapshot (`source: database`). Exact filters and pagination remain available;
 typo tolerance is temporarily unavailable and the UI shows a notice. A committed
 financial write still succeeds with `X-Holdings-Search-Sync: pending`, so clients
 must not repeat it merely because indexing failed. Successful synchronization
-sets this header to `ready`. A worker retries persistent pending revisions every
-two seconds and reconciles acknowledged accounts after five minutes. Reads also
+sets this header to `ready`. A worker wakes on committed PostgreSQL notifications
+and scans durable pending revisions on startup. A one-minute fallback handles
+missed notifications; acknowledged accounts are reconciled after five minutes. Reads also
 try to synchronize before searching. Recreating a lost collection requeues all
 accounts. This provides immediate visibility through fallback, not an atomic
 transaction across PostgreSQL and Typesense.

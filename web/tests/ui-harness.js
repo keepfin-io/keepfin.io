@@ -4,6 +4,14 @@ const fs = require('node:fs')
 const path = require('node:path')
 const build = path.resolve(process.env.AUTH_UI_BUILD || path.join(__dirname, '../dist'))
 const pause = () => new Promise(resolve => setTimeout(resolve, 25))
+let requestSequence = 0
+function apiResponse(data, status = 200, pagination) {
+  const meta = { request_id: `ui-request-${++requestSequence}`, timestamp: new Date().toISOString(), ...(pagination ? { pagination } : {}) }
+  const body = status < 400
+    ? { data, meta, error: null }
+    : { data: null, meta, error: { code: data?.code || 'request_failed', message: data?.message || 'Request failed' } }
+  return new global.Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'X-Request-ID': meta.request_id } })
+}
 
 async function launch(t, { route = '/login', authenticated = false, outage = false, conflict = false, width = 320, internalTesting = false, google = true, sessionGate, profileGate, onBoot, locale = 'en-US', portfolioResponse, portfolioGate, measuredChartWidth, accountsResponse = [], holdingsResponse = [], activitiesResponse = [], marketHistoryResponse = [], marketHistoryFailure = '', holdingsFailure = false, activitiesFailure = false, userId = 'app-uuid', storage = {}, wealthHandler = null, zen = false } = {}) {
   const errors = [], calls = []
@@ -49,9 +57,9 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
     calls.push({ endpoint, method: options.method || 'GET', body, query: Object.fromEntries(requestURL.searchParams) })
     if (state.wealthHandler) {
       const custom = await state.wealthHandler({ endpoint, method:options.method || 'GET', body, query:Object.fromEntries(requestURL.searchParams), state })
-      if (custom) return new global.Response(JSON.stringify(custom.data || custom), { status:custom.status || 200, headers:{'Content-Type':'application/json'} })
+      if (custom) return apiResponse(custom.data, custom.status ?? 200, custom.pagination)
     }
-    let data, status = 200
+    let data, pagination, status = 200
     if (endpoint === '/api/auth/get-session') {
       if (sessionGate) await sessionGate
       if (state.outage) { status = 503; data = { message: 'Unavailable' } }
@@ -66,8 +74,8 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
     } else if (endpoint === '/api/v1/user/me') {
       if (profileGate) await profileGate
       status = state.conflict ? 409 : 200
-      data = state.conflict ? { error: true } : { error: false, user: { ...user } }
-    } else if (endpoint === '/api/v1/user/theme') { user.theme = body.theme; data = { error: false } }
+      data = state.conflict ? { code: 'conflict', message: 'Account migration required' } : { ...user }
+    } else if (endpoint === '/api/v1/user/theme') { user.theme = body.theme; data = { ...user } }
     else if (endpoint === '/api/auth/sign-in/email') {
       const valid = internalTesting && body.email === 'internal-testing@keepfin.test' && body.password === '12345'
       status = valid ? 200 : 401
@@ -77,27 +85,27 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
     else if (endpoint === '/api/v1/portfolio') {
       if (portfolioGate) await portfolioGate
       status = state.portfolioFailure ? 503 : 200
-      data = state.portfolioFailure ? { error: true, message: 'Portfolio service unavailable' } : { error: false, portfolio: state.portfolioHandler ? await state.portfolioHandler(Object.fromEntries(requestURL.searchParams)) : state.portfolio }
+      data = state.portfolioFailure ? { error: true, message: 'Portfolio service unavailable' } : (state.portfolioHandler ? await state.portfolioHandler(Object.fromEntries(requestURL.searchParams)) : state.portfolio)
     }
-    else if (endpoint === '/api/v1/accounts') data = { error: false, accounts: state.accounts }
+    else if (endpoint === '/api/v1/accounts') data = state.accounts
     else if (endpoint === '/api/v1/accounts/create' && options.method === 'POST') {
       if (state.accountCreateGate) await state.accountCreateGate
       if (state.accountCreateFailure) { status = 400; data = { error: true, message: 'Account creation failed' } }
       else {
         const account = { ...body, id: `account-${state.accounts.length + 1}`, cash_balance: body.initial_balance, is_active: true }
         state.accounts.push(account)
-        status = 201; data = { error: false, account }
+        status = 201; data = account
       }
     }
     else if (/^\/api\/v1\/accounts\/[^/]+$/.test(endpoint) && options.method === 'PUT') {
       const account = state.accounts.find(account => endpoint === `/api/v1/accounts/${account.id}`)
       if (!account) throw new Error(`Unknown account: ${endpoint}`)
       Object.assign(account, body)
-      data = { error: false, account }
+      data = account
     }
     else if (/^\/api\/v1\/accounts\/[^/]+$/.test(endpoint) && options.method === 'GET') {
       const account = state.accounts.find(account => endpoint === `/api/v1/accounts/${account.id}`)
-      status = account ? 200 : 404; data = account ? { error: false, account } : { error: true, message: 'Account not found' }
+      status = account ? 200 : 404; data = account ? account : { error: true, message: 'Account not found' }
     }
     else if (/^\/api\/v1\/accounts\/[^/]+\/holdings\/search$/.test(endpoint)) {
       const accountId = endpoint.split('/')[4]
@@ -117,13 +125,20 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
         data = { holdings: rows.slice((page - 1) * perPage, page * perPage), total: rows.length, page, per_page: perPage, pages: Math.max(1, Math.ceil(rows.length / perPage)), source: state.holdingsSearchSource || 'typesense', facets }
       }
       if (state.holdingsSearchFailure) { status = 503; data = { message: 'Holdings temporarily unavailable' } }
+      else {
+        pagination = { page: data.page, page_size: data.per_page, total: data.total, total_pages: data.pages }
+        data = { holdings: data.holdings, facets: data.facets, source: data.source }
+      }
     }
     else if (/^\/api\/v1\/accounts\/[^/]+\/(holdings|activities)(\/[^/]+)?$/.test(endpoint)) {
       const [, accountId, collection, recordId] = endpoint.match(/^\/api\/v1\/accounts\/([^/]+)\/(holdings|activities)(?:\/([^/]+))?$/)
       const records = state[collection]
       if (options.method === 'GET') {
         status = state[`${collection}Failure`] ? 503 : 200
-        data = status === 503 ? { error: true, message: `${collection} unavailable` } : { error: false, [collection]: records.filter(item => !item.account_id || item.account_id === accountId), summary: { complete: true, total_value: 0, warnings: [] } }
+        const matching = records.filter(item => !item.account_id || item.account_id === accountId)
+        data = status === 503 ? { message: `${collection} unavailable` } : collection === 'holdings'
+          ? { holdings: matching, summary: { complete: true, total_value: 0, warnings: [] } }
+          : matching
       }
       else {
         if (state.mutationGate) await state.mutationGate
@@ -133,25 +148,31 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
           else if (options.method === 'PUT') Object.assign(records.find(item => item.id === recordId), body)
           else if (options.method === 'DELETE') state[collection] = records.filter(item => item.id !== recordId)
           else throw new Error(`Unexpected method: ${options.method}`)
-          data = { error: false }
+          data = null
         }
       }
     }
     else if (endpoint === '/api/v1/market/search') {
       if (state.marketSearchFailure) { status = 503; data = { error: true, code: state.marketSearchFailure, message: 'Market provider unavailable' } }
-      else data = { results: state.searchHandler ? await state.searchHandler(requestURL.searchParams.get('q')) : state.marketResults }
+      else data = state.searchHandler ? await state.searchHandler(requestURL.searchParams.get('q')) : state.marketResults
     }
     else if (endpoint.startsWith('/api/v1/market/eod/')) {
       status = state.marketHistoryFailure ? 503 : 200
-      data = state.marketHistoryFailure ? { error: true, code: state.marketHistoryFailure, message: 'Market provider unavailable' } : { error: false, data: state.historyHandler ? await state.historyHandler(decodeURIComponent(endpoint.split('/').at(-1)), Object.fromEntries(requestURL.searchParams)) : state.marketHistory }
+      data = state.marketHistoryFailure ? { error: true, code: state.marketHistoryFailure, message: 'Market provider unavailable' } : (state.historyHandler ? await state.historyHandler(decodeURIComponent(endpoint.split('/').at(-1)), Object.fromEntries(requestURL.searchParams)) : state.marketHistory)
     }
-    else if (endpoint.startsWith('/api/v1/market/live/')) data = { data: state.quoteHandler ? await state.quoteHandler(decodeURIComponent(endpoint.split('/').at(-1))) : { close: 284.34, change_p: -3.46 } }
+    else if (endpoint.startsWith('/api/v1/market/live/')) data = state.quoteHandler ? await state.quoteHandler(decodeURIComponent(endpoint.split('/').at(-1))) : { close: 284.34, change_p: -3.46 }
     else if (endpoint === '/api/v1/transfers' && options.method === 'POST') {
       if (state.mutationGate) await state.mutationGate
       status = state.mutationFailure ? 400 : 200
-      data = state.mutationFailure ? { error: true, message: 'Transaction rejected' } : { error: false }
+      data = state.mutationFailure ? { message: 'Transaction rejected' } : null
     }
+    else if (endpoint === '/api/v1/preferences') {
+      if (options.method === 'PUT') Object.assign(state.preferences, body)
+      data = { ...state.preferences }
+    }
+    else if (endpoint === '/api/v1/tags' || endpoint === '/api/v1/assets/manual') data = []
     else throw new Error(`Unexpected request: ${endpoint}`)
+    if (endpoint.startsWith('/api/v1/') || endpoint.startsWith('/api/public/')) return apiResponse(data, status, pagination)
     return new global.Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
   }
   const protectedPaints = []

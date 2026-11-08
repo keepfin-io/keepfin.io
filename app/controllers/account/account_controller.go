@@ -3,10 +3,10 @@ package account
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"keepnode/pkg/apiresponse"
 
 	accountmodel "keepnode/app/models/account"
 	accountservice "keepnode/app/services/account"
-	"keepnode/pkg/utils"
 )
 
 // AccountController handles account-related requests
@@ -30,36 +30,18 @@ func NewAccountController(accountService *accountservice.AccountService) *Accoun
 // @Param account body models.Account true "Account data"
 // @Success 201 {object} models.Account
 // @Router /api/v1/accounts/create [post]
-func (ctrl *AccountController) CreateAccount(c *fiber.Ctx) error {
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *AccountController) CreateAccount(c *fiber.Ctx, userID uuid.UUID) error {
 	account := &accountmodel.Account{}
 	if err := c.BodyParser(account); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid request body",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
 	createdAccount, err := ctrl.accountService.CreateAccount(userID, account)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"error":   false,
-		"message": "Account created successfully",
-		"account": createdAccount,
-	})
+	return apiresponse.RespondCreated(c, createdAccount)
 }
 
 // GetAccount method to get an account by ID.
@@ -71,40 +53,22 @@ func (ctrl *AccountController) CreateAccount(c *fiber.Ctx) error {
 // @Param id path string true "Account ID"
 // @Success 200 {object} models.Account
 // @Router /api/v1/accounts/{id} [get]
-func (ctrl *AccountController) GetAccount(c *fiber.Ctx) error {
-	// Get user ID from context (set by session middleware)
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *AccountController) GetAccount(c *fiber.Ctx, userID uuid.UUID) error {
 	// Get account ID from URL params
 	accountIDStr := c.Params("id")
 	accountID, err := uuid.Parse(accountIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid account ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid account ID format")
 	}
 
 	// Call service layer
 	account, err := ctrl.accountService.GetAccountByID(accountID, userID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 
 	// Return success response
-	return c.JSON(fiber.Map{
-		"error":   false,
-		"account": account,
-	})
+	return apiresponse.RespondOK(c, account)
 }
 
 // GetUserAccounts method to get all accounts for the current user.
@@ -115,30 +79,15 @@ func (ctrl *AccountController) GetAccount(c *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {array} models.Account
 // @Router /api/v1/accounts [get]
-func (ctrl *AccountController) GetUserAccounts(c *fiber.Ctx) error {
-	// Get user ID from context (set by session middleware)
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *AccountController) GetUserAccounts(c *fiber.Ctx, userID uuid.UUID) error {
 	// Call service layer
 	accounts, err := ctrl.accountService.GetAccountsByUserID(userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   true,
-			"message": "Failed to retrieve accounts",
-		})
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to retrieve accounts")
 	}
 
 	// Return success response
-	return c.JSON(fiber.Map{
-		"error":    false,
-		"accounts": accounts,
-	})
+	return apiresponse.RespondOK(c, accounts)
 }
 
 // UpdateAccount method to update an account.
@@ -151,50 +100,28 @@ func (ctrl *AccountController) GetUserAccounts(c *fiber.Ctx) error {
 // @Param account body models.Account true "Account data"
 // @Success 200 {object} models.Account
 // @Router /api/v1/accounts/{id} [put]
-func (ctrl *AccountController) UpdateAccount(c *fiber.Ctx) error {
-	// Get user ID from context (set by session middleware)
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *AccountController) UpdateAccount(c *fiber.Ctx, userID uuid.UUID) error {
 	// Get account ID from URL params
 	accountIDStr := c.Params("id")
 	accountID, err := uuid.Parse(accountIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid account ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid account ID format")
 	}
 
 	// Parse request body
 	updateData := &accountmodel.Account{}
 	if err := c.BodyParser(updateData); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid request body",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
 	// Call service layer
 	updatedAccount, err := ctrl.accountService.UpdateAccount(accountID, userID, updateData)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	// Return success response
-	return c.JSON(fiber.Map{
-		"error":   false,
-		"message": "Account updated successfully",
-		"account": updatedAccount,
-	})
+	return apiresponse.RespondOK(c, updatedAccount)
 }
 
 // DeleteAccount method to delete an account.
@@ -206,40 +133,22 @@ func (ctrl *AccountController) UpdateAccount(c *fiber.Ctx) error {
 // @Param id path string true "Account ID"
 // @Success 200 {string} string "Account deleted successfully"
 // @Router /api/v1/accounts/{id} [delete]
-func (ctrl *AccountController) DeleteAccount(c *fiber.Ctx) error {
-	// Get user ID from context (set by session middleware)
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *AccountController) DeleteAccount(c *fiber.Ctx, userID uuid.UUID) error {
 	// Get account ID from URL params
 	accountIDStr := c.Params("id")
 	accountID, err := uuid.Parse(accountIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid account ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid account ID format")
 	}
 
 	// Call service layer
 	err = ctrl.accountService.DeleteAccount(accountID, userID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	// Return success response
-	return c.JSON(fiber.Map{
-		"error":   false,
-		"message": "Account deleted successfully",
-	})
+	return apiresponse.RespondOK(c, fiber.Map{"message": "Account deleted successfully"})
 }
 
 // ToggleAccountStatus method to toggle account active status.
@@ -251,39 +160,20 @@ func (ctrl *AccountController) DeleteAccount(c *fiber.Ctx) error {
 // @Param id path string true "Account ID"
 // @Success 200 {object} models.Account
 // @Router /api/v1/accounts/{id}/toggle-status [patch]
-func (ctrl *AccountController) ToggleAccountStatus(c *fiber.Ctx) error {
-	// Get user ID from context (set by session middleware)
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *AccountController) ToggleAccountStatus(c *fiber.Ctx, userID uuid.UUID) error {
 	// Get account ID from URL params
 	accountIDStr := c.Params("id")
 	accountID, err := uuid.Parse(accountIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid account ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid account ID format")
 	}
 
 	// Call service layer
 	account, err := ctrl.accountService.ToggleAccountStatus(accountID, userID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	// Return success response
-	return c.JSON(fiber.Map{
-		"error":   false,
-		"message": "Account status updated successfully",
-		"account": account,
-	})
+	return apiresponse.RespondOK(c, account)
 }

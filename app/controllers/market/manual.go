@@ -2,23 +2,20 @@ package market
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	marketmodel "keepnode/app/models/market"
 	model "keepnode/app/models/wealth"
-	"keepnode/pkg/utils"
+	"keepnode/pkg/apiresponse"
 	"strings"
 	"time"
 )
 
-func (ctrl *MarketController) manual(c *fiber.Ctx, symbol string) error {
+func (ctrl *MarketController) manual(c *fiber.Ctx, userID uuid.UUID, symbol string) error {
 	if ctrl.db == nil {
 		return fiber.NewError(404, "Manual asset not found")
 	}
-	user, err := utils.GetUserID(c)
-	if err != nil {
-		return err
-	}
 	var asset model.ManualAsset
-	if err = ctrl.db.First(&asset, "user_id = ? AND symbol = ?", user, symbol).Error; err != nil {
+	if err := ctrl.db.First(&asset, "user_id = ? AND symbol = ?", userID, symbol).Error; err != nil {
 		return fiber.NewError(404, "Manual asset not found")
 	}
 	rows := []model.ManualValuation{}
@@ -43,7 +40,7 @@ func (ctrl *MarketController) manual(c *fiber.Ctx, symbol string) error {
 	} else {
 		q = q.Order("date")
 	}
-	if err = q.Find(&rows).Error; err != nil {
+	if err := q.Find(&rows).Error; err != nil {
 		return fiber.NewError(500, "Unable to load valuations")
 	}
 	if live {
@@ -51,11 +48,11 @@ func (ctrl *MarketController) manual(c *fiber.Ctx, symbol string) error {
 			return fiber.NewError(404, "Add a dated valuation for this asset")
 		}
 		day, _ := time.Parse("2006-01-02", rows[0].Date)
-		return c.JSON(fiber.Map{"error": false, "data": marketmodel.LivePrice{Code: symbol, Close: rows[0].Price, Timestamp: day.Unix()}})
+		return apiresponse.RespondOK(c, marketmodel.LivePrice{Code: symbol, Close: rows[0].Price, Timestamp: day.Unix()})
 	}
 	data := []marketmodel.EODData{}
 	for _, v := range rows {
 		data = append(data, marketmodel.EODData{Date: v.Date, Open: v.Price, High: v.Price, Low: v.Price, Close: v.Price, AdjustedClose: v.Price})
 	}
-	return c.JSON(fiber.Map{"error": false, "data": data, "symbol": symbol, "count": len(data)})
+	return apiresponse.RespondOK(c, data)
 }

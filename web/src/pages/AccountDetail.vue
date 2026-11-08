@@ -239,7 +239,7 @@ export default {
       this.error = null
       try {
         const response = await accountAPI.getAccount(this.$route.params.id)
-        this.account = response.account
+        this.account = response.data
         // Fetch holdings and activities after account is loaded
         await Promise.all([this.fetchHoldings(), this.fetchActivities()])
       } catch (err) {
@@ -252,8 +252,8 @@ export default {
       this.holdingsError = ''
       try {
         const response = await holdingAPI.getHoldings(this.$route.params.id)
-        this.holdings = response.holdings || []
-        this.holdingsSummary = response.summary || null
+        this.holdings = response.data.holdings || []
+        this.holdingsSummary = response.data.summary || null
       } catch (err) {
         this.holdingsError = err.message || this.$t('holdingDetail.loadError')
         this.holdings = []
@@ -264,7 +264,7 @@ export default {
       this.activitiesError = ''
       try {
         const response = await activityAPI.getActivities(this.$route.params.id)
-        this.activities = response.activities || []
+        this.activities = response.data || []
       } catch (err) {
         this.activitiesError = err.message || this.$t('holdingDetail.activitiesError')
         this.activities = []

@@ -26,7 +26,7 @@ import { portfolioAPI } from '@/services/portfolioApi'
 const { t, busy, error, notice, run, money, today } = useWealthPage()
 const debts = ref([]), report = ref(null), range = ref('1y'), entries = ref({})
 const form = ref({ name: '', currency: 'USD', date: today, amount: '' })
-async function load() { const [d, r] = await Promise.all([wealthAPI.get('/liabilities'), portfolioAPI.report({ range: range.value })]); debts.value = d.items; report.value = r.portfolio; for (const item of debts.value) entries.value[item.id] ||= { date: today, amount: item.balances[0]?.amount ?? '' } }
+async function load() { const [d, r] = await Promise.all([wealthAPI.get('/liabilities'), portfolioAPI.report({ range: range.value })]); debts.value = d.data; report.value = r.data; for (const item of debts.value) entries.value[item.id] ||= { date: today, amount: item.balances[0]?.amount ?? '' } }
 function create() { run(async () => { await wealthAPI.save('/liabilities', { ...form.value, currency: form.value.currency.toUpperCase() }); form.value.name = ''; form.value.amount = ''; await load() }, true) }
 function balance(item) { run(async () => { await wealthAPI.save(`/liabilities/${item.id}/balances`, entries.value[item.id], 'PUT'); await load() }, true) }
 onMounted(() => run(load))

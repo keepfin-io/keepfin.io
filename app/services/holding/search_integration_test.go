@@ -27,6 +27,7 @@ import (
 	usermodel "keepnode/app/models/user"
 	accountservice "keepnode/app/services/account"
 	holdingservice "keepnode/app/services/holding"
+	"keepnode/pkg/authhandler"
 	"keepnode/pkg/typesense"
 	"keepnode/platform/database"
 )
@@ -393,7 +394,7 @@ func TestHoldingsSearchHTTPAccountBoundary(t *testing.T) {
 		c.Locals("user_id", id)
 		return c.Next()
 	})
-	app.Get("/accounts/:id/holdings/search", controller.SearchHoldings)
+	app.Get("/accounts/:id/holdings/search", authhandler.WithUser(controller.SearchHoldings))
 	for _, tc := range []struct {
 		name, query, identity string
 		status                int

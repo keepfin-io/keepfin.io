@@ -3,12 +3,12 @@ package portfolio
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"keepnode/pkg/apiresponse"
 
 	activitymodel "keepnode/app/models/activity"
 	accountservice "keepnode/app/services/account"
 	activityservice "keepnode/app/services/activity"
 	portfolioservice "keepnode/app/services/portfolio"
-	"keepnode/pkg/utils"
 )
 
 type PortfolioController struct {
@@ -20,32 +20,26 @@ type PortfolioController struct {
 func NewPortfolioController(p *portfolioservice.PortfolioService, a *activityservice.ActivityService, accounts *accountservice.AccountService) *PortfolioController {
 	return &PortfolioController{p, a, accounts}
 }
-func (ctrl *PortfolioController) account(c *fiber.Ctx) (uuid.UUID, error) {
-	user, err := utils.GetUserID(c)
-	if err != nil {
-		return uuid.Nil, fiber.NewError(401, "Authentication required")
-	}
+
+func (ctrl *PortfolioController) requireOwnedAccountID(c *fiber.Ctx, userID uuid.UUID) (uuid.UUID, error) {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return uuid.Nil, fiber.NewError(400, "Invalid account ID")
 	}
-	if _, err = ctrl.accounts.GetAccountByID(id, user); err != nil {
+	if _, err = ctrl.accounts.GetAccountByID(id, userID); err != nil {
 		return uuid.Nil, fiber.NewError(404, "Account not found")
 	}
 	return id, nil
 }
-func (ctrl *PortfolioController) Report(c *fiber.Ctx) error {
-	user, err := utils.GetUserID(c)
-	if err != nil {
-		return fiber.NewError(401, "Authentication required")
-	}
+
+func (ctrl *PortfolioController) GetPortfolioReport(c *fiber.Ctx, userID uuid.UUID) error {
 	var account *uuid.UUID
 	if c.Query("account_id") != "" {
 		id, e := uuid.Parse(c.Query("account_id"))
 		if e != nil {
 			return fiber.NewError(400, "Invalid account ID")
 		}
-		if _, e = ctrl.accounts.GetAccountByID(id, user); e != nil {
+		if _, e = ctrl.accounts.GetAccountByID(id, userID); e != nil {
 			return fiber.NewError(404, "Account not found")
 		}
 		account = &id
@@ -58,14 +52,21 @@ func (ctrl *PortfolioController) Report(c *fiber.Ctx) error {
 		}
 		opts.TagID = &id
 	}
-	report, err := ctrl.portfolio.Report(user, account, c.Query("range", "1m"), c.Query("benchmark"), opts)
+	report, err := ctrl.portfolio.Report(
+		userID,
+		account,
+		c.Query("range", "1m"),
+		c.Query("benchmark"),
+		opts,
+	)
 	if err != nil {
 		return fiber.NewError(422, err.Error())
 	}
-	return c.JSON(fiber.Map{"error": false, "portfolio": report})
+	return apiresponse.RespondOK(c, report)
 }
-func (ctrl *PortfolioController) UpdateActivity(c *fiber.Ctx) error {
-	account, err := ctrl.account(c)
+
+func (ctrl *PortfolioController) UpdateAccountActivity(c *fiber.Ctx, userID uuid.UUID) error {
+	account, err := ctrl.requireOwnedAccountID(c, userID)
 	if err != nil {
 		return err
 	}
@@ -81,24 +82,22 @@ func (ctrl *PortfolioController) UpdateActivity(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(422, err.Error())
 	}
-	return c.JSON(fiber.Map{"error": false, "activity": a})
+	return apiresponse.RespondOK(c, a)
 }
-func (ctrl *PortfolioController) Transfer(c *fiber.Ctx) error {
-	user, err := utils.GetUserID(c)
-	if err != nil {
-		return fiber.NewError(401, "Authentication required")
-	}
+
+func (ctrl *PortfolioController) CreateAccountTransfer(c *fiber.Ctx, userID uuid.UUID) error {
 	var req activityservice.TransferRequest
-	if err = c.BodyParser(&req); err != nil {
+	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(400, "Invalid transfer")
 	}
-	if err = ctrl.activities.Transfer(user, req); err != nil {
+	if err := ctrl.activities.Transfer(userID, req); err != nil {
 		return fiber.NewError(422, err.Error())
 	}
-	return c.JSON(fiber.Map{"error": false})
+	return apiresponse.RespondOK[any](c, nil)
 }
-func (ctrl *PortfolioController) Import(c *fiber.Ctx) error {
-	account, err := ctrl.account(c)
+
+func (ctrl *PortfolioController) ImportAccountActivities(c *fiber.Ctx, userID uuid.UUID) error {
+	account, err := ctrl.requireOwnedAccountID(c, userID)
 	if err != nil {
 		return err
 	}
@@ -119,10 +118,11 @@ func (ctrl *PortfolioController) Import(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(422, err.Error())
 	}
-	return c.JSON(fiber.Map{"error": false, "result": result})
+	return apiresponse.RespondOK(c, result)
 }
-func (ctrl *PortfolioController) Export(c *fiber.Ctx) error {
-	account, err := ctrl.account(c)
+
+func (ctrl *PortfolioController) ExportAccountActivities(c *fiber.Ctx, userID uuid.UUID) error {
+	account, err := ctrl.requireOwnedAccountID(c, userID)
 	if err != nil {
 		return err
 	}

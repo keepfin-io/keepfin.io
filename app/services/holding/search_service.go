@@ -20,6 +20,7 @@ import (
 	holdingmodel "keepnode/app/models/holding"
 	holdingquery "keepnode/app/queries/holding"
 	"keepnode/pkg/typesense"
+	"keepnode/pkg/worker"
 )
 
 const HoldingsCollection = "keepfin_holdings_v1"
@@ -28,6 +29,7 @@ type SearchService struct {
 	db         *gorm.DB
 	client     *typesense.Client
 	collection string
+	wake       worker.Signal
 }
 
 func NewSearchService(db *gorm.DB, client *typesense.Client, collection string) *SearchService {
@@ -140,7 +142,12 @@ func (s *SearchService) SyncAccount(ctx context.Context, accountID uuid.UUID) er
 	})
 }
 
-func (s *SearchService) FlushUser(ctx context.Context, userID uuid.UUID) error {
+func (s *SearchService) FlushUser(ctx context.Context, userID uuid.UUID) (err error) {
+	defer func() {
+		if err != nil {
+			s.Wake()
+		}
+	}()
 	states := []holdingmodel.SearchState{}
 	if err := s.db.WithContext(ctx).Where("user_id = ? AND revision > indexed_revision", userID).
 		Order("account_id").Find(&states).Error; err != nil {
@@ -154,41 +161,44 @@ func (s *SearchService) FlushUser(ctx context.Context, userID uuid.UUID) error {
 	return nil
 }
 
-// Run replays durable work after crashes and periodically reconciles lost index
-// documents. Foreground writes and reads do not wait for the worker's interval.
+func (s *SearchService) Wake() {
+	s.wake.Notify()
+}
+
+// Run replays durable work on startup, on committed-change notifications and on
+// periodic reconciliation. Foreground writes/reads still synchronize immediately.
 func (s *SearchService) Run(ctx context.Context) {
 	if s.client == nil {
 		return
 	}
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-	for {
+	process := func(ctx context.Context) (bool, error) {
 		states := []holdingmodel.SearchState{}
 		err := s.db.WithContext(ctx).Where("revision > indexed_revision OR indexed_at < ?", time.Now().Add(-5*time.Minute)).
 			Order("attempted_at NULLS FIRST, account_id").Limit(25).Find(&states).Error
 		if err == nil {
 			for _, state := range states {
 				attempt, cancel := context.WithTimeout(ctx, 3*time.Second)
-				err = s.SyncAccount(attempt, state.AccountID)
+				syncErr := s.SyncAccount(attempt, state.AccountID)
 				cancel()
 				// Rotate failing accounts too, so one bad document cannot starve others.
 				if e := s.db.WithContext(ctx).Model(&state).UpdateColumn("attempted_at", time.Now().UTC()).Error; e != nil {
-					err = e
+					syncErr = e
 				}
+				err = errors.Join(err, syncErr)
 				if ctx.Err() != nil {
-					return
+					return false, ctx.Err()
 				}
 			}
 		}
-		if err != nil && ctx.Err() == nil {
-			log.Printf("Holdings index retry pending: %v", err)
-		}
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-		}
+		return len(states) == 25, err
 	}
+	worker.Run(
+		ctx,
+		s.wake.C(),
+		worker.ReconcileInterval,
+		process,
+		func(err error) { log.Printf("Holdings index retry pending: %v", err) },
+	)
 }
 
 var facetFields = []string{"currency", "exchange", "asset_class", "sector", "country"}

@@ -361,7 +361,7 @@ export default {
       this.error = null
       try {
         const response = await accountAPI.getAccounts()
-        this.accounts = response.accounts || []
+        this.accounts = response.data || []
         const created = this.accounts.find(account => account.id === this.$route.query.created)
         if (created) {
           this.showNotification('success', this.$t('accounts.accountCreated'), `${created.account_name} ${this.$t('accounts.accountCreatedDesc')}`)
@@ -397,7 +397,7 @@ export default {
         const response = await accountAPI.toggleAccountStatus(
           this.accountToToggle.id
         )
-        this.accountToToggle.is_active = response.account.is_active
+        this.accountToToggle.is_active = response.data.is_active
         this.showNotification(
           'success',
           'Status updated',

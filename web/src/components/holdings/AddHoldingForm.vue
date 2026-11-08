@@ -340,7 +340,7 @@ export default {
     clearTimeout(this.searchTimeout)
   },
   methods: {
-    async loadManualAssets(open) { if (!open) return; this.manualError = ''; try { const r = await wealthAPI.get('/assets/manual');if (this.active) this.manualAssets=r.items } catch(e) { if (this.active) this.manualError=e.message } },
+    async loadManualAssets(open) { if (!open) return; this.manualError = ''; try { const r = await wealthAPI.get('/assets/manual');if (this.active) this.manualAssets=r.data } catch(e) { if (this.active) this.manualError=e.message } },
     moveHighlight(direction) {
       if (!this.filteredResults.length) return
       this.highlightedIndex = this.highlightedIndex < 0 ? (direction > 0 ? 0 : this.filteredResults.length - 1) : (this.highlightedIndex + direction + this.filteredResults.length) % this.filteredResults.length
@@ -374,7 +374,7 @@ export default {
       try {
         const response = await marketAPI.searchAssets(query, 20)
         if (this.active && revision === this.searchRevision && !this.selectedAsset)
-          this.searchResults = response.results || []
+          this.searchResults = response.data || []
       } catch (err) {
         if (this.active && revision === this.searchRevision) {
           const key = `holdings.marketErrors.${err.code}`

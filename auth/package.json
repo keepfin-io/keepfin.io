@@ -1,15 +1,46 @@
 {
   "name": "keepfin-auth",
+  "description": "Keepfin authentication service and identity migration tools",
   "private": true,
+  "license": "MIT",
   "type": "module",
-  "engines": { "node": ">=26" },
+  "packageManager": "npm@11.20.0",
+  "engines": {
+    "node": ">=26 <27",
+    "npm": ">=11 <12"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=26 <27",
+      "onFail": "error"
+    },
+    "packageManager": {
+      "name": "npm",
+      "version": ">=11 <12",
+      "onFail": "error"
+    }
+  },
   "scripts": {
-    "start": "node src/server.js",
-    "migrate": "node src/migrate.js",
-    "test": "node --test test/*.test.js"
+    "start": "node dist/server.js",
+    "dev": "node --watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "migrate": "node dist/migrate.js",
+    "migrate:dev": "node src/migrate.ts",
+    "link-user": "node dist/link-user.js",
+    "link-user:dev": "node src/link-user.ts",
+    "test": "npm run typecheck && npm run build && node --test test/*.test.ts",
+    "test:smoke": "node test/live-smoke.ts"
   },
   "dependencies": {
     "better-auth": "1.7.12",
+    "kysely": "0.29.7",
     "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/pg": "8.23.1",
+    "typescript": "7.0.2"
   }
 }

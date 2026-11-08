@@ -19,7 +19,7 @@ const { t, busy, error, notice, run, money, today } = useWealthPage()
 const symbol=ref(''),from=ref(`${today.slice(0,4)}-01-01`),to=ref(today),rows=ref([]),selected=ref([]),preview=ref(null),previewPayload=ref('')
 const eligible = row => row.per_share > 0 && /^[A-Z]{3}$/.test(row.activity.currency) && /^\d{4}-\d{2}-\d{2}$/.test(row.activity.date) && row.activity.date <= today
 const payload=computed(()=>JSON.stringify({version:1,activities:selected.value.map(i=>rows.value[i]).filter(eligible).map(r=>r.activity)}))
-function fetchRows(){run(async()=>{preview.value=null;selected.value=[];rows.value=(await wealthAPI.get(`/accounts/${props.accountId}/dividends/preview`,{symbol:symbol.value.toUpperCase(),from:from.value,to:to.value})).items})}
-function check(){run(async()=>{previewPayload.value=payload.value;preview.value=(await portfolioAPI.importJSON(props.accountId,payload.value,false)).result})}
-function commit(){if(previewPayload.value!==payload.value)return;run(async()=>{const r=await portfolioAPI.importJSON(props.accountId,previewPayload.value,true);preview.value=r.result;if(r.result.valid){rows.value=[];selected.value=[];emit('changed')}},true)}
+function fetchRows(){run(async()=>{preview.value=null;selected.value=[];rows.value=(await wealthAPI.get(`/accounts/${props.accountId}/dividends/preview`,{symbol:symbol.value.toUpperCase(),from:from.value,to:to.value})).data})}
+function check(){run(async()=>{previewPayload.value=payload.value;preview.value=(await portfolioAPI.importJSON(props.accountId,payload.value,false)).data})}
+function commit(){if(previewPayload.value!==payload.value)return;run(async()=>{const r=await portfolioAPI.importJSON(props.accountId,previewPayload.value,true);preview.value=r.data;if(r.data.valid){rows.value=[];selected.value=[];emit('changed')}},true)}
 </script>

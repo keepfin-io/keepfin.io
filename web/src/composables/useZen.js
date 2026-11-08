@@ -9,7 +9,7 @@ export async function loadZen(userID) {
   if (!owner) return
   const data = await wealthAPI.get('/preferences')
   if (current !== revision) return
-  zen.value = data.preferences.zen
+  zen.value = data.data.zen
   try { localStorage.setItem(`keepfin:zen:${owner}`, String(zen.value)) } catch { /* Optional display cache. */ }
 }
 export async function toggleZen() {
@@ -17,7 +17,7 @@ export async function toggleZen() {
   const user = owner, current = revision, value = !zen.value
   const data = await wealthAPI.get('/preferences')
   if (current !== revision) return
-  await wealthAPI.save('/preferences', { ...data.preferences, zen: value }, 'PUT')
+  await wealthAPI.save('/preferences', { ...data.data, zen: value }, 'PUT')
   if (owner !== user || current !== revision) return
   zen.value = value
   try { localStorage.setItem(`keepfin:zen:${owner}`, String(value)) } catch { /* Server preference is persisted. */ }

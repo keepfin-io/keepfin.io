@@ -1,4 +1,4 @@
-import apiFetch from './api'
+import apiFetch, { readAPIResponse } from './api'
 
 export const portfolioAPI = {
   report(options = {}) {
@@ -12,7 +12,7 @@ export const portfolioAPI = {
   importJSON(accountId, json, commit = false) {return apiFetch(`/accounts/${accountId}/activities/import`, {method:'POST',body:JSON.stringify({json,commit})})},
   async exportCSV(accountId, format = 'csv') {
     const response = await fetch(`/api/v1/accounts/${accountId}/activities/export?format=${format}`, { credentials: 'same-origin' })
-    if (!response.ok) throw new Error('Unable to export activities')
+    if (!response.ok) await readAPIResponse(response)
     const url = URL.createObjectURL(await response.blob())
     const link = document.createElement('a')
     link.href = url; link.download = `keepfin-activities.${format}`; link.click()

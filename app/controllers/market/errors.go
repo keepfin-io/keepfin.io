@@ -2,6 +2,7 @@ package market
 
 import (
 	"errors"
+	"keepnode/pkg/apiresponse"
 
 	"github.com/gofiber/fiber/v2"
 	marketservice "keepnode/app/services/market"
@@ -15,5 +16,5 @@ func marketErrorResponse(c *fiber.Ctx, err error) error {
 	} else if errors.Is(err, marketservice.ErrProviderNotConfigured) {
 		status, code = fiber.StatusServiceUnavailable, "market_not_configured"
 	}
-	return c.Status(status).JSON(fiber.Map{"error": true, "code": code, "message": err.Error()})
+	return apiresponse.NewError(status, code, err.Error())
 }

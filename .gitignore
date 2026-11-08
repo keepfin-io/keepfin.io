@@ -8,6 +8,8 @@ build-errors.log
 .env.local
 .env.*.local
 auth/.mail/
+auth/dist/
+auth/*.tsbuildinfo
 .auth-mail/
 
 # Log files

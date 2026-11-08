@@ -23,8 +23,8 @@ func GetDatabaseConfig() DatabaseConfig {
 		RawURL:   rawURL,
 		Host:     getEnv("DB_HOST", "localhost"),
 		Port:     getEnv("DB_PORT", "5432"),
-		Username: getEnvMultiple([]string{"DB_USER", "DB_USERNAME"}, "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres"),
+		Username: getEnvMultiple([]string{"DB_USER", "DB_USERNAME"}, "keepfin_runtime"),
+		Password: getEnv("DB_PASSWORD", ""),
 		DBName:   getEnv("DB_NAME", "keepnode"),
 		SSLMode:  getEnv("DB_SSL_MODE", "disable"),
 	}

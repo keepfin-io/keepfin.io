@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"keepnode/pkg/apiresponse"
+	"keepnode/pkg/middleware"
 	"keepnode/pkg/routes"
 	"keepnode/platform/database"
 
@@ -23,22 +24,30 @@ func main() {
 	}
 	log.Println("Database initialized successfully")
 
-	// Run migrations
-	db := database.GetDB()
-	if err := database.AutoMigrate(db); err != nil {
-		log.Fatalf("Migration error: %v", err)
+	// DDL credentials belong to the one-shot migration job, never the HTTP server.
+	if len(os.Args) > 1 {
+		if len(os.Args) != 2 || os.Args[1] != "migrate" {
+			log.Fatal("Usage: keepnode [migrate]")
+		}
+		if err := database.AutoMigrate(database.GetDB()); err != nil {
+			log.Fatalf("Migration error: %v", err)
+		}
+		if err := database.Close(); err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Migrations completed successfully")
+		return
 	}
-	log.Println("Migrations completed successfully")
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:        "KeepNode API",
 		ReadBufferSize: 16384, // 16KB - prevents 431 error for large headers/cookies
-		ErrorHandler:   jsonErrorHandler,
+		ErrorHandler:   apiresponse.ErrorHandler,
 	})
 
 	// Recovery middleware
-	app.Use(recover.New())
+	app.Use(middleware.RequestContext(), recover.New())
 
 	// Register routes
 	if err := routes.Register(app); err != nil {
@@ -73,23 +82,4 @@ func main() {
 	}
 
 	log.Println("Server gracefully stopped")
-}
-
-// jsonErrorHandler returns all errors (also recovered panics) as JSON
-func jsonErrorHandler(c *fiber.Ctx, err error) error {
-	code := fiber.StatusInternalServerError
-	message := "Internal server error"
-
-	var fiberErr *fiber.Error
-	if errors.As(err, &fiberErr) {
-		code = fiberErr.Code
-		message = fiberErr.Message
-	} else {
-		log.Printf("Unhandled error: %v", err)
-	}
-
-	return c.Status(code).JSON(fiber.Map{
-		"error":   true,
-		"message": message,
-	})
 }

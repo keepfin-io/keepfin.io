@@ -34,7 +34,7 @@ const empty = () => ({ name: '', currency: 'USD', asset_class: 'Other', sector: 
 const form = ref(empty())
 function reset() { editing.value = null; form.value = empty() }
 function edit(a) { editing.value = a.id; form.value = { name: a.name, currency: a.currency, asset_class: a.asset_class, sector: a.sector, country: a.country } }
-async function load() { assets.value = (await wealthAPI.get('/assets/manual')).items; for (const a of assets.value) entries.value[a.id] ||= { date: today, price: '' } }
+async function load() { assets.value = (await wealthAPI.get('/assets/manual')).data; for (const a of assets.value) entries.value[a.id] ||= { date: today, price: '' } }
 function save() { run(async () => { await wealthAPI.save(`/assets/manual${editing.value ? `/${editing.value}` : ''}`, { ...form.value, currency: form.value.currency.toUpperCase() }, editing.value ? 'PUT' : 'POST'); reset(); await load() }, true) }
 function valuation(a) { run(async () => { await wealthAPI.save(`/assets/manual/${a.id}/valuations`, entries.value[a.id], 'PUT'); await load() }, true) }
 function remove() { run(async () => { await wealthAPI.remove(`/assets/manual/${deleting.value.id}`); deleting.value = null; await load() }) }

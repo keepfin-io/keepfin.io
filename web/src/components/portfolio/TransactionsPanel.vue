@@ -46,7 +46,7 @@ async function readFile(event) { preview.value = null; error.value = ''; const f
 async function importCSV(commit) {
   if (busy.value) return
   busy.value = true; error.value = ''; notice.value = ''
-  try { const data = await (format.value === 'json' ? portfolioAPI.importJSON : portfolioAPI.importCSV)(props.account.id, csvText.value, commit); preview.value = data.result; previewCSV.value = csvText.value; if (commit && data.result.valid) { notice.value = t('portfolio.imported', { count: data.result.imported }); preview.value = null; csvText.value = ''; showImport.value = false; emit('changed') } }
+  try { const data = await (format.value === 'json' ? portfolioAPI.importJSON : portfolioAPI.importCSV)(props.account.id, csvText.value, commit); preview.value = data.data; previewCSV.value = csvText.value; if (commit && data.data.valid) { notice.value = t('portfolio.imported', { count: data.data.imported }); preview.value = null; csvText.value = ''; showImport.value = false; emit('changed') } }
   catch (e) { error.value = e.message } finally { busy.value = false }
 }
 </script>

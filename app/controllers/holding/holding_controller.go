@@ -3,11 +3,11 @@ package holding
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"keepnode/pkg/apiresponse"
 
 	holdingmodel "keepnode/app/models/holding"
 	accountservice "keepnode/app/services/account"
 	holdingservice "keepnode/app/services/holding"
-	"keepnode/pkg/utils"
 )
 
 type HoldingController struct {
@@ -30,11 +30,7 @@ func NewHoldingController(
 
 // SearchHoldings returns one account-scoped page. Ownership is checked in the
 // database before either Typesense or the outage fallback is consulted.
-func (ctrl *HoldingController) SearchHoldings(c *fiber.Ctx) error {
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return fiber.NewError(401, "Authentication required")
-	}
+func (ctrl *HoldingController) SearchHoldings(c *fiber.Ctx, userID uuid.UUID) error {
 	accountID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return fiber.NewError(400, "Invalid account ID")
@@ -74,7 +70,11 @@ func (ctrl *HoldingController) SearchHoldings(c *fiber.Ctx) error {
 		}
 	}
 	c.Set("Cache-Control", "no-store")
-	return c.JSON(page)
+	return apiresponse.RespondOK(
+		c,
+		fiber.Map{"holdings": page.Holdings, "facets": page.Facets, "source": page.Source},
+		apiresponse.WithPagination(page.Page, page.PerPage, int64(page.Total)),
+	)
 }
 
 // AddHolding adds a new holding to an account
@@ -86,54 +86,30 @@ func (ctrl *HoldingController) SearchHoldings(c *fiber.Ctx) error {
 // @Param holding body models.CreateHoldingRequest true "Holding data"
 // @Success 201 {object} models.Holding
 // @Router /api/v1/accounts/{id}/holdings [post]
-func (ctrl *HoldingController) AddHolding(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(uuid.UUID)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *HoldingController) AddHolding(c *fiber.Ctx, userID uuid.UUID) error {
 	accountIDStr := c.Params("id")
 	accountID, err := uuid.Parse(accountIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid account ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid account ID format")
 	}
 
 	// Verify account belongs to user
 	_, err = ctrl.accountService.GetAccountByID(accountID, userID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   true,
-			"message": "Account not found",
-		})
+		return fiber.NewError(fiber.StatusNotFound, "Account not found")
 	}
 
 	req := &holdingmodel.CreateHoldingRequest{}
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid request body",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
 	holding, err := ctrl.holdingService.AddHolding(accountID, req)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"error":   false,
-		"message": "Holding added successfully",
-		"holding": holding,
-	})
+	return apiresponse.RespondCreated(c, holding)
 }
 
 // GetHoldings returns all holdings for an account with live data
@@ -143,46 +119,25 @@ func (ctrl *HoldingController) AddHolding(c *fiber.Ctx) error {
 // @Param id path string true "Account ID"
 // @Success 200 {array} models.HoldingWithLiveData
 // @Router /api/v1/accounts/{id}/holdings [get]
-func (ctrl *HoldingController) GetHoldings(c *fiber.Ctx) error {
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *HoldingController) GetHoldings(c *fiber.Ctx, userID uuid.UUID) error {
 	accountIDStr := c.Params("id")
 	accountID, err := uuid.Parse(accountIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid account ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid account ID format")
 	}
 
 	// Verify account belongs to user
 	_, err = ctrl.accountService.GetAccountByID(accountID, userID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   true,
-			"message": "Account not found",
-		})
+		return fiber.NewError(fiber.StatusNotFound, "Account not found")
 	}
 
 	holdings, summary, err := ctrl.holdingService.GetHoldingsWithLiveData(accountID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   true,
-			"message": "Failed to fetch holdings",
-		})
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to fetch holdings")
 	}
 
-	return c.JSON(fiber.Map{
-		"error":    false,
-		"holdings": holdings,
-		"summary":  summary,
-	})
+	return apiresponse.RespondOK(c, fiber.Map{"holdings": holdings, "summary": summary})
 }
 
 // UpdateHolding updates a holding
@@ -194,63 +149,36 @@ func (ctrl *HoldingController) GetHoldings(c *fiber.Ctx) error {
 // @Param holding body models.UpdateHoldingRequest true "Update data"
 // @Success 200 {object} models.Holding
 // @Router /api/v1/holdings/{id} [put]
-func (ctrl *HoldingController) UpdateHolding(c *fiber.Ctx) error {
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *HoldingController) UpdateHolding(c *fiber.Ctx, userID uuid.UUID) error {
 	holdingIDStr := c.Params("id")
 	holdingID, err := uuid.Parse(holdingIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid holding ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid holding ID format")
 	}
 
 	accountIDStr := c.Params("accountId")
 	accountID, err := uuid.Parse(accountIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid account ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid account ID format")
 	}
 
 	// Verify account belongs to user
 	_, err = ctrl.accountService.GetAccountByID(accountID, userID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   true,
-			"message": "Account not found",
-		})
+		return fiber.NewError(fiber.StatusNotFound, "Account not found")
 	}
 
 	req := &holdingmodel.UpdateHoldingRequest{}
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid request body",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
 	holding, err := ctrl.holdingService.UpdateHolding(holdingID, accountID, req)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(fiber.Map{
-		"error":   false,
-		"message": "Holding updated successfully",
-		"holding": holding,
-	})
+	return apiresponse.RespondOK(c, holding)
 }
 
 // DeleteHolding deletes a holding
@@ -260,52 +188,29 @@ func (ctrl *HoldingController) UpdateHolding(c *fiber.Ctx) error {
 // @Param id path string true "Holding ID"
 // @Success 200 {string} string "Holding deleted successfully"
 // @Router /api/v1/holdings/{id} [delete]
-func (ctrl *HoldingController) DeleteHolding(c *fiber.Ctx) error {
-	userID, err := utils.GetUserID(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   true,
-			"message": "User not authenticated",
-		})
-	}
-
+func (ctrl *HoldingController) DeleteHolding(c *fiber.Ctx, userID uuid.UUID) error {
 	holdingIDStr := c.Params("id")
 	holdingID, err := uuid.Parse(holdingIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid holding ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid holding ID format")
 	}
 
 	accountIDStr := c.Params("accountId")
 	accountID, err := uuid.Parse(accountIDStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": "Invalid account ID format",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid account ID format")
 	}
 
 	// Verify account belongs to user
 	_, err = ctrl.accountService.GetAccountByID(accountID, userID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   true,
-			"message": "Account not found",
-		})
+		return fiber.NewError(fiber.StatusNotFound, "Account not found")
 	}
 
 	err = ctrl.holdingService.DeleteHolding(holdingID, accountID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(fiber.Map{
-		"error":   false,
-		"message": "Holding deleted successfully",
-	})
+	return apiresponse.RespondOK(c, fiber.Map{"message": "Holding deleted successfully"})
 }

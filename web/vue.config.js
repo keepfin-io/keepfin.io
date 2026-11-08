@@ -1,4 +1,9 @@
 const { defineConfig } = require('@vue/cli-service')
+function forwardClientIP(proxyReq, req) {
+  proxyReq.setHeader('X-Real-IP', req.socket.remoteAddress)
+  proxyReq.removeHeader('X-Forwarded-For')
+  proxyReq.removeHeader('Forwarded')
+}
 module.exports = defineConfig({
   transpileDependencies: true,
   devServer: {
@@ -9,15 +14,10 @@ module.exports = defineConfig({
     proxy: {
       '/api/auth': {
         target: process.env.AUTH_PROXY_TARGET || 'http://localhost:3001',
-        onProxyReq(proxyReq, req) {
-          // Never let clients choose the rate-limit identity.
-          proxyReq.setHeader('X-Real-IP', req.socket.remoteAddress)
-          proxyReq.removeHeader('X-Forwarded-For')
-          proxyReq.removeHeader('Forwarded')
-        }
+        onProxyReq: forwardClientIP
       },
-      '/api/public': { target: process.env.API_PROXY_TARGET || 'http://localhost:3000' },
-      '/api/v1': { target: process.env.API_PROXY_TARGET || 'http://localhost:3000' }
+      '/api/public': { target: process.env.API_PROXY_TARGET || 'http://localhost:3000', onProxyReq: forwardClientIP },
+      '/api/v1': { target: process.env.API_PROXY_TARGET || 'http://localhost:3000', onProxyReq: forwardClientIP }
     },
     watchFiles: {
       paths: ['src/**/*', 'public/**/*'],

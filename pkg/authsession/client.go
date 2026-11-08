@@ -9,10 +9,22 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
 var ErrUnauthorized = errors.New("invalid session")
+
+type RateLimitError struct{ RetryAfter string }
+
+func (e *RateLimitError) Error() string { return "session verification rate limit reached" }
+
+type clientIPKey struct{}
+
+// WithClientIP carries only the address resolved by our trusted-proxy boundary.
+func WithClientIP(ctx context.Context, ip string) context.Context {
+	return context.WithValue(ctx, clientIPKey{}, ip)
+}
 
 type Identity struct {
 	ID            string `json:"id"`
@@ -50,12 +62,22 @@ func (c *Client) Verify(ctx context.Context, cookie string) (*Identity, []string
 		return nil, nil, err
 	}
 	req.Header.Set("Cookie", cookie)
+	if ip, ok := ctx.Value(clientIPKey{}).(string); ok {
+		req.Header.Set("X-Real-IP", ip)
+	}
 	res, err := c.http.Do(req)
 	if err != nil {
 		return nil, nil, fmt.Errorf("session service: %w", err)
 	}
 	defer res.Body.Close()
 	cookies := res.Header.Values("Set-Cookie")
+	if res.StatusCode == http.StatusTooManyRequests {
+		delay, err := strconv.Atoi(res.Header.Get("Retry-After"))
+		if err != nil || delay < 1 || delay > 3600 {
+			delay = 60
+		}
+		return nil, nil, &RateLimitError{RetryAfter: strconv.Itoa(delay)}
+	}
 	if res.StatusCode == http.StatusUnauthorized {
 		return nil, cookies, ErrUnauthorized
 	}

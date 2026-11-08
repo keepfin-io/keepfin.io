@@ -15,6 +15,6 @@ const props = defineProps({ kind: { type: String, required: true }, id: { type: 
 const emit = defineEmits(['saved'])
 const { t, busy, error, notice, run } = useWealthPage()
 const tags = ref([]), selected = ref([])
-onMounted(() => run(async () => { const [all, current] = await Promise.all([wealthAPI.get('/tags'), wealthAPI.get(`/tags/${props.kind}/${props.id}`)]); tags.value = all.items; selected.value = current.items.map(t => t.id) }))
+onMounted(() => run(async () => { const [all, current] = await Promise.all([wealthAPI.get('/tags'), wealthAPI.get(`/tags/${props.kind}/${props.id}`)]); tags.value = all.data; selected.value = current.data.map(t => t.id) }))
 function save() { run(async () => { await wealthAPI.save(`/tags/${props.kind}/${props.id}`, { tag_ids: selected.value }, 'PUT'); emit('saved') }, true) }
 </script>

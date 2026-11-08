@@ -82,7 +82,7 @@ const props = defineProps({ accountId: { type: String, default: '' }, accountNam
 const { locale, t } = useI18n()
 const range = ref('1m'), benchmark = ref('none'), chartMode = ref('value'), tab = ref('overview')
 const method = ref('dietz'), tag = ref('all'), tags = ref([])
-onMounted(async () => { if (!props.readonly) { try { tags.value=(await wealthAPI.get('/tags')).items } catch { /* The portfolio remains available without tag filters. */ } } })
+onMounted(async () => { if (!props.readonly) { try { tags.value=(await wealthAPI.get('/tags')).data } catch { /* The portfolio remains available without tag filters. */ } } })
 const report = ref(null), loading = ref(false), error = ref('')
 const detailMetrics = [
   { key: 'net_contributions' }, { key: 'realized', signed: true },
@@ -96,7 +96,7 @@ async function load() {
   const current = ++request; loading.value = true; error.value = ''
   try {
     const result = await (props.reportLoader || portfolioAPI.report)({ account_id: props.accountId, range: range.value, benchmark: benchmark.value === 'none' ? '' : benchmark.value, method: method.value, tag_id: tag.value === 'all' ? '' : tag.value })
-    if (current === request) report.value = result.portfolio
+    if (current === request) report.value = result.data
   } catch (e) { if (current === request) { error.value = e.message; report.value = null } }
   finally { if (current === request) loading.value = false }
 }

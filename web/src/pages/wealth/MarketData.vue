@@ -19,7 +19,7 @@ const { user } = useAuth(), admin = computed(() => user.value?.user_role === 'ad
 const configuration = ref(null), jobs = ref([]), corrections = ref([])
 const form = ref({ symbol:'', from:new Date(Date.now()-30*86400000).toISOString().slice(0,10), to:today })
 const correction = ref({ symbol:'', date:today, close:'', reason:'' })
-async function load() { const [c,j] = await Promise.all([wealthAPI.get('/market/providers'),wealthAPI.get('/market/jobs')]); configuration.value=c.configuration;jobs.value=j.items;if(admin.value) corrections.value=(await wealthAPI.get('/market/corrections')).items }
+async function load() { const [c,j] = await Promise.all([wealthAPI.get('/market/providers'),wealthAPI.get('/market/jobs')]); configuration.value=c.data;jobs.value=j.data;if(admin.value) corrections.value=(await wealthAPI.get('/market/corrections')).data }
 function selectProvider(provider) { run(async () => {await wealthAPI.save('/market/providers',{provider},'PUT');await load()},true) }
 function queue() {run(async () => {await wealthAPI.save('/market/jobs',form.value);await load()},true)}
 function retry(job) {run(async () => {await wealthAPI.save(`/market/jobs/${job.id}/retry`,{});await load()},true)}
