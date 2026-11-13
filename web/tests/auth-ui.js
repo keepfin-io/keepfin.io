@@ -2,6 +2,80 @@ const assert = require('node:assert/strict')
 const { test } = require('node:test')
 const { launch, pause } = require('./ui-harness')
 
+test('profile shows active devices, the current session and safe fallbacks without persisting tokens', async t => {
+  const ui = await launch(t, { route: '/profile', authenticated: true, locale: 'tr-TR', authSessions: [
+    { id: 'phone', token: 'private-phone-token', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Version/18.0 Mobile/15E148 Safari/604.1', ipAddress: '2001:db8:1234:5678:abcd:ef01:2345:6789', createdAt: '2026-11-08T08:00:00Z', expiresAt: '2026-11-15T08:00:00Z' },
+    { id: 'unknown', token: 'private-unknown-token', userAgent: null, ipAddress: null, createdAt: null, expiresAt: 'invalid' },
+    { id: 'session', token: 'private-current-token', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/142.0.0.0 Safari/537.36', ipAddress: '203.0.113.10', createdAt: '2026-11-07T08:00:00Z', expiresAt: '2026-11-14T08:00:00Z' },
+    { id: 'tablet', userAgent: 'Mozilla/5.0 (Linux; Android 14; Tablet) Chrome/142.0.0.0 Safari/537.36', createdAt: '2026-11-06T08:00:00Z' },
+    { id: 'edge', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0', createdAt: '2026-11-05T08:00:00Z' },
+    { id: 'linux', userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0', createdAt: '2026-11-04T08:00:00Z' },
+    { id: 'chromebook', userAgent: 'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 Chrome/142.0.0.0 Safari/537.36', createdAt: '2026-11-03T08:00:00Z' },
+  ] })
+  await ui.until(() => ui.find('profile-current-session'))
+  const rows = [...ui.w.document.querySelectorAll('[data-testid="profile-session"]')]
+  assert.equal(rows.length, 7)
+  assert.match(rows[0].textContent, /Chrome · macOS/)
+  assert.match(rows[0].textContent, /Bu oturum/)
+  assert.match(rows[0].textContent, /Girişteki IP adresi.*203\.0\.113\.10/)
+  assert.match(rows[0].textContent, /Giriş zamanı.*2026/)
+  assert.match(rows[1].textContent, /Safari · iOS.*Telefon/)
+  assert.match(rows[2].textContent, /Chrome · Android.*Tablet/)
+  assert.match(rows[3].textContent, /Edge · Windows.*Bilgisayar/)
+  assert.match(rows[4].textContent, /Firefox · Linux.*Bilgisayar/)
+  assert.match(rows[5].textContent, /Chrome · ChromeOS.*Bilgisayar/)
+  assert.match(rows[6].textContent, /Bilinmeyen tarayıcı · Bilinmeyen işletim sistemi.*Bilinmeyen cihaz/)
+  assert.equal(rows[6].querySelectorAll('dd')[0].textContent, '—')
+  assert.equal(rows[6].querySelectorAll('dd')[1].textContent, '—')
+  assert.equal(rows[6].querySelectorAll('dd')[2].textContent, '—')
+  const icons = rows.map(row => row.querySelector('svg').innerHTML)
+  assert.equal(icons[0], icons[1], 'macOS and iOS share the Apple icon')
+  assert.equal(new Set(icons).size, 6, 'each operating system and the unknown fallback have distinct icons')
+  assert.equal(ui.find('profile-sessions-refresh'), null)
+  assert.equal(ui.w.document.querySelectorAll('[data-testid="profile-current-session"]').length, 1)
+  assert.doesNotMatch(ui.w.document.body.innerHTML, /private-.*-token/)
+  assert.doesNotMatch(JSON.stringify({ ...ui.w.localStorage, ...ui.w.sessionStorage }), /private-.*-token/)
+  const call = ui.calls.find(call => call.endpoint === '/api/auth/list-sessions')
+  assert.equal(call.method, 'GET')
+  assert.deepEqual(call.query, {}, 'session scope is determined by the server, not a supplied user ID')
+  ui.find('profile-theme-light').click()
+  await ui.until(() => !ui.w.document.documentElement.classList.contains('dark'))
+  assert.equal(ui.calls.filter(call => call.endpoint === '/api/auth/list-sessions').length, 1, 'preference changes must not reload sessions')
+  assert.deepEqual(ui.errors, [])
+})
+
+test('profile session list has loading, retry, empty and recent-sign-in states', async t => {
+  let release
+  const sessionsGate = new Promise(resolve => { release = resolve })
+  t.after(() => release())
+  const ui = await launch(t, { route: '/profile', authenticated: true, sessionsGate, sessionsFailure: 'UNAVAILABLE' })
+  await ui.until(() => ui.find('profile-sessions-loading'))
+  assert.ok(ui.find('profile-email'), 'sessions must not block the rest of the profile')
+  assert.equal(ui.find('profile-sessions-refresh'), null)
+  assert.equal(ui.find('profile-sessions-empty'), null)
+  release()
+  await ui.until(() => ui.find('profile-sessions-error'))
+  assert.match(ui.find('profile-sessions-error').textContent, /could not be loaded/)
+  ui.state.sessionsFailure = ''
+  ui.find('profile-sessions-retry').click()
+  await ui.until(() => ui.find('profile-sessions-empty'))
+  assert.deepEqual(ui.errors, [])
+  const reauth = await launch(t, { route: '/profile', authenticated: true, sessionsFailure: 'SESSION_NOT_FRESH' })
+  await reauth.until(() => reauth.find('profile-sessions-error'))
+  assert.match(reauth.find('profile-sessions-error').textContent, /sign out and sign in again/)
+  assert.equal(reauth.find('profile-sessions-retry'), null)
+  assert.equal(reauth.calls.some(call => call.endpoint === '/api/auth/sign-out'), false, 'reauthentication must be an explicit user action')
+  reauth.state.failSignOut = true
+  reauth.find('profile-sessions-sign-out').click()
+  await reauth.until(() => reauth.find('profile-sessions-error')?.textContent.includes('Sign-out failed'))
+  assert.equal(reauth.w.location.pathname, '/profile')
+  reauth.state.failSignOut = false
+  reauth.find('profile-sessions-sign-out').click()
+  await reauth.until(() => reauth.find('login-email'))
+  assert.equal(reauth.find('profile-sessions'), null)
+  assert.deepEqual(reauth.errors, [])
+})
+
 test('passwordless form, latest branding, no cached-identity access, no duplicate sends', async t => {
   const ui = await launch(t, { route: '/accounts' })
   const { w, find, until, calls } = ui
@@ -62,7 +136,10 @@ test('verified callback loads profile; dark theme survives navigation', async t 
   const collapsedLogo = ui.find('sidebar-brand-link').querySelector('span.hidden')
   assert.ok(collapsedLogo, 'collapsed brand remains hidden in the expanded sidebar')
   assert.equal(collapsedLogo.classList.contains('inline-flex'), false)
-  ui.find('sidebar-nav-profile').click()
+  assert.equal(ui.find('sidebar-nav-profile'), null)
+  ui.find('sidebar-user-menu-trigger').dispatchEvent(new ui.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+  await ui.until(() => ui.find('sidebar-profile-link'))
+  ui.find('sidebar-profile-link').click()
   await ui.until(() => ui.find('profile-theme-light'))
   assert.ok(ui.find('footer-legal-trigger'))
   assert.equal(ui.w.document.querySelectorAll('[data-testid="app-footer"]').length, 1)

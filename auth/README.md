@@ -212,6 +212,23 @@ returns 503 on auth outages rather than trusting stale browser identity. Auth
 tables persist rate limits across processes. OAuth tokens are encrypted at rest.
 Keep the encryption secret backed up and manage rotation deliberately.
 
+The profile page lists the signed-in user's active sessions through Better Auth's
+`/api/auth/list-sessions`. The existing `auth_session` records capture the sign-in
+IP and User-Agent; the UI shows an approximate browser/device description, sign-in
+and expiry times, and the current session. It keeps only display fields in memory
+and does not persist session tokens. Better Auth's recent-sign-in requirement is
+preserved: older sessions must sign in again before viewing the list. This remains
+an active-session view; it does not display the permanent login history.
+
+Database security provisioning also installs `public.auth_login_history`.
+An insert trigger captures each new session's ID, auth user ID, original sign-in
+time, IP and User-Agent in the same transaction. No tokens or credentials are copied.
+Logout, expiry cleanup and user deletion leave that history intact; session refresh
+does not create or update history rows. Existing session rows are backfilled once.
+Runtime roles cannot read, modify or delete this protected table. See
+[database security](../docs/database-security.md#permanent-login-history) for setup
+and administrator inspection. These records describe sessions, not unique hardware.
+
 Automatic linking within Better Auth requires verified local email ownership;
 different-email linking is disabled. Password authentication is disabled outside
 the explicit development test flow; email changes are disabled. The separate legacy Go identity mapping remains explicit.

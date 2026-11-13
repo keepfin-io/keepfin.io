@@ -6,6 +6,7 @@ function report() {
   return {
     currency: 'USD', complete: true, from: '2026-01-01', to: '2026-02-01', warnings: [],
     summary: { value: 125000.25, equity: 100000, cash: 25000.25, net_contributions: 120000, profit_loss: 5000.25, realized: 1200, unrealized: -500, dividends: 120, daily_change: null },
+    performance: { method: 'dietz', profit: 5000.25, price_effect: 5200, currency_effect: -199.75 },
     holdings: [{ symbol: 'ABC.US', currency: 'USD', quantity: 123.12345678, value: 100000, cost: 100500, profit_loss: -500, weight: 79.99, complete: true, accounts: ['Retirement account with a very long name', 'Broker account'], price_date: '2026-02-01' }],
     history: [{ date: '2026-01-01', value: 120000, net_flow: 120000, return: 0, benchmark: 0 }, { date: '2026-01-02', value: null, net_flow: 0, return: null, benchmark: null }, { date: '2026-02-01', value: 125000.25, net_flow: 0, return: 4.17, benchmark: 2 }],
     income: [{ period: '2026-01', dividends: 70, interest: 10, fees: 5, net: 75 }, { period: '2026-02', dividends: 50, interest: 5, fees: 2, net: 53 }],
@@ -34,8 +35,14 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     assert.match(ui.find('portfolio-stat-cash').textContent, /25,000.25/)
     assert.match(ui.find('portfolio-stat-equity').textContent, /100,000.00/)
     assert.match(ui.find('portfolio-stat-profit_loss').textContent, /5,000.25/)
+    assert.equal(ui.find('portfolio-options-toggle').getAttribute('aria-expanded'), 'false')
+    assert.equal(ui.find('portfolio-options').style.display, 'none')
+    assert.equal(ui.find('portfolio-active-options'), null)
     const details = ui.find('portfolio-summary-details')
     assert.equal(details.open, false)
+    assert.equal(ui.find('portfolio-stat-net_contributions').closest('details'), null, 'contributed capital remains visible beside total gain / loss')
+    assert.equal(ui.find('portfolio-stat-daily_change').closest('details'), details)
+    assert.equal(ui.find('portfolio-performance-details').closest('details'), details)
     const callsBeforeDetails = ui.calls.length
     ui.find('portfolio-summary-toggle').click()
     assert.equal(details.open, true)
@@ -45,6 +52,8 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     assert.match(ui.find('portfolio-stat-dividends').textContent, /120.00/)
     assert.match(ui.find('portfolio-stat-dividends').textContent, /Selected period/)
     assert.match(ui.find('portfolio-stat-daily_change').textContent, /—/)
+    assert.match(ui.find('portfolio-performance-details').textContent, /5,200.00/)
+    assert.match(ui.find('portfolio-performance-details').textContent, /-\$199.75/)
     assert.ok(ui.w.document.querySelector('.metric-value.portfolio-negative'))
     ui.find('portfolio-summary-toggle').click()
     assert.equal(details.open, false)
@@ -81,8 +90,11 @@ for (const width of [320, 390, 768, 1024, 1440]) {
   })
 }
 
-test('period and benchmark requests preserve the active tab; annual income aggregates correctly', async t => {
-  const ui = await launch(t, { route: '/', authenticated: true, width: 1024, portfolioResponse: report() })
+test('advanced options preserve filters and the active tab when collapsed; annual income aggregates correctly', async t => {
+  const ui = await launch(t, {
+    route: '/', authenticated: true, width: 1024, portfolioResponse: report(),
+    wealthHandler: ({ endpoint }) => endpoint === '/api/v1/tags' ? { data: [{ id: 'long-term', name: 'Long-term investments' }] } : null,
+  })
   await ui.until(() => ui.find('portfolio-stat-value'))
   ui.find('portfolio-summary-toggle').click()
   activate(ui, 'portfolio-tab-income')
@@ -93,8 +105,31 @@ test('period and benchmark requests preserve the active tab; annual income aggre
   await ui.until(() => ui.calls.some(call => call.endpoint === '/api/v1/portfolio' && call.query.range === '1y'))
   await ui.until(() => ui.find('portfolio-income'))
   assert.equal(ui.find('portfolio-tab-income').getAttribute('data-state'), 'active')
+  const callsBeforeOptions = ui.calls.length
+  ui.find('portfolio-options-toggle').click()
+  await ui.until(() => ui.find('portfolio-options-toggle').getAttribute('aria-expanded') === 'true')
+  assert.notEqual(ui.find('portfolio-options').style.display, 'none')
+  assert.equal(ui.calls.length, callsBeforeOptions, 'opening options does not refetch')
   await select(ui, 'portfolio-benchmark', 'SPY.US')
   await ui.until(() => ui.calls.some(call => call.query.benchmark === 'SPY.US'))
+  await select(ui, 'portfolio-method', 'twr')
+  await ui.until(() => ui.calls.some(call => call.query.method === 'twr'))
+  await select(ui, 'portfolio-tag', 'long-term')
+  await ui.until(() => ui.calls.some(call => call.query.tag_id === 'long-term'))
+  const callsBeforeCollapse = ui.calls.length
+  ui.find('portfolio-options-toggle').click()
+  await ui.until(() => ui.find('portfolio-active-options'))
+  assert.equal(ui.find('portfolio-options').style.display, 'none')
+  assert.match(ui.find('portfolio-active-options').textContent, /S&P 500 \(SPY\).*Time-weighted return.*Long-term investments/)
+  assert.equal(ui.calls.length, callsBeforeCollapse, 'closing options does not reset or refetch filters')
+  ui.find('portfolio-refresh').click()
+  await ui.until(() => ui.calls.length > callsBeforeCollapse && !ui.find('portfolio-refresh').disabled)
+  const query = ui.calls.filter(call => call.endpoint === '/api/v1/portfolio').at(-1).query
+  assert.equal(query.range, '1y')
+  assert.equal(query.benchmark, 'SPY.US')
+  assert.equal(query.method, 'twr')
+  assert.equal(query.tag_id, 'long-term')
+  assert.equal(ui.find('portfolio-tab-income').getAttribute('data-state'), 'active')
   assert.equal(ui.find('portfolio-summary-details').open, true)
   assert.deepEqual(ui.errors, [])
 })
@@ -110,6 +145,7 @@ test('incomplete valuation stays unknown in totals, holdings and allocation', as
     assert.match(ui.find(`portfolio-stat-${key}`).textContent, /—/)
   }
   assert.match(ui.find('portfolio-warnings').textContent, /Missing EUR/)
+  assert.doesNotMatch(ui.find('portfolio-performance-details').textContent, /5,000.25|5,200.00|199.75/)
   activate(ui, 'portfolio-tab-holdings')
   await ui.until(() => ui.find('portfolio-holdings-mobile'))
   assert.doesNotMatch(ui.find('portfolio-holdings-mobile').textContent, /100,000|100,500|500.00/)

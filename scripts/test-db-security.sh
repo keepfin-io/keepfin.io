@@ -39,6 +39,9 @@ export PGPASSWORD=security-test-admin DATABASE_URL="postgres://postgres@127.0.0.
 # Reproduce the legacy owner layout, then upgrade it in place.
 "$test_dir/keepnode" migrate >"$test_dir/go-migrate.log" 2>&1 || { cat "$test_dir/go-migrate.log"; exit 1; }
 node auth/dist/migrate.js
+# Reproduce sessions created before permanent login history was installed.
+docker exec "$test_name" psql -U postgres -d keepfin_security_test -v ON_ERROR_STOP=1 -c \
+  "INSERT INTO auth_user(id,name,email,\"emailVerified\",\"createdAt\",\"updatedAt\") VALUES ('30000000-0000-4000-8000-000000000001','Legacy session','legacy-session@example.test',true,'2026-01-01','2026-01-01'); INSERT INTO auth_session(id,\"userId\",token,\"createdAt\",\"updatedAt\",\"expiresAt\",\"ipAddress\",\"userAgent\") VALUES ('40000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','legacy-test-session-token','2026-01-01','2026-01-01','2026-01-08','192.0.2.40','Legacy test browser')" >/dev/null
 docker exec "$test_name" psql -U postgres -d keepfin_security_test -v ON_ERROR_STOP=1 -c \
   "INSERT INTO users(id,email,user_status) VALUES ('10000000-0000-4000-8000-000000000001','legacy-security@example.test',1)" >/dev/null
 docker exec "$test_name" psql -U postgres -d keepfin_security_test -v ON_ERROR_STOP=1 -c \
@@ -55,6 +58,10 @@ permissions() {
     >"$test_dir/permissions.log" 2>&1 || { cat "$test_dir/permissions.log"; exit 1; }
 }
 roles
+# Preserve history from the earlier private schema, including a logged-out
+# session which cannot be recovered by backfilling auth_session.
+docker exec "$test_name" psql -U postgres -d keepfin_security_test -v ON_ERROR_STOP=1 -c \
+  "SET ROLE keepfin_security_owner; CREATE TABLE keepfin_security.auth_login_history (session_id text PRIMARY KEY, auth_user_id text NOT NULL, signed_in_at timestamptz NOT NULL, recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(), ip_address text, user_agent text); INSERT INTO keepfin_security.auth_login_history VALUES ('40000000-0000-4000-8000-000000000002','30000000-0000-4000-8000-000000000001','2026-01-02','2026-01-03','192.0.2.41','Logged-out test browser')" >/dev/null
 DB_USERNAME=keepfin_migrator DB_PASSWORD=security-test-migrator "$test_dir/keepnode" migrate \
   >"$test_dir/go-upgrade.log" 2>&1 || { cat "$test_dir/go-upgrade.log"; exit 1; }
 DATABASE_URL="postgres://auth_migrator@127.0.0.1:$port/keepfin_security_test" PGPASSWORD=security-test-auth-migrator node auth/dist/migrate.js

@@ -148,6 +148,7 @@ for (const width of [320, 1280]) test(`holding search and purchase stay on a pag
   await ui.until(() => ui.find('holding-add-result-QQQM.US'))
   ui.find('holding-add-result-QQQM.US').click()
   await ui.until(() => ui.find('holding-add-price')?.value === '284.34')
+  assert.ok(ui.find('holding-add-currency-locked')); assert.equal(ui.find('holding-add-currency').disabled, true)
   input(ui, 'holding-add-quantity', '2'); input(ui, 'holding-add-fee', '1'); input(ui, 'holding-add-notes', 'New position')
   setField(ui, 'holding-date', '2026-02-02'); setField(ui, 'holding-rate', '1.1')
   await pause()
@@ -179,6 +180,16 @@ for (const [path, page, cancel] of [['holdings/new', 'holding-add-page', 'holdin
     assert.deepEqual(ui.errors, [])
   })
 }
+
+test('holding editing records a single trade in the listing currency', async t => {
+  const ui = await launch(t, { route: '/accounts/source/holdings/holding-1/edit', authenticated: true, accountsResponse: [sampleAccount], holdingsResponse: [{ ...sampleHolding, buy_currency: 'TRY', quote_currency: 'USD' }] })
+  await ui.until(() => ui.find('holding-edit-page'))
+  assert.ok(ui.find('holding-edit-currency-corrected')); assert.equal(ui.find('holding-edit-currency').disabled, true)
+  submitForm(ui, 'holding-edit-form')
+  await ui.until(() => ui.calls.find(call => call.method === 'PUT'))
+  assert.equal(ui.calls.find(call => call.method === 'PUT').body.buy_currency, 'USD')
+  assert.deepEqual(ui.errors, [])
+})
 
 test('holding editing preserves restrictions and missing records cannot open a form', async t => {
   const ui = await launch(t, { route: '/accounts/source/holdings/holding-1/edit', authenticated: true, accountsResponse: [sampleAccount], holdingsResponse: [{ ...sampleHolding, can_edit_position: false }] })

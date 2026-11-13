@@ -11,24 +11,39 @@
           data-testid="account-detail-back"
           to="/accounts"
           :aria-label="$t('accountDetail.backToAccounts')"
+          :title="$t('accountDetail.backToAccounts')"
         >
-          <ArrowLeft class="size-4" />
+          <LuArrowLeft class="size-4" />
         </router-link>
       </Button>
-      <div class="min-w-0">
-        <h1
-          data-testid="account-detail-name"
-          class="break-words text-2xl font-semibold tracking-tight"
-        >
-          {{ account?.account_name || $t('accounts.account') }}
-        </h1>
-        <p class="text-sm text-muted-foreground">
-          {{ account?.platform || $t('accounts.general') }}
-        </p>
+      <div class="flex min-w-0 items-center gap-3">
+        <div data-testid="account-detail-logo" class="flex size-11 shrink-0 items-center justify-center rounded-xl border bg-card" aria-hidden="true">
+          <Favicon v-if="logoDomain" :domain="logoDomain" :size="24" />
+          <LuWallet v-else class="size-5 text-muted-foreground" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ $t('accounts.account') }}</p>
+          <h1
+            data-testid="account-detail-name"
+            class="break-words text-2xl font-semibold leading-tight tracking-tight"
+          >
+            {{ account?.account_name || $t('accounts.account') }}
+          </h1>
+          <p class="mt-0.5 flex flex-wrap items-center gap-x-2 text-sm">
+            <span><span class="text-muted-foreground">{{ $t('accountDetail.institution') }}:</span> <span data-testid="account-detail-platform" class="font-medium">{{ account?.platform || $t('accounts.general') }}</span></span>
+            <template v-if="account?.currency">
+              <span class="text-muted-foreground" aria-hidden="true">·</span>
+              <span><span class="text-muted-foreground">{{ $t('accounts.currency') }}:</span> <span data-testid="account-detail-currency" class="font-medium">{{ account.currency }}</span></span>
+            </template>
+          </p>
+        </div>
       </div>
-      <Button v-if="account && !$route.meta.accountAction" variant="outline" class="ml-auto" as-child>
-        <router-link data-testid="account-analysis-link" :to="{ name: 'AccountAnalysis', params: { id: account.id } }"><ChartNoAxesCombined class="size-4" />{{ $t('portfolio.accountAnalysis') }}</router-link>
-      </Button>
+      <div v-if="account && !$route.meta.accountAction" class="ml-auto flex flex-wrap gap-2">
+        <Button data-testid="account-tags-toggle" variant="ghost" :aria-expanded="showTags" @click="showTags = !showTags"><LuTag class="size-4" />{{ $t('wealth.tags') }}</Button>
+        <Button variant="outline" as-child>
+          <router-link data-testid="account-analysis-link" :to="{ name: 'AccountAnalysis', params: { id: account.id } }"><LuChartNoAxesCombined class="size-4" />{{ $t('portfolio.accountAnalysis') }}</router-link>
+        </Button>
+      </div>
     </div>
     <Alert
       data-testid="account-detail-error"
@@ -48,8 +63,8 @@
         <component :is="Component" :key="$route.path" :account="account" :holdings="holdings" :activities="activities" :holdings-error="holdingsError" :activities-error="activitiesError" @retry="fetchAccountDetails" @saved="onActionSaved" />
       </router-view>
       <template v-else>
-      <details @toggle="showTags = $event.target.open"><summary class="cursor-pointer text-sm text-primary">{{ $t('wealth.tags') }}</summary><EntityTags v-if="showTags" kind="account" :id="account.id" class="mt-3" /></details>
-      <div class="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-6">
+      <EntityTags v-if="showTags" kind="account" :id="account.id" />
+      <div class="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
         <Card
           :data-testid="`account-summary-${stat.label}`"
           v-for="stat in summaryCards"
@@ -57,17 +72,11 @@
           class="min-w-0 gap-2 py-4"
         >
           <CardHeader class="px-4">
-            <CardDescription class="flex items-center gap-2">
-              <span class="inline-flex shrink-0 text-primary/80" aria-hidden="true">
-                <component :is="stat.icon" class="size-4" />
-              </span>
-              <span class="min-w-0 break-words">{{ $t('accountDetail.' + stat.label) }}</span>
-            </CardDescription>
+            <CardDescription class="flex min-w-0 items-center gap-2"><component :is="stat.icon" class="size-4 shrink-0 text-primary/80" aria-hidden="true" /><span class="min-w-0 break-words">{{ $t('accountDetail.' + stat.label) }}</span></CardDescription>
           </CardHeader>
-          <CardContent
-            class="break-all px-4 text-lg font-semibold tabular-nums"
-          >
-            {{ stat.value }}
+          <CardContent class="space-y-1 px-4">
+            <p class="break-all text-lg font-semibold tabular-nums" :class="stat.tone">{{ stat.value }}</p>
+            <p v-if="stat.caption" :data-testid="`account-summary-${stat.label}-caption`" class="flex items-center gap-1.5 break-words text-xs text-muted-foreground tabular-nums"><LuCoins class="size-3.5 shrink-0" aria-hidden="true" />{{ stat.caption }}</p>
           </CardContent>
         </Card>
       </div>
@@ -75,10 +84,14 @@
       <Tabs v-model="activeTab" class="min-w-0 space-y-4">
         <TabsList class="grid w-full grid-cols-2 sm:w-fit">
           <TabsTrigger data-testid="holdings-tab" value="holdings">
+            <LuBriefcase class="size-4" aria-hidden="true" />
             {{ $t('accountDetail.holdings') }}
+            <span class="text-xs tabular-nums text-muted-foreground">{{ holdings.length }}</span>
           </TabsTrigger>
           <TabsTrigger data-testid="activities-tab" value="activities">
+            <LuHistory class="size-4" aria-hidden="true" />
             {{ $t('accountDetail.activities') }}
+            <span class="text-xs tabular-nums text-muted-foreground">{{ activities.length }}</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent
@@ -127,6 +140,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
+  Favicon,
   InlineConfirmation,
   FullPageSpinner,
   Tabs,
@@ -138,9 +152,9 @@ import EntityTags from '@/components/wealth/EntityTags.vue'
 import { zen } from '@/composables/useZen'
 import TransactionsPanel from '@/components/portfolio/TransactionsPanel.vue'
 import HoldingsList from '@/components/holdings/HoldingsList.vue'
-import { ArrowLeft, ChartNoAxesCombined } from 'lucide-vue-next'
-import { LuArrowLeftRight, LuBanknote, LuCoins, LuLayers, LuPercent, LuWallet } from '@kalimahapps/vue-icons/lu'
+import { LuArrowLeft, LuBriefcase, LuChartNoAxesCombined, LuChartPie, LuCoins, LuHistory, LuLandmark, LuTag, LuTrendingDown, LuTrendingUp, LuWallet } from '@kalimahapps/vue-icons/lu'
 import { accountAPI } from '@/services/accountApi'
+import { platformDomain } from '@/lib/platforms'
 import { holdingAPI } from '@/services/holdingApi'
 import { activityAPI } from '@/services/activityApi'
 
@@ -151,8 +165,14 @@ export default {
     EntityTags,
     HoldingsList,
     Alert,
-    ArrowLeft,
-    ChartNoAxesCombined,
+    LuArrowLeft,
+    LuBriefcase,
+    LuChartNoAxesCombined,
+    LuCoins,
+    LuHistory,
+    LuTag,
+    LuWallet,
+    Favicon,
     Button,
     Card,
     CardContent,
@@ -190,33 +210,27 @@ export default {
   },
   computed: {
     summaryCards() {
+      const currency = this.account?.currency
+      const summary = this.holdingsSummary
+      const profit = summary?.complete ? summary.total_profit_loss : null
+      const income = (summary?.dividend || 0) + (summary?.interest || 0)
+      const tone = profit == null || zen.value || Math.abs(profit) < 0.005 ? '' : profit < 0 ? 'text-destructive' : 'text-primary'
       return [
+        { label: 'totalValue', icon: LuLandmark, value: this.formatCurrency(this.totalEquity == null ? null : this.totalEquity + (this.account?.cash_balance || 0), currency) },
+        { label: 'cashBalance', icon: LuWallet, value: this.formatCurrency(this.account?.cash_balance, currency) },
+        { label: 'equity', icon: LuChartPie, value: this.formatCurrency(this.totalEquity, currency) },
         {
-          label: 'cashBalance',
-          icon: LuWallet,
-          value: this.formatCurrency(
-            this.account?.cash_balance,
-            this.account?.currency
-          ),
+          label: 'profitLoss',
+          icon: profit < 0 ? LuTrendingDown : LuTrendingUp,
+          tone,
+          value: profit == null ? '—' : `${this.formatCurrency(profit, currency)}${zen.value ? '' : ` (${this.formatPercent(summary.total_performance)})`}`,
+          // Income is rare for most accounts; show it only when there is some.
+          caption: Math.abs(income) >= 0.005 ? this.$t('accountDetail.incomeCaption', { amount: this.formatCurrency(income, currency) }) : '',
         },
-        {
-          label: 'equity',
-          icon: LuLayers,
-          value: this.formatCurrency(this.totalEquity, this.account?.currency),
-        },
-        {
-          label: 'interest',
-          icon: LuPercent,
-          value: this.formatCurrency(this.holdingsSummary?.interest, this.account?.currency),
-        },
-        {
-          label: 'dividend',
-          icon: LuCoins,
-          value: this.formatCurrency(this.holdingsSummary?.dividend, this.account?.currency),
-        },
-        { label: 'activities', icon: LuArrowLeftRight, value: this.activities.length },
-        { label: 'currency', icon: LuBanknote, value: this.account?.currency },
       ]
+    },
+    logoDomain() {
+      return platformDomain(this.account?.platform)
     },
     totalEquity() {
       return this.holdingsSummary?.complete ? this.holdingsSummary.total_value : null
@@ -331,6 +345,11 @@ export default {
         style: 'currency',
         currency: currency || 'USD',
       }).format(amount || 0)
+    },
+    formatPercent(value) {
+      if (!Number.isFinite(value)) return '—'
+      const shown = Math.abs(value) < 0.005 ? 0 : value
+      return `${shown > 0 ? '+' : ''}${shown.toFixed(2)}%`
     },
     formatDate(dateString) {
       if (!dateString) return '-'

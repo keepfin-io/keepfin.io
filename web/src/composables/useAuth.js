@@ -77,6 +77,7 @@ export function useAuth() {
   }
   return {
     user: computed(() => user.value),
+    currentSessionId: computed(() => authSession.value?.session?.id ?? null),
     hasSession: computed(() => !!authSession.value),
     isAuthenticated: computed(() => !!user.value),
     isLoading: computed(() => isLoading.value),

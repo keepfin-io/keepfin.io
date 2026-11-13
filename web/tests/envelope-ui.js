@@ -20,6 +20,8 @@ test('public shared reports use the same envelope without changing Better Auth r
   await ui.until(() => ui.find('portfolio-stat-value'))
   assert.match(ui.find('portfolio-stat-value').textContent, /1,990/)
   assert.equal(ui.find('dashboard-accounts-link'), null)
+  assert.equal(ui.find('portfolio-options-toggle'), null)
+  assert.equal(ui.find('portfolio-options'), null)
   assert.deepEqual(ui.errors, [])
 })
 

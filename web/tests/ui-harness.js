@@ -13,7 +13,7 @@ function apiResponse(data, status = 200, pagination) {
   return new global.Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'X-Request-ID': meta.request_id } })
 }
 
-async function launch(t, { route = '/login', authenticated = false, outage = false, conflict = false, width = 320, internalTesting = false, google = true, sessionGate, profileGate, onBoot, locale = 'en-US', portfolioResponse, portfolioGate, measuredChartWidth, accountsResponse = [], holdingsResponse = [], activitiesResponse = [], marketHistoryResponse = [], marketHistoryFailure = '', holdingsFailure = false, activitiesFailure = false, userId = 'app-uuid', storage = {}, wealthHandler = null, zen = false } = {}) {
+async function launch(t, { route = '/login', authenticated = false, outage = false, conflict = false, width = 320, internalTesting = false, google = true, sessionGate, profileGate, authSessions = [], sessionsGate, sessionsFailure = '', onBoot, locale = 'en-US', portfolioResponse, portfolioGate, measuredChartWidth, accountsResponse = [], holdingsResponse = [], activitiesResponse = [], marketHistoryResponse = [], marketHistoryFailure = '', holdingsFailure = false, activitiesFailure = false, userId = 'app-uuid', storage = {}, wealthHandler = null, zen = false } = {}) {
   const errors = [], calls = []
   const vc = new VirtualConsole()
   vc.on('jsdomError', error => errors.push(error.message))
@@ -50,6 +50,7 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
   Object.assign(state, { marketResults: [{ Code: 'QQQM', Exchange: 'US', Name: 'Invesco NASDAQ 100 ETF', Currency: 'USD', Type: 'ETF' }], searchHandler: null, quoteHandler: null, marketHistory: marketHistoryResponse, marketHistoryFailure, historyHandler: null, portfolioHandler: null, holdingsFailure, activitiesFailure })
   state.preferences = { zen, max_asset_weight:25,max_account_weight:70,max_currency_weight:80,max_fee_ratio:1,emergency_months:6,emergency_fund:0,monthly_expenses:0,monthly_contribution:0,annual_expenses:0,annual_return:5,withdrawal_rate:4,horizon_years:30,disabled_rules:[] }
   state.wealthHandler = wealthHandler
+  Object.assign(state, { authSessions, sessionsGate, sessionsFailure })
   w.fetch = async (input, options = {}) => {
     const requestURL = new URL(input.url || String(input), w.location.origin)
     const endpoint = requestURL.pathname
@@ -64,6 +65,10 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
       if (sessionGate) await sessionGate
       if (state.outage) { status = 503; data = { message: 'Unavailable' } }
       else data = state.authenticated ? { user: { id: 'auth-uuid', email: user.email, emailVerified: true }, session: { id: 'session', userId: 'auth-uuid', expiresAt: '2099-01-01T00:00:00Z' } } : null
+    } else if (endpoint === '/api/auth/list-sessions') {
+      if (state.sessionsGate) await state.sessionsGate
+      status = state.sessionsFailure === 'SESSION_NOT_FRESH' ? 403 : state.sessionsFailure ? 503 : 200
+      data = state.sessionsFailure ? { code: state.sessionsFailure, message: 'Sessions unavailable' } : state.authSessions
     } else if (endpoint === '/api/auth/config') data = { google, apple: false, internalTesting, email: true, developmentMail: true }
     else if (endpoint === '/api/auth/sign-in/magic-link') {
       status = state.rateLimited ? 429 : 200; data = state.rateLimited ? { message: 'Rate limited' } : { status: true }

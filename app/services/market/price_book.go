@@ -23,6 +23,7 @@ type priceBook struct {
 	from, to time.Time
 	series   map[string][]marketmodel.MarketPrice
 	failures map[string]error
+	quotes   map[string]string
 }
 
 // NewPriceBook shares persisted daily prices and FX rates within one calculation.
@@ -31,6 +32,7 @@ func NewPriceBook(db *gorm.DB, market *MarketService, from, to time.Time) *price
 		db: db, market: market,
 		from: portfolio.Day(from).AddDate(0, 0, -7), to: portfolio.Day(to),
 		series: map[string][]marketmodel.MarketPrice{}, failures: map[string]error{},
+		quotes: map[string]string{},
 	}
 }
 func (b *priceBook) load(symbol string) {
@@ -125,10 +127,55 @@ func (b *priceBook) Price(symbol string, date time.Time) (float64, string, error
 	return 0, "", fmt.Errorf("price unavailable: %s (%s)", symbol, day)
 }
 
+// QuoteCurrency returns the currency of symbol's prices, or fallback when unknown.
+func (b *priceBook) QuoteCurrency(symbol, fallback string) string {
+	c, ok := b.quotes[symbol]
+	if !ok {
+		c = QuoteCurrency(b.db, b.market, symbol)
+		b.quotes[symbol] = c
+	}
+	if c == "" {
+		return fallback
+	}
+	return c
+}
+
+// PriceIn returns symbol's close converted from its quote currency into
+// currency. When the quote currency is unknown, both are assumed to match.
+func (b *priceBook) PriceIn(symbol, currency string, date time.Time) (float64, string, error) {
+	price, day, err := b.Price(symbol, date)
+	if err != nil {
+		return 0, "", err
+	}
+	quote := b.QuoteCurrency(symbol, currency)
+	if quote == currency {
+		return price, day, nil
+	}
+	rate, err := b.Rate(quote, currency, date)
+	if err != nil {
+		return 0, "", err
+	}
+	return portfolio.Mul(price, rate), day, nil
+}
+
 // Rate resolves a direct or inverse historical exchange rate.
 func (b *priceBook) Rate(from, to string, date time.Time) (float64, error) {
 	if from == to {
 		return 1, nil
+	}
+	if m, ok := minorUnits[from]; ok {
+		rate, err := b.Rate(m.major, to, date)
+		if err != nil {
+			return 0, err
+		}
+		return portfolio.Mul(rate, m.factor), nil
+	}
+	if m, ok := minorUnits[to]; ok {
+		rate, err := b.Rate(from, m.major, date)
+		if err != nil {
+			return 0, err
+		}
+		return portfolio.Div(rate, m.factor), nil
 	}
 	v, _, err := b.Price(from+to+".FOREX", date)
 	if err == nil {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"sync"
+	"time"
 
 	marketmodel "keepnode/app/models/market"
 )
@@ -13,13 +14,16 @@ type MarketService struct {
 	alpha    *AlphaVantageClient
 	mu       sync.RWMutex
 	provider string
+	// failedLookups throttles quote-currency lookups while the provider fails.
+	failedLookups map[string]time.Time
 }
 
 func NewMarketService() *MarketService {
 	return &MarketService{
-		eodhd:    NewEODHDClient(),
-		alpha:    NewAlphaVantageClient(),
-		provider: os.Getenv("MARKET_DATA_PROVIDER"),
+		eodhd:         NewEODHDClient(),
+		alpha:         NewAlphaVantageClient(),
+		provider:      os.Getenv("MARKET_DATA_PROVIDER"),
+		failedLookups: map[string]time.Time{},
 	}
 }
 

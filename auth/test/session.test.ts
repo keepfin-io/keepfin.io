@@ -35,9 +35,9 @@ test('PostgreSQL: passwordless sessions, replay, expiry, revocation, origin and 
   }), pool)
   await (await getMigrations(auth.options)).runMigrations()
   let nextIP = 1
-  function request(path: string, { method = 'GET', body, cookie, requestOrigin = origin, ip = `192.0.2.${nextIP++}` }: AuthRequestOptions = {}): Promise<Response> {
+  function request(path: string, { method = 'GET', body, cookie, requestOrigin = origin, ip = `192.0.2.${nextIP++}`, userAgent = '' }: AuthRequestOptions = {}): Promise<Response> {
     return auth.handler(new Request(new URL(path, origin), {
-      method, headers: { Origin: requestOrigin, 'X-Real-IP': ip, ...(body ? { 'Content-Type': 'application/json' } : {}), ...(cookie ? { Cookie: cookie } : {}) },
+      method, headers: { Origin: requestOrigin, 'X-Real-IP': ip, 'User-Agent': userAgent, ...(body ? { 'Content-Type': 'application/json' } : {}), ...(cookie ? { Cookie: cookie } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}),
     }))
   }
@@ -58,7 +58,8 @@ test('PostgreSQL: passwordless sessions, replay, expiry, revocation, origin and 
   assert.ok(rawToken)
   const stored = await pool.query('SELECT * FROM auth_verification')
   assert.equal(JSON.stringify(stored.rows).includes(rawToken), false, 'raw token must not be stored')
-  const verified = await request(link)
+  const desktopAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/142.0.0.0 Safari/537.36'
+  const verified = await request(link, { ip: '203.0.113.10', userAgent: desktopAgent })
   assert.equal(verified.status, 302)
   assert.equal(verified.headers.get('location'), `${origin}/auth/callback`)
   const cookie = cookies(verified)
@@ -72,6 +73,50 @@ test('PostgreSQL: passwordless sessions, replay, expiry, revocation, origin and 
   const replay = await request(link)
   assert.equal(cookies(replay).includes('keepfin.session_token='), false)
   assert.match(replay.headers.get('location') ?? '', /error=/)
+
+  // Device metadata is captured by Better Auth for every login method. Listing
+  // must stay scoped to the authenticated identity, including legacy app users.
+  async function sessionsFor(sessionCookie: string, query = '') {
+    const response = await request(`/api/auth/list-sessions${query}`, { cookie: sessionCookie })
+    assert.equal(response.status, 200)
+    const data: unknown = await response.json()
+    assert.ok(Array.isArray(data))
+    return data.map(object)
+  }
+  assert.equal((await request('/api/auth/list-sessions')).status, 401)
+  const [desktop] = await sessionsFor(cookie)
+  assert.ok(desktop)
+  assert.equal(desktop.userAgent, desktopAgent)
+  assert.equal(desktop.ipAddress, '203.0.113.10')
+  const desktopID = string(desktop.id)
+  const phoneAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'
+  const phoneCookie = cookies(await request(await newLink(session.user.email), { ip: '203.0.113.20', userAgent: phoneAgent }))
+  const ownSessions = await sessionsFor(phoneCookie)
+  assert.equal(ownSessions.length, 2)
+  assert.ok(ownSessions.every(row => row.userId === session.user.id))
+  const phone = ownSessions.find(row => row.id !== desktopID)
+  assert.ok(phone)
+  assert.equal(phone.userAgent, phoneAgent)
+  assert.equal(phone.ipAddress, '203.0.113.20')
+  const outsiderCookie = cookies(await request(await newLink()))
+  const outsiderSessions = await sessionsFor(outsiderCookie, `?userId=${session.user.id}`)
+  assert.equal(outsiderSessions.length, 1)
+  assert.ok(outsiderSessions.every(row => row.userId !== session.user.id))
+  assert.equal((await sessionsFor(cookie)).length, 2, 'another user must not appear in the device list')
+  await pool.query('UPDATE auth_session SET "expiresAt" = NOW() - interval \'1 hour\' WHERE id = $1', [phone.id])
+  assert.deepEqual((await sessionsFor(cookie)).map(row => row.id), [desktopID], 'expired devices must be excluded')
+
+  // Go's session verification may refresh timestamps; it must not overwrite the
+  // original browser/IP. Keep the native recent-sign-in requirement intact.
+  await pool.query('UPDATE auth_session SET "createdAt" = NOW() - interval \'2 days\', "updatedAt" = NOW() - interval \'2 days\', "expiresAt" = NOW() + interval \'5 days\' WHERE id = $1', [desktopID])
+  assert.ok(await readSession(await request('/api/auth/get-session', { cookie, userAgent: 'Go-http-client/1.1' })))
+  const metadata = await pool.query('SELECT "userAgent", "ipAddress" FROM auth_session WHERE id = $1', [desktopID])
+  assert.equal(object(metadata.rows[0]).userAgent, desktopAgent)
+  assert.equal(object(metadata.rows[0]).ipAddress, '203.0.113.10')
+  const stale = await request('/api/auth/list-sessions', { cookie })
+  assert.equal(stale.status, 403)
+  assert.equal(object(await stale.json()).code, 'SESSION_NOT_FRESH')
+  await pool.query('UPDATE auth_session SET "createdAt" = NOW() WHERE id = $1', [desktopID])
 
   const denied = await request('/api/auth/sign-out', { method: 'POST', cookie, body: {}, requestOrigin: 'https://evil.example' })
   assert.equal(denied.status, 403)

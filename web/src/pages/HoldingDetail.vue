@@ -31,7 +31,7 @@
         </dl>
         <p class="mt-4 text-xs leading-relaxed text-muted-foreground">{{ t('holdingDetail.positionHint') }}</p>
       </section>
-      <HoldingPriceHistory :key="holding.symbol" :symbol="holding.symbol" :currency="holding.buy_currency" />
+      <HoldingPriceHistory :key="holding.symbol" :symbol="holding.symbol" :currency="holding.quote_currency || holding.buy_currency" />
       <HoldingActivityHistory :account="account" :activities="holdingActivities" :error="activitiesError" @retry="$emit('retry')" />
     </template>
   </section>

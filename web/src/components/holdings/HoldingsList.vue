@@ -1,22 +1,19 @@
 <template>
   <section class="min-w-0 space-y-4" :aria-busy="loading">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div><h2 class="font-semibold">{{ t('accountDetail.holdings') }}</h2><p class="mt-1 text-xs text-muted-foreground">{{ t('holdings.listHint') }}</p></div>
-      <Button data-testid="holdings-add" :disabled="!account.is_active" @click="$emit('add')"><LuPlus class="size-4" />{{ t('accountDetail.addHolding') }}</Button>
-    </div>
-    <div class="space-y-3 rounded-2xl border bg-card p-3 sm:p-4">
-      <div class="flex flex-col gap-3 sm:flex-row">
+    <div class="space-y-3">
+      <div class="flex flex-col gap-2 sm:flex-row">
         <div class="relative min-w-0 flex-1">
           <LuSearch class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input data-testid="holdings-search" :model-value="params.q" :aria-label="t('holdings.searchOwned')" :placeholder="t('holdings.searchOwned')" class="h-10 pl-9 pr-10" @update:model-value="setParam('q', $event)" />
           <Button v-if="params.q" data-testid="holdings-clear-search" type="button" variant="ghost" size="icon" class="absolute right-1 top-1/2 size-8 -translate-y-1/2" :aria-label="t('holdings.clearSearch')" @click="setParam('q', '')"><LuX class="size-4" /></Button>
         </div>
         <div class="flex gap-2">
-          <FormSelect data-testid="holdings-sort" class="h-10 min-w-40" :aria-label="t('holdings.sort')" :model-value="`${params.sort}:${params.direction}`" :options="sortOptions" @update:model-value="setSort" />
-          <Button data-testid="holdings-filter-toggle" type="button" variant="outline" class="h-10" :aria-expanded="showFilters" @click="showFilters = !showFilters"><LuSlidersHorizontal class="size-4" />{{ t('holdings.filters') }}<span v-if="filterCount" class="text-primary">{{ filterCount }}</span></Button>
+          <FormSelect data-testid="holdings-sort" class="h-10 min-w-0 flex-1 sm:w-40 sm:flex-none" :aria-label="t('holdings.sort')" :model-value="`${params.sort}:${params.direction}`" :options="sortOptions" @update:model-value="setSort" />
+          <Button data-testid="holdings-filter-toggle" type="button" variant="outline" size="icon" class="relative size-10 shrink-0" :aria-label="t('holdings.filters')" :title="t('holdings.filters')" :aria-expanded="showFilters" @click="showFilters = !showFilters"><LuSlidersHorizontal class="size-4" /><span v-if="filterCount" class="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">{{ filterCount }}</span></Button>
+          <Button data-testid="holdings-add" class="h-10 shrink-0" :disabled="!account.is_active" @click="$emit('add')"><LuPlus class="size-4" />{{ t('accountDetail.addHolding') }}</Button>
         </div>
       </div>
-      <div v-if="showFilters" data-testid="holdings-filters" class="grid gap-3 border-t pt-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div v-if="showFilters" data-testid="holdings-filters" class="grid gap-3 rounded-2xl border bg-card p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-5">
         <div v-for="key in filterKeys" :key="key" class="min-w-0 space-y-2">
           <Label :for="`holdings-filter-${key}`">{{ t(`holdings.filterLabels.${key}`) }}</Label>
           <FormSelect :id="`holdings-filter-${key}`" :data-testid="`holdings-filter-${key}`" :model-value="params[key] || 'all'" :options="filterOptions(key)" @update:model-value="setParam(key, $event === 'all' ? '' : $event)" />
@@ -34,7 +31,7 @@
     <template v-else>
       <div data-testid="holdings-cards" class="grid gap-3 md:hidden">
         <Card v-for="holding in rows" :key="holding.id" :data-testid="`holding-card-${holding.id}`" class="gap-4 rounded-2xl p-4">
-          <div class="flex items-start gap-2"><router-link class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-ring" :to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }"><AssetIdentity :asset="identity(holding)" compact /></router-link><RecordActions :view-to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }" :data-testid="`holding-card-${holding.id}-actions`" @edit="$emit('edit', holding)" @delete="$emit('delete', holding)" /></div>
+          <div class="flex items-start gap-2"><router-link :data-testid="`holding-card-${holding.id}-link`" class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-ring" :to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }"><AssetIdentity :asset="identity(holding)" compact /></router-link><RecordActions :data-testid="`holding-card-${holding.id}-actions`" @edit="$emit('edit', holding)" @delete="$emit('delete', holding)" /></div>
           <div class="grid grid-cols-2 gap-4 text-sm">
             <div v-for="field in metricFields" :key="field"><p class="text-xs text-muted-foreground">{{ t(`accountDetail.${field}`) }}</p><p class="mt-1 break-all font-medium tabular-nums" :class="field === 'profitLoss' && profitClass(holding)">{{ metric(holding, field) }}</p></div>
           </div>
@@ -44,9 +41,9 @@
         <Table data-testid="holdings-table">
           <TableHeader><TableRow class="hover:bg-transparent"><TableHead class="px-4">{{ t('accountDetail.name') }}</TableHead><TableHead v-for="field in metricFields" :key="field" class="text-right">{{ t(`accountDetail.${field}`) }}</TableHead><TableHead class="px-4 text-right">{{ t('accountDetail.actions') }}</TableHead></TableRow></TableHeader>
           <TableBody><TableRow v-for="holding in rows" :key="holding.id" :data-testid="`holding-row-${holding.id}`" class="hover:bg-muted/30">
-            <TableCell class="w-[28%] min-w-48 max-w-80 px-4 py-4"><router-link class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-ring" :to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }"><AssetIdentity :asset="identity(holding)" compact /></router-link></TableCell>
+            <TableCell class="w-[28%] min-w-48 max-w-80 px-4 py-4"><router-link :data-testid="`holding-row-${holding.id}-link`" class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-ring" :to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }"><AssetIdentity :asset="identity(holding)" compact /></router-link></TableCell>
             <TableCell v-for="field in metricFields" :key="field" class="text-right tabular-nums" :class="field === 'profitLoss' && profitClass(holding)">{{ metric(holding, field) }}</TableCell>
-            <TableCell class="px-4"><div class="flex justify-end"><RecordActions :view-to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }" :data-testid="`holding-row-${holding.id}-actions`" @edit="$emit('edit', holding)" @delete="$emit('delete', holding)" /></div></TableCell>
+            <TableCell class="px-4"><div class="flex justify-end"><RecordActions :data-testid="`holding-row-${holding.id}-actions`" @edit="$emit('edit', holding)" @delete="$emit('delete', holding)" /></div></TableCell>
           </TableRow></TableBody>
         </Table>
       </div>
@@ -54,7 +51,7 @@
     <div v-if="!error && (total > 0 || params.page > 1)" data-testid="holdings-pagination" class="flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
       <p aria-live="polite">{{ t('holdings.showing', { from: total ? (params.page - 1) * params.per_page + 1 : 0, to: Math.min(params.page * params.per_page, total), total }) }}</p>
       <div class="flex flex-wrap items-center gap-3">
-        <div class="flex items-center gap-2"><Label for="holdings-page-size" class="text-xs font-normal">{{ t('holdings.perPage') }}</Label><FormSelect id="holdings-page-size" data-testid="holdings-page-size" class="w-20" :model-value="String(params.per_page)" :options="['10', '25', '50', '100']" :disabled="loading" @update:model-value="setParam('per_page', Number($event))" /></div>
+        <div class="flex items-center gap-2"><Label for="holdings-page-size" class="whitespace-nowrap text-xs font-normal">{{ t('holdings.perPage') }}</Label><FormSelect id="holdings-page-size" data-testid="holdings-page-size" class="w-20" :model-value="String(params.per_page)" :options="['10', '25', '50', '100']" :disabled="loading" @update:model-value="setParam('per_page', Number($event))" /></div>
         <nav class="flex items-center gap-1" :aria-label="t('holdings.pagination')">
           <Button data-testid="holdings-first" variant="ghost" size="icon" class="size-8" :disabled="loading || params.page <= 1" :aria-label="t('holdings.firstPage')" @click="params.page = 1"><LuChevronsLeft class="size-4" /></Button>
           <Button data-testid="holdings-prev" variant="ghost" size="icon" class="size-8" :disabled="loading || params.page <= 1" :aria-label="t('holdings.previousPage')" @click="params.page--"><LuChevronLeft class="size-4" /></Button>

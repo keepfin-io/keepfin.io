@@ -21,6 +21,7 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-2">
             <Label for="edit-quantity">
+              <LuHash class="size-4 text-muted-foreground" aria-hidden="true" />
               {{ $t('accountDetail.quantity') }}
             </Label>
             <Input
@@ -35,7 +36,7 @@
             />
           </div>
           <div class="space-y-2">
-            <Label for="edit-buy_price">{{ $t('accountDetail.price') }}</Label>
+            <Label for="edit-buy_price"><LuCircleDollarSign class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('accountDetail.price') }}</Label>
             <Input
               id="edit-buy_price"
               data-testid="holding-edit-price"
@@ -49,23 +50,30 @@
           </div>
           <div class="space-y-2">
             <Label for="edit-buyCurrency">
+              <LuBanknote class="size-4 text-muted-foreground" aria-hidden="true" />
               {{ $t('accountDetail.currency') }}
             </Label>
             <FormSelect
               id="edit-buyCurrency"
               data-testid="holding-edit-currency"
               v-model="form.buy_currency"
-              :disabled="submitting || !holding?.can_edit_position"
-              :options="[
+              :disabled="submitting || !holding?.can_edit_position || !!lockedCurrency"
+              :options="lockedCurrency ? [lockedCurrency] : [
                 ...new Set([form.buy_currency, 'USD', 'EUR', 'GBP', 'TRY']),
               ]"
             />
+            <p v-if="currencyCorrected" data-testid="holding-edit-currency-corrected" class="text-xs text-amber-600 dark:text-amber-400">
+              {{ $t('holdings.currencyCorrected', { symbol: holding.symbol, from: holding.buy_currency, currency: lockedCurrency }) }}
+            </p>
+            <p v-else-if="lockedCurrency" data-testid="holding-edit-currency-locked" class="text-xs text-muted-foreground">
+              {{ $t('holdings.currencyLocked', { symbol: holding.symbol, currency: lockedCurrency }) }}
+            </p>
           </div>
         </div>
         <p class="text-xs text-muted-foreground">{{ $t('portfolio.classificationHint') }}</p>
-        <div class="grid gap-3 sm:grid-cols-3"><div v-for="field in ['asset_class', 'sector', 'country']" :key="field"><Label :for="`holding-${field}`">{{ $t(`portfolio.${field}`) }}</Label><Input :id="`holding-${field}`" v-model="form[field]" maxlength="100" :disabled="submitting" /></div></div>
+        <div class="grid gap-3 sm:grid-cols-3"><div v-for="field in ['asset_class', 'sector', 'country']" :key="field"><Label :for="`holding-${field}`"><component :is="{ asset_class: 'LuLayers', sector: 'LuFactory', country: 'LuGlobe' }[field]" class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t(`portfolio.${field}`) }}</Label><Input :id="`holding-${field}`" v-model="form[field]" maxlength="100" :disabled="submitting" /></div></div>
         <div class="space-y-2">
-          <Label for="edit-notes">{{ $t('holdings.notes') }}</Label>
+          <Label for="edit-notes"><LuNotebookPen class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('holdings.notes') }}</Label>
           <Textarea
             id="edit-notes"
             data-testid="holding-edit-notes"
@@ -76,7 +84,7 @@
         <div
           class="flex flex-wrap justify-between gap-2 rounded-lg bg-muted p-3 text-sm"
         >
-          <span>{{ $t('holdings.totalCost') }}</span>
+          <span class="flex items-center gap-2"><LuCalculator class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('holdings.totalCost') }}</span>
           <strong
             data-testid="holding-edit-total"
             class="break-all tabular-nums"
@@ -120,6 +128,8 @@ import {
   Textarea,
 } from '@/components/ui'
 import { holdingAPI } from '@/services/holdingApi'
+import { LuBanknote, LuCalculator, LuCircleDollarSign, LuFactory, LuGlobe, LuHash, LuLayers, LuNotebookPen } from '@kalimahapps/vue-icons/lu'
+import { tradeCurrency } from '@/lib/portfolio-format'
 
 export default {
   components: {
@@ -129,6 +139,7 @@ export default {
     Input,
     Label,
     Textarea,
+    LuBanknote, LuCalculator, LuCircleDollarSign, LuFactory, LuGlobe, LuHash, LuLayers, LuNotebookPen,
   },
   name: 'EditHoldingForm',
   props: {
@@ -156,6 +167,14 @@ export default {
     }
   },
   computed: {
+    // Only single-trade positions can change currency; others are fixed by their activities.
+    lockedCurrency() {
+      return this.holding?.can_edit_position ? tradeCurrency(this.holding.quote_currency) : ''
+    },
+    // Legacy positions may record a listing's price in another currency.
+    currencyCorrected() {
+      return !!this.lockedCurrency && this.lockedCurrency !== this.holding.buy_currency
+    },
     canSubmit() {
       return (
         this.form.quantity > 0 &&
@@ -179,7 +198,7 @@ export default {
       this.form = {
         quantity: this.holding.quantity,
         buy_price: this.holding.can_edit_position ? this.holding.entry_price : this.holding.buy_price,
-        buy_currency: this.holding.buy_currency || 'USD',
+        buy_currency: this.lockedCurrency || this.holding.buy_currency || 'USD',
         notes: this.holding.notes || '',
         asset_class: this.holding.asset_class || '', sector: this.holding.sector || '', country: this.holding.country || '',
       }

@@ -130,7 +130,27 @@
     "themeSaveError": "Tema tercihiniz kaydedilemedi. Lütfen tekrar deneyin.",
     "themeSystem": "Sistem",
     "avatarHint": "Avatarınızı değiştirmek için tıklayın",
-    "chooseAvatar": "Avatarınızı Seçin"
+    "chooseAvatar": "Avatarınızı Seçin",
+    "sessions": {
+      "title": "Oturum açılan cihazlar",
+      "hint": "Şu anda açık olan oturumlarınız. Cihaz bilgileri tarayıcının bildirdiği verilere dayanır.",
+      "current": "Bu oturum",
+      "ipAddress": "Girişteki IP adresi",
+      "signedIn": "Giriş zamanı",
+      "expires": "Oturum bitişi",
+      "desktop": "Bilgisayar",
+      "mobile": "Telefon",
+      "tablet": "Tablet",
+      "unknownDevice": "Bilinmeyen cihaz",
+      "unknownBrowser": "Bilinmeyen tarayıcı",
+      "unknownOS": "Bilinmeyen işletim sistemi",
+      "loading": "Oturumlarınız yükleniyor…",
+      "empty": "Aktif oturum bulunamadı.",
+      "loadError": "Oturumlarınız yüklenemedi. Lütfen tekrar deneyin.",
+      "reauthRequired": "Güvenliğiniz için oturumlarınızı görüntülemeden önce çıkış yapıp yeniden giriş yapın.",
+      "signOut": "Yeniden giriş için çıkış yap",
+      "retry": "Tekrar dene"
+    }
   },
   "accounts": {
     "title": "Hesaplar",
@@ -198,13 +218,16 @@
     "comingSoon": "Çok Yakında"
   },
   "accountDetail": {
+    "institution": "Kurum",
     "loadingDetails": "Hesap detayları yükleniyor...",
     "backToAccounts": "Hesaplara Dön",
     "backToAccount": "Hesaba dön",
     "changesSaved": "Değişiklikleriniz kaydedildi.",
     "actionUnavailable": "Bu kayıt bulunamadı veya değiştirilemiyor. Güncel durumunu kontrol etmek için hesaba dönün.",
     "cashBalance": "Nakit Bakiye",
-    "equity": "Öz Sermaye",
+    "equity": "Yatırımlar",
+    "totalValue": "Toplam Değer",
+    "incomeCaption": "Temettü + faiz: {amount}",
     "interest": "Faiz",
     "dividend": "Temettü",
     "activities": "Aktiviteler",
@@ -237,7 +260,6 @@
     "deleteHoldingMessage": "{symbol} varlığını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
   },
   "holdings": {
-    "listHint": "Bu hesaptaki varlıkları arayın ve yönetin.",
     "searchOwned": "Sembol, ad, sektör veya ülke ara",
     "sort": "Varlıkları sırala",
     "filters": "Filtreler",
@@ -303,6 +325,14 @@
     "editHolding": "Varlığı düzenle",
     "formHint": "Varlığınızın miktarını ve alış bilgilerini yönetin.",
     "notes": "Notlar",
+    "notesPlaceholder": "İsteğe bağlı: aracı kurum, strateji veya hatırlatma",
+    "quantityPlaceholder": "Örn. 10",
+    "pricePlaceholder": "Birim alış fiyatı",
+    "feePlaceholder": "Ödenen komisyon, örn. 1,50",
+    "exchangeRate": "Döviz kuru",
+    "exchangeRatePlaceholder": "Boş bırakılırsa tarihsel kur kullanılır",
+    "currencyLocked": "{symbol} {currency} ile işlem görüyor. Fiyatı {currency} olarak girin; hesap para birimine kurla çevrilir.",
+    "currencyCorrected": "{symbol} {currency} ile işlem görüyor ama {from} olarak kaydedilmiş. Kaydettiğinizde fiyat {currency} olarak düzeltilir.",
     "totalCost": "Toplam maliyet"
   },
   "portfolio": {
@@ -311,6 +341,7 @@
     "title": "Portföy",
     "subtitle": "Tüm hesaplarınız, varlıklarınız ve getirileriniz tek yerde.",
     "range": "Dönem",
+    "options": "Seçenekler",
     "benchmark": "Karşılaştırma",
     "none": "Yok",
     "refresh": "Yenile",

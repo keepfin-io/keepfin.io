@@ -7,6 +7,7 @@ export interface AuthRequestOptions {
   cookie?: string
   requestOrigin?: string
   ip?: string
+  userAgent?: string
 }
 
 export function object(value: unknown): Record<string, unknown> {

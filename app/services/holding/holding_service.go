@@ -217,7 +217,8 @@ func (s *HoldingService) ValueHoldings(
 			}
 		}
 		row.CanEditPosition = count == 1
-		price, date, e := book.Price(h.Symbol, now)
+		row.QuoteCurrency = book.QuoteCurrency(h.Symbol, h.BuyCurrency)
+		price, date, e := book.PriceIn(h.Symbol, h.BuyCurrency, now)
 		rate, fe := book.Rate(h.BuyCurrency, a.Currency, now)
 		if e != nil || fe != nil {
 			summary.Complete = false
@@ -238,7 +239,7 @@ func (s *HoldingService) ValueHoldings(
 			}
 			summary.TotalValue += row.Value * rate
 			summary.TotalProfitLoss += row.Value*rate - p.AccountCost
-			prior, _, pe := book.Price(h.Symbol, now.AddDate(0, 0, -1))
+			prior, _, pe := book.PriceIn(h.Symbol, h.BuyCurrency, now.AddDate(0, 0, -1))
 			if pe == nil {
 				row.Change = price - prior
 				row.ChangePercent = row.Change / prior * 100

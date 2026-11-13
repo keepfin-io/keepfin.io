@@ -19,6 +19,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&holdingmodel.Holding{},
 		&activitymodel.Activity{},
 		&marketmodel.MarketPrice{},
+		&marketmodel.Instrument{},
 		&holdingmodel.SearchState{},
 		&wealthmodel.WatchItem{}, &wealthmodel.ManualAsset{}, &wealthmodel.ManualValuation{},
 		&wealthmodel.Liability{}, &wealthmodel.LiabilityBalance{}, &wealthmodel.Tag{}, &wealthmodel.TagAssignment{},

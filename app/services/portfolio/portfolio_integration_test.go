@@ -23,6 +23,7 @@ import (
 	activityquery "keepnode/app/queries/activity"
 	accountservice "keepnode/app/services/account"
 	activityservice "keepnode/app/services/activity"
+	holdingservice "keepnode/app/services/holding"
 	"keepnode/pkg/portfolio"
 	"keepnode/platform/database"
 )
@@ -396,4 +397,66 @@ func accountCashForTest(db *gorm.DB, account accountmodel.Account) (float64, err
 		return 0, err
 	}
 	return current.CashBalance, nil
+}
+
+func TestPortfolioConvertsQuoteCurrency(t *testing.T) {
+	db := portfolioDB(t)
+	u := fixtureUser(t, db)
+	day := portfolio.Day(time.Now()).AddDate(0, 0, -1)
+	lira := fixtureAccount(t, db, u.ID, "TRY", 1000, day)
+	sterling := fixtureAccount(t, db, u.ID, "GBP", 100, day)
+	svc := activityservice.NewActivityService(db, nil)
+	// Recorded before the quote currency was known: a USD listing bought in TRY.
+	createEvent(t, svc, lira, day, "buy", "ABC.US", 2, 400, 0)
+	for _, row := range []marketmodel.Instrument{{Symbol: "ABC.US", Currency: "USD"}, {Symbol: "VOD.LSE", Currency: "GBX"}} {
+		if err := db.Create(&row).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 2; i++ {
+		date := day.AddDate(0, 0, i).Format("2006-01-02")
+		for symbol, close := range map[string]float64{"ABC.US": 10, "VOD.LSE": 70, "USDTRY.FOREX": 40, "GBPUSD.FOREX": 1.25} {
+			if err := db.Create(&marketmodel.MarketPrice{Symbol: symbol, Date: date, Close: close}).Error; err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	// A pence-quoted listing is traded in pounds.
+	createEvent(t, svc, sterling, day, "buy", "VOD.LSE", 10, 0.7, 0)
+	if _, err := svc.CreateActivity(lira.ID, nil, &activitymodel.CreateActivityRequest{Date: day.Format("2006-01-02"), Type: "buy", Symbol: "ABC.US", Quantity: 1, UnitPrice: 400, Currency: "TRY"}); err == nil || !strings.Contains(err.Error(), "trades in USD") {
+		t.Fatalf("TRY trade of a USD listing was accepted: %v", err)
+	}
+	if _, err := svc.CreateActivity(sterling.ID, nil, &activitymodel.CreateActivityRequest{Date: day.Format("2006-01-02"), Type: "buy", Symbol: "VOD.LSE", Quantity: 1, UnitPrice: 70, Currency: "GBX"}); err == nil {
+		t.Fatal("minor-unit trade currency was accepted")
+	}
+
+	report, err := NewPortfolioService(db, nil).Report(u.ID, nil, "max", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.Complete {
+		t.Fatalf("incomplete %+v", report.Warnings)
+	}
+	// TRY: 200 cash / 40 + 2 x 10 USD. GBP: (93 cash + 10 x 70p) x 1.25.
+	closeTo(t, "value", report.Summary.Value, 5+20+116.25+8.75)
+	for _, h := range report.Holdings {
+		switch h.Symbol {
+		case "ABC.US":
+			closeTo(t, "ABC price in TRY", h.Price, 400)
+		case "VOD.LSE":
+			closeTo(t, "VOD price in GBP", h.Price, 0.7)
+		}
+	}
+
+	rows, summary, err := holdingservice.NewHoldingService(db, nil).GetHoldingsWithLiveData(lira.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].QuoteCurrency != "USD" || !rows[0].PriceAvailable {
+		t.Fatalf("holdings %+v", rows)
+	}
+	closeTo(t, "row price", rows[0].CurrentPrice, 400)
+	closeTo(t, "row value", rows[0].Value, 800)
+	closeTo(t, "row profit", rows[0].ProfitLoss, 0)
+	closeTo(t, "account equity", summary.TotalValue, 800)
 }

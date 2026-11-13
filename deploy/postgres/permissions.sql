@@ -29,4 +29,5 @@ GRANT SELECT (id, email, "emailVerified") ON public.auth_user TO keepfin_securit
 -- PostgreSQL requires an UPDATE privilege to take the verification row lock.
 GRANT UPDATE (id) ON public.auth_user TO keepfin_security_owner;
 \ir identity.sql
+\ir login-history.sql
 COMMIT;

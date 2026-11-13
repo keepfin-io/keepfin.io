@@ -135,10 +135,19 @@
           {{ $t('common.loading') }}
         </p>
         <p v-if="priceError" data-testid="holding-add-price-error" role="status" class="text-sm text-muted-foreground">{{ priceError }}</p>
-        <div class="grid gap-3 sm:grid-cols-2"><div><Label for="holding-date">{{ $t('portfolio.date') }}</Label><Input id="holding-date" v-model="form.date" type="date" :max="new Date().toISOString().slice(0, 10)" required /></div><div><Label for="holding-rate">{{ $t('portfolio.automaticRate') }}</Label><Input id="holding-rate" v-model.number="form.exchange_rate" type="number" min="0.0000000001" step="any" :placeholder="$t('portfolio.automaticRate')" /></div></div>
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-2">
-            <Label for="add-quantity">{{ $t('accountDetail.quantity') }}</Label>
+            <Label for="holding-date"><LuCalendar class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('portfolio.date') }}</Label>
+            <Input id="holding-date" v-model="form.date" type="date" :max="new Date().toISOString().slice(0, 10)" required />
+          </div>
+          <div class="space-y-2">
+            <Label for="holding-rate"><LuArrowRightLeft class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('holdings.exchangeRate') }}</Label>
+            <Input id="holding-rate" v-model.number="form.exchange_rate" type="number" min="0.0000000001" step="any" :placeholder="$t('holdings.exchangeRatePlaceholder')" />
+          </div>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <Label for="add-quantity"><LuHash class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('accountDetail.quantity') }}</Label>
             <Input
               id="add-quantity"
               data-testid="holding-add-quantity"
@@ -146,12 +155,13 @@
               v-model.number="form.quantity"
               step="any"
               min="0.00000001"
+              :placeholder="$t('holdings.quantityPlaceholder')"
               :disabled="submitting"
               required
             />
           </div>
           <div class="space-y-2">
-            <Label for="add-buy_price">{{ $t('accountDetail.price') }}</Label>
+            <Label for="add-buy_price"><LuCircleDollarSign class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('accountDetail.price') }}</Label>
             <Input
               id="add-buy_price"
               data-testid="holding-add-price"
@@ -159,12 +169,13 @@
               v-model.number="form.buy_price"
               step="any"
               min="0"
+              :placeholder="$t('holdings.pricePlaceholder')"
               :disabled="submitting"
               required
             />
           </div>
           <div class="space-y-2">
-            <Label for="add-fee">{{ $t('accountDetail.fee') }}</Label>
+            <Label for="add-fee"><LuReceipt class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('accountDetail.fee') }}</Label>
             <Input
               id="add-fee"
               data-testid="holding-add-fee"
@@ -172,37 +183,43 @@
               v-model.number="form.fee"
               step="any"
               min="0"
+              :placeholder="$t('holdings.feePlaceholder')"
               :disabled="submitting"
             />
           </div>
           <div class="space-y-2">
             <Label for="add-buyCurrency">
+              <LuBanknote class="size-4 text-muted-foreground" aria-hidden="true" />
               {{ $t('accountDetail.currency') }}
             </Label>
             <FormSelect
               id="add-buyCurrency"
               data-testid="holding-add-currency"
               v-model="form.buy_currency"
-              :disabled="submitting"
-              :options="[
+              :disabled="submitting || !!lockedCurrency"
+              :options="lockedCurrency ? [lockedCurrency] : [
                 ...new Set([form.buy_currency, 'USD', 'EUR', 'GBP', 'TRY']),
               ]"
             />
+            <p v-if="lockedCurrency" data-testid="holding-add-currency-locked" class="text-xs text-muted-foreground">
+              {{ $t('holdings.currencyLocked', { symbol: selectedAsset.Code, currency: lockedCurrency }) }}
+            </p>
           </div>
         </div>
         <div class="space-y-2">
-          <Label for="add-notes">{{ $t('holdings.notes') }}</Label>
+          <Label for="add-notes"><LuNotebookPen class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('holdings.notes') }}</Label>
           <Textarea
             id="add-notes"
             data-testid="holding-add-notes"
             v-model="form.notes"
+            :placeholder="$t('holdings.notesPlaceholder')"
             :disabled="submitting"
           />
         </div>
         <div
           class="flex flex-wrap justify-between gap-2 rounded-lg bg-muted p-3 text-sm"
         >
-          <span>{{ $t('holdings.totalCost') }}</span>
+          <span class="flex items-center gap-2"><LuCalculator class="size-4 text-muted-foreground" aria-hidden="true" />{{ $t('holdings.totalCost') }}</span>
           <strong
             data-testid="holding-add-total"
             class="break-all tabular-nums"
@@ -250,10 +267,12 @@ import {
   Textarea,
 } from '@/components/ui'
 import { ArrowRight, History, LoaderCircle, Search, X } from 'lucide-vue-next'
+import { LuArrowRightLeft, LuBanknote, LuCalculator, LuCalendar, LuCircleDollarSign, LuHash, LuNotebookPen, LuReceipt } from '@kalimahapps/vue-icons/lu'
 import AssetIdentity from './AssetIdentity.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useRecentAssets } from '@/composables/useRecentAssets'
 import { assetCategory } from '@/lib/asset-search'
+import { tradeCurrency } from '@/lib/portfolio-format'
 import { wealthAPI } from '@/services/wealthApi'
 import { marketAPI } from '@/services/marketApi'
 import { holdingAPI } from '@/services/holdingApi'
@@ -272,6 +291,7 @@ export default {
     ArrowRight,
     X,
     Textarea,
+    LuArrowRightLeft, LuBanknote, LuCalculator, LuCalendar, LuCircleDollarSign, LuHash, LuNotebookPen, LuReceipt,
   },
   name: 'AddHoldingForm',
   props: {
@@ -316,6 +336,10 @@ export default {
     }
   },
   computed: {
+    // Trade prices are valued against market quotes, so they use the listing currency.
+    lockedCurrency() {
+      return tradeCurrency(this.selectedAsset?.Currency)
+    },
     filteredResults() {
       const query = this.searchQuery.trim().toUpperCase()
       return this.searchResults.filter(asset => this.assetFilter === 'all' || assetCategory(asset) === this.assetFilter)
@@ -400,7 +424,7 @@ export default {
       this.livePrice = null
       this.priceError = null
       this.form.symbol = asset.Exchange ? `${asset.Code}.${asset.Exchange}` : asset.Code
-      this.form.buy_currency = asset.Currency || 'USD'
+      this.form.buy_currency = tradeCurrency(asset.Currency) || 'USD'
       this.form.buy_price = null
 
       // Fetch live price

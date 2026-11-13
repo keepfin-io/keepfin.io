@@ -97,6 +97,10 @@ test('real PostgreSQL roles enforce isolation and atomic, attributable identity 
   assert.equal(retainedAccount.user_id,applicationID)
   assert.equal(Number(retainedAccount.initial_balance),775.50)
   for (const pool of [app,authPool,operator]) await denied(pool,'TRUNCATE keepfin_security.identity_link_audit')
+  for (const pool of [app,authPool,operator]) {
+    await denied(pool, 'SELECT * FROM public.auth_login_history')
+    await denied(pool, 'DELETE FROM public.auth_login_history')
+  }
   await admin.query('REVOKE identity_operator FROM security_test_operator')
   await assert.rejects(call())
 })

@@ -158,6 +158,5 @@ const navigation = [
   { path: '/wealth', label: 'wealth.title', icon: Folder },
   { path: '/projects', label: 'nav.projects', icon: Folder },
   { path: '/settings', label: 'nav.settings', icon: Settings },
-  { path: '/profile', label: 'nav.profile', icon: User },
 ]
 </script>

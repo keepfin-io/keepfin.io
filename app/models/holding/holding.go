@@ -42,6 +42,7 @@ type HoldingWithLiveData struct {
 	Quantity        float64   `json:"quantity"`
 	BuyPrice        float64   `json:"buy_price"`
 	BuyCurrency     string    `json:"buy_currency"`
+	QuoteCurrency   string    `json:"quote_currency"`
 	CurrentPrice    float64   `json:"current_price"`
 	Value           float64   `json:"value"`
 	Change          float64   `json:"change"`

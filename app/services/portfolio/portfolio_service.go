@@ -272,7 +272,7 @@ func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period
 			} else {
 				h.Complete = false
 			}
-			price, date, e := book.Price(symbol, end)
+			price, date, e := book.PriceIn(symbol, p.Currency, end)
 			rate, fe := book.Rate(p.Currency, r.Currency, end)
 			if e != nil || fe != nil {
 				h.Complete = false
@@ -407,7 +407,7 @@ func (s *PortfolioService) Report(userID uuid.UUID, accountID *uuid.UUID, period
 				if p.Quantity <= 0 {
 					continue
 				}
-				price, _, e := book.Price(p.Symbol, day)
+				price, _, e := book.PriceIn(p.Symbol, p.Currency, day)
 				rate, fe := book.Rate(p.Currency, r.Currency, day)
 				if e != nil || fe != nil {
 					valid = false

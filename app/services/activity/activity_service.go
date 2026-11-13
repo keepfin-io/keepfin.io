@@ -128,6 +128,13 @@ func (s *ActivityService) PrepareActivity(
 		if !symbolPattern.MatchString(a.Symbol) {
 			return a, errors.New("a valid symbol is required")
 		}
+		// Trade prices are compared with market quotes, so they must share a currency.
+		if !strings.HasPrefix(a.Symbol, "MANUAL-") {
+			quote := marketservice.MajorCurrency(marketservice.QuoteCurrency(s.DB, s.marketService, a.Symbol))
+			if validCurrency(quote) && quote != a.Currency {
+				return a, fmt.Errorf("%s trades in %s; enter the price in %s", a.Symbol, quote, quote)
+			}
+		}
 	} else if a.Symbol == "" {
 		a.Symbol = a.Currency
 	}

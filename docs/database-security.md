@@ -8,7 +8,7 @@ public tables and revoke public access.
 | Role | Used by | Access |
 | --- | --- | --- |
 | `keepfin_runtime` | Go HTTP server/workers | Application data; no auth tables or DDL. Existing users allow profile/soft-delete updates only. |
-| `auth_runtime` | Auth HTTP server | CRUD on `auth_*`; no application tables or DDL. |
+| `auth_runtime` | Auth HTTP server | CRUD on public auth tables except `auth_login_history`; no application data, audit schema or DDL. |
 | `keepfin_migrator` | One-shot Go migration job | Owns application tables; not supplied to the HTTP server. |
 | `auth_migrator` | One-shot auth migration job | Owns auth tables; not supplied to the HTTP server. |
 | `identity_operator` | Group granted to named human DB logins | Execute the audited link function only; cannot log in itself. |
@@ -55,7 +55,8 @@ containers while retaining named volumes. Do not use these credentials publicly.
 
 `db-roles` creates roles, transfers existing object ownership and configures default
 privileges. The two migrators then apply their own migrations. `db-security` applies
-permissions to existing/new tables and installs the audited linking function.
+permissions to existing/new tables and installs identity-link auditing and permanent
+login history.
 The jobs are repeatable. They preserve rows, UUIDs, sessions and financial history;
 they do not reset the database. A failed job blocks dependent runtime startup.
 
@@ -121,6 +122,39 @@ link attempts return errors without a successful-link audit row. The CLI does no
 print SQL, credentials or identity details on failure. Keep PostgreSQL/privileged
 access logs according to your operational retention policy.
 
+## Permanent login history
+
+`permissions.sql` includes `login-history.sql` inside the same setup transaction.
+It creates `public.auth_login_history` in the same database/schema as the other
+auth tables, and an `AFTER INSERT` trigger on
+`public.auth_session`. A restricted `SECURITY DEFINER` function writes the history
+row atomically with the session: if history insertion fails, session creation fails.
+The runtime roles cannot bypass the trigger or read/write the history table.
+
+Each row contains `session_id`, `auth_user_id`, `signed_in_at`, `recorded_at`,
+`ip_address` and `user_agent`. No password, cookie or session token is retained.
+The auth user ID can be matched to `users.auth_user_id` for application identity;
+device labels remain an approximation derived from User-Agent.
+
+Logout, session expiry cleanup and user deletion do not remove these records.
+No automatic retention cleanup is configured. Database administrators remain
+trusted and can inspect or remove records for an explicit retention/deletion task.
+Repeated setup preserves snapshots and backfills any existing session rows without
+duplicates. An existing `keepfin_security.auth_login_history` table is moved intact
+to `public`, preserving history for already-ended sessions. Sessions deleted before
+login history was first installed cannot be recovered.
+`recorded_at` distinguishes the capture time from the original `signed_in_at`.
+
+```sql
+SELECT session_id, auth_user_id, signed_in_at, ip_address, user_agent
+FROM public.auth_login_history
+ORDER BY signed_in_at DESC
+LIMIT 100;
+```
+
+The profile device list still shows active sessions through Better Auth. No public
+history endpoint or additional container is introduced.
+
 ## Rate limits and trusted proxies
 
 Both services enforce limits. Go has a pre-auth IP budget and a post-auth user
@@ -144,4 +178,5 @@ or deployment-wide ingress quota. Limits reduce abuse; they are not a DDoS servi
 legacy ownership migration and fresh setup, then runs auth and Go tests against it.
 It removes the container and test volume on exit and never uses the application DB.
 The suite checks denied cross-service reads/DDL, named-operator attribution,
-mapping validation, audit atomicity and normal runtime data operations.
+mapping validation, audit atomicity, login-history backfill/retention and normal
+runtime data operations.

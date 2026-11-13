@@ -130,7 +130,27 @@
     "themeSaveError": "Could not save your theme. Please try again.",
     "themeSystem": "System",
     "avatarHint": "Click to change your avatar",
-    "chooseAvatar": "Choose Your Avatar"
+    "chooseAvatar": "Choose Your Avatar",
+    "sessions": {
+      "title": "Signed-in devices",
+      "hint": "Your active sessions. Device details are based on information reported by the browser.",
+      "current": "This session",
+      "ipAddress": "IP at sign-in",
+      "signedIn": "Signed in",
+      "expires": "Session expires",
+      "desktop": "Computer",
+      "mobile": "Phone",
+      "tablet": "Tablet",
+      "unknownDevice": "Unknown device",
+      "unknownBrowser": "Unknown browser",
+      "unknownOS": "Unknown operating system",
+      "loading": "Loading your sessions…",
+      "empty": "No active sessions found.",
+      "loadError": "Your sessions could not be loaded. Please try again.",
+      "reauthRequired": "For security, sign out and sign in again to view your sessions.",
+      "signOut": "Sign out to sign in again",
+      "retry": "Try again"
+    }
   },
   "accounts": {
     "title": "Accounts",
@@ -198,13 +218,16 @@
     "comingSoon": "Coming Soon"
   },
   "accountDetail": {
+    "institution": "Institution",
     "loadingDetails": "Loading account details...",
     "backToAccounts": "Back to Accounts",
     "backToAccount": "Back to account",
     "changesSaved": "Your changes have been saved.",
     "actionUnavailable": "This record is unavailable or cannot be changed. Return to the account to check its current status.",
     "cashBalance": "Cash Balance",
-    "equity": "Equity",
+    "equity": "Investments",
+    "totalValue": "Total Value",
+    "incomeCaption": "Dividends + interest: {amount}",
     "interest": "Interest",
     "dividend": "Dividend",
     "activities": "Activities",
@@ -237,7 +260,6 @@
     "deleteHoldingMessage": "Are you sure you want to delete {symbol}? This action cannot be undone."
   },
   "holdings": {
-    "listHint": "Search and manage the assets in this account.",
     "searchOwned": "Search symbol, name, sector or country",
     "sort": "Sort assets",
     "filters": "Filters",
@@ -303,6 +325,14 @@
     "editHolding": "Edit holding",
     "formHint": "Manage the quantity and purchase details of your holding.",
     "notes": "Notes",
+    "notesPlaceholder": "Optional: broker, strategy, or a reminder",
+    "quantityPlaceholder": "e.g., 10",
+    "pricePlaceholder": "Price per unit",
+    "feePlaceholder": "Commission paid, e.g., 1.50",
+    "exchangeRate": "Exchange rate",
+    "exchangeRatePlaceholder": "Leave empty to use the historical rate",
+    "currencyLocked": "{symbol} trades in {currency}. Enter the price in {currency}; it is converted to the account currency.",
+    "currencyCorrected": "{symbol} trades in {currency} but was recorded in {from}. Saving records the price in {currency}.",
     "totalCost": "Total cost"
   },
   "portfolio": {
@@ -311,6 +341,7 @@
     "title": "Portfolio",
     "subtitle": "All your accounts, positions and returns in one place.",
     "range": "Period",
+    "options": "Options",
     "benchmark": "Benchmark",
     "none": "None",
     "refresh": "Refresh",

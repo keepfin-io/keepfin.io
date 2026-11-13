@@ -74,6 +74,64 @@
         </dl>
       </CardContent>
     </Card>
+    <Card data-testid="profile-sessions">
+      <CardHeader>
+        <CardTitle>{{ $t('profile.sessions.title') }}</CardTitle>
+        <p class="text-sm leading-relaxed text-muted-foreground">
+          {{ $t('profile.sessions.hint') }}
+        </p>
+      </CardHeader>
+      <CardContent :aria-busy="sessionsLoading">
+        <p v-if="sessionsLoading" data-testid="profile-sessions-loading" role="status" class="py-4 text-sm text-muted-foreground">
+          {{ $t('profile.sessions.loading') }}
+        </p>
+        <div v-else-if="sessionsError" data-testid="profile-sessions-error" role="alert" class="space-y-3 text-sm">
+          <p class="text-muted-foreground">{{ $t(`profile.sessions.${sessionsError}`) }}</p>
+          <p v-if="authError === 'signOutFailed'" class="text-destructive">{{ $t('auth.signOutFailed') }}</p>
+          <Button v-if="sessionsError === 'reauthRequired'" data-testid="profile-sessions-sign-out" variant="outline" :disabled="isLoading" @click="logout">
+            {{ $t('profile.sessions.signOut') }}
+          </Button>
+          <Button v-else variant="outline" data-testid="profile-sessions-retry" @click="loadSessions">
+            {{ $t('profile.sessions.retry') }}
+          </Button>
+        </div>
+        <ul v-else-if="sessionDevices.length" class="divide-y divide-border/60">
+          <li v-for="session in sessionDevices" :key="session.id" data-testid="profile-session" class="flex gap-3 py-5 first:pt-0 last:pb-0">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <component :is="session.device.icon" class="size-5" aria-hidden="true" />
+            </div>
+            <div class="min-w-0 flex-1 space-y-3">
+              <div>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  <h3 class="text-sm font-medium">{{ session.device.browser }} · {{ session.device.os }}</h3>
+                  <span v-if="session.id === currentSessionId" data-testid="profile-current-session" class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    {{ $t('profile.sessions.current') }}
+                  </span>
+                </div>
+                <p class="mt-1 text-xs text-muted-foreground">{{ $t(`profile.sessions.${session.device.kind}`) }}</p>
+              </div>
+              <dl class="grid gap-x-4 gap-y-3 text-xs sm:grid-cols-3">
+                <div class="min-w-0">
+                  <dt class="text-muted-foreground">{{ $t('profile.sessions.ipAddress') }}</dt>
+                  <dd class="mt-1 break-all font-mono">{{ session.ipAddress || '—' }}</dd>
+                </div>
+                <div>
+                  <dt class="text-muted-foreground">{{ $t('profile.sessions.signedIn') }}</dt>
+                  <dd class="mt-1">{{ formatSessionDate(session.createdAt) }}</dd>
+                </div>
+                <div>
+                  <dt class="text-muted-foreground">{{ $t('profile.sessions.expires') }}</dt>
+                  <dd class="mt-1">{{ formatSessionDate(session.expiresAt) }}</dd>
+                </div>
+              </dl>
+            </div>
+          </li>
+        </ul>
+        <p v-else data-testid="profile-sessions-empty" class="py-4 text-sm text-muted-foreground">
+          {{ $t('profile.sessions.empty') }}
+        </p>
+      </CardContent>
+    </Card>
     <Card>
       <CardHeader>
         <CardTitle>{{ $t('profile.preferences') }}</CardTitle>
@@ -191,8 +249,11 @@ import {
   ThemeToggle,
 } from '@/components/ui'
 import { useAuth } from '@/composables/useAuth'
+import { authClient } from '@/lib/auth-client'
 import { userAPI } from '@/services/userApi'
 import { setLanguage } from '@/i18n'
+import { LuMonitor, LuSmartphone, LuTablet, LuCircleHelp } from '@kalimahapps/vue-icons/lu'
+import { FaBandsApple, FaBandsWindows, FaBandsLinux, FaBandsAndroid, FaBandsChrome } from '@kalimahapps/vue-icons/fa'
 
 export default {
   name: 'ProfilePage',
@@ -214,14 +275,28 @@ export default {
     Label,
     Separator,
     ThemeToggle,
+    LuMonitor,
+    LuSmartphone,
+    LuTablet,
+    LuCircleHelp,
+    FaBandsApple,
+    FaBandsWindows,
+    FaBandsLinux,
+    FaBandsAndroid,
+    FaBandsChrome,
   },
   setup() {
-    const { user, isLoading } = useAuth()
-    return { user, isLoading }
+    const { user, isLoading, currentSessionId, logout, error: authError } = useAuth()
+    return { user, isLoading, currentSessionId, logout, authError }
   },
   computed: {
     loading() {
       return this.isLoading || !this.user
+    },
+    sessionDevices() {
+      return this.sessions.map(session => ({ ...session, device: this.describeDevice(session.userAgent) }))
+        .sort((a, b) => Number(b.id === this.currentSessionId) - Number(a.id === this.currentSessionId) ||
+          (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0))
     },
   },
   data() {
@@ -232,6 +307,10 @@ export default {
       language: localStorage.getItem('language') || 'en',
       locale: localStorage.getItem('locale') || 'en-US',
       saving: false,
+      sessions: [],
+      sessionsLoading: false,
+      sessionsError: '',
+      sessionsRequest: 0,
       emojiList: [
         '😊',
         '😎',
@@ -318,6 +397,16 @@ export default {
     }
   },
   watch: {
+    'user.id': {
+      immediate: true,
+      handler() {
+        this.sessionsRequest += 1
+        this.sessions = []
+        this.sessionsError = ''
+        this.sessionsLoading = false
+        if (this.user) this.loadSessions()
+      },
+    },
     user: {
       immediate: true,
       handler(newUser) {
@@ -328,7 +417,62 @@ export default {
       },
     },
   },
+  beforeUnmount() {
+    this.sessionsRequest += 1
+  },
   methods: {
+    async loadSessions() {
+      if (!this.user || this.sessionsLoading) return
+      const request = ++this.sessionsRequest
+      this.sessionsLoading = true
+      this.sessionsError = ''
+      this.sessions = []
+      try {
+        const { data, error } = await authClient.listSessions()
+        if (request !== this.sessionsRequest) return
+        if (error) {
+          this.sessionsError = error.code === 'SESSION_NOT_FRESH' ? 'reauthRequired' : 'loadError'
+          return
+        }
+        if (!Array.isArray(data)) throw new Error('Invalid session response')
+        // Retain only display fields, never session tokens or full auth responses.
+        this.sessions = data.map(({ id, userAgent, ipAddress, createdAt, expiresAt }) => ({
+          id, userAgent, ipAddress, createdAt, expiresAt,
+        }))
+      } catch {
+        if (request === this.sessionsRequest) this.sessionsError = 'loadError'
+      } finally {
+        if (request === this.sessionsRequest) this.sessionsLoading = false
+      }
+    },
+    describeDevice(userAgent) {
+      const ua = typeof userAgent === 'string' ? userAgent : ''
+      // User-Agent provides an approximate device description, not a hardware identity.
+      const browser = [
+        [/Edg(e|A|iOS)?\//, 'Edge'], [/OPR\/|Opera\//, 'Opera'],
+        [/SamsungBrowser\//, 'Samsung Internet'], [/Firefox\/|FxiOS\//, 'Firefox'],
+        [/Chrome\/|CriOS\//, 'Chrome'], [/Version\/.*Safari\//, 'Safari'],
+      ].find(([pattern]) => pattern.test(ua))?.[1] || this.$t('profile.sessions.unknownBrowser')
+      const os = [
+        [/iPad/, 'iPadOS'], [/iPhone|iPod/, 'iOS'], [/Android/, 'Android'],
+        [/Windows/, 'Windows'], [/CrOS/, 'ChromeOS'], [/Macintosh|Mac OS X/, 'macOS'], [/Linux/, 'Linux'],
+      ].find(([pattern]) => pattern.test(ua))?.[1] || this.$t('profile.sessions.unknownOS')
+      let kind = 'unknownDevice'
+      if (/iPad|Tablet/i.test(ua) || (/Android/.test(ua) && !/Mobile/.test(ua))) kind = 'tablet'
+      else if (/Mobile|iPhone|iPod/i.test(ua)) kind = 'mobile'
+      else if (/Windows|Macintosh|Linux|CrOS/.test(ua)) kind = 'desktop'
+      const osIcons = {
+        macOS: 'FaBandsApple', iOS: 'FaBandsApple', iPadOS: 'FaBandsApple',
+        Windows: 'FaBandsWindows', Linux: 'FaBandsLinux',
+        Android: 'FaBandsAndroid', ChromeOS: 'FaBandsChrome',
+      }
+      const deviceIcons = { desktop: 'LuMonitor', mobile: 'LuSmartphone', tablet: 'LuTablet', unknownDevice: 'LuCircleHelp' }
+      return { browser, os, kind, icon: osIcons[os] || deviceIcons[kind] }
+    },
+    formatSessionDate(value) {
+      if (!value || Number.isNaN(new Date(value).getTime())) return '—'
+      return new Date(value).toLocaleString(this.locale, { dateStyle: 'medium', timeStyle: 'short' })
+    },
     async selectEmoji(emoji) {
       this.selectedEmoji = emoji
       localStorage.setItem('user_avatar', emoji)

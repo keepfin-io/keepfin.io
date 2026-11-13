@@ -302,6 +302,7 @@ import {
 import { CreditCard } from 'lucide-vue-next'
 import { Plus } from 'lucide-vue-next'
 import { accountAPI } from '@/services/accountApi'
+import { platformDomain } from '@/lib/platforms'
 
 export default {
   name: 'AccountsPage',
@@ -479,48 +480,7 @@ export default {
     },
 
     getPlatformDomain(platform) {
-      const domains = {
-        'Bank of America': 'bankofamerica.com',
-        Chase: 'chase.com',
-        'Wells Fargo': 'wellsfargo.com',
-        Citibank: 'citibank.com',
-        HSBC: 'hsbc.com',
-        Barclays: 'barclays.co.uk',
-        'Deutsche Bank': 'db.com',
-        ING: 'ing.com',
-        N26: 'n26.com',
-        Revolut: 'revolut.com',
-        'Interactive Brokers': 'interactivebrokers.com',
-        Fidelity: 'fidelity.com',
-        'Charles Schwab': 'schwab.com',
-        'TD Ameritrade': 'tdameritrade.com',
-        'E*TRADE': 'etrade.com',
-        Robinhood: 'robinhood.com',
-        Webull: 'webull.com',
-        'Trading 212': 'trading212.com',
-        eToro: 'etoro.com',
-        Degiro: 'degiro.com',
-        Coinbase: 'coinbase.com',
-        Binance: 'binance.com',
-        Kraken: 'kraken.com',
-        'Crypto.com': 'crypto.com',
-        Gemini: 'gemini.com',
-        Bybit: 'bybit.com',
-        OKX: 'okx.com',
-        PayPal: 'paypal.com',
-        Wise: 'wise.com',
-        Stripe: 'stripe.com',
-        Venmo: 'venmo.com',
-        'Cash App': 'cash.app',
-        'Garanti BBVA': 'garantibbva.com.tr',
-        'İş Bankası': 'isbank.com.tr',
-        'Yapı Kredi': 'yapikredi.com.tr',
-        Akbank: 'akbank.com',
-        'QNB Finansbank': 'qnbfinansbank.com',
-        'Ziraat Bankası': 'ziraatbank.com.tr',
-        Midas: 'getmidas.com',
-      }
-      return domains[platform] || 'example.com'
+      return platformDomain(platform) || 'example.com'
     },
 
     getCurrencyFlag(currency) {
