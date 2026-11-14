@@ -7,8 +7,8 @@
     </div>
     <Alert v-if="unavailable" data-testid="account-action-error" variant="error" :description="$t('accountDetail.actionUnavailable')" />
     <Card v-else class="rounded-2xl" :class="action === 'holding-create' && 'py-0'"><CardContent class="p-5 sm:p-7">
-      <AddHoldingForm v-if="action === 'holding-create'" :account-id="account.id" @busy="busy = $event" @close="close" @success="$emit('saved', action)" />
-      <EditHoldingForm v-else-if="action === 'holding-edit'" :account-id="account.id" :holding="holding" @busy="busy = $event" @close="close" @success="$emit('saved', action)" />
+      <AddHoldingForm v-if="action === 'holding-create'" :account-id="account.id" @busy="busy = $event" @success="$emit('saved', action)" />
+      <EditHoldingForm v-else-if="action === 'holding-edit'" :account-id="account.id" :holding="holding" @busy="busy = $event" @success="$emit('saved', action)" />
       <ActivityForm v-else-if="action === 'activity-create' || action === 'activity-edit'" :account="account" :activity="activity" @busy="busy = $event" @close="close" @saved="$emit('saved', action)" />
       <TransferForm v-else-if="action === 'transfer'" :account="account" @busy="busy = $event" @close="close" @saved="$emit('saved', action)" />
     </CardContent></Card>
@@ -36,7 +36,7 @@ const unavailable = computed(() => {
   return !props.account.is_active
 })
 const title = computed(() => ({ 'holding-create': 'accountDetail.addHolding', 'holding-edit': 'holdings.editHolding', 'activity-create': 'portfolio.addActivity', 'activity-edit': 'portfolio.editActivity', transfer: 'portfolio.transfer' })[action.value])
-const hint = computed(() => action.value === 'holding-create' ? 'holdings.addHint' : action.value.startsWith('holding') ? 'holdings.formHint' : action.value === 'transfer' ? 'portfolio.transferHint' : 'portfolio.activityHint')
+const hint = computed(() => action.value === 'holding-create' ? 'holdings.addHint' : action.value === 'holding-edit' ? 'holdings.editHint' : action.value === 'transfer' ? 'portfolio.transferHint' : 'portfolio.activityHint')
 function close() {
   if (busy.value) return
   router.replace({ name: 'AccountDetail', params: { id: props.account.id }, query: action.value.startsWith('activity') || action.value === 'transfer' ? { tab: 'activities' } : {} })

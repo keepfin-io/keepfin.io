@@ -170,10 +170,14 @@ for (const width of [320, 1280]) test(`holding search and purchase stay on a pag
   assert.deepEqual(ui.errors, [])
 })
 
-for (const [path, page, cancel] of [['holdings/new', 'holding-add-page', 'holding-add-cancel'], ['activities/new', 'activity-page', 'activity-cancel'], ['transfer', 'transfer-page', 'transfer-cancel'], ['edit', 'account-edit-page', 'account-form-cancel']]) {
+for (const [path, page, cancel] of [['holdings/new', 'holding-add-page', 'account-action-back'], ['activities/new', 'activity-page', 'activity-cancel'], ['transfer', 'transfer-page', 'transfer-cancel'], ['edit', 'account-edit-page', 'account-form-cancel']]) {
   test(`direct account action ${path} loads and cancels without a mutation`, async t => {
     const ui = await launch(t, { route: `/accounts/source/${path}`, authenticated: true, accountsResponse: [sampleAccount] })
     await ui.until(() => ui.find(page)); noDialog(ui); assert.ok(ui.find('app-footer'))
+    if (path === 'holdings/new') {
+      assert.equal(ui.find('holding-add-cancel'), null, 'back to account is the only way back')
+      assert.equal(ui.find('account-detail-header'), null, 'action pages do not repeat the account header')
+    }
     ui.find(cancel).click()
     await ui.until(() => ui.w.location.pathname === '/accounts/source' && !ui.find(page))
     assert.equal(ui.calls.some(call => ['POST', 'PUT', 'PATCH', 'DELETE'].includes(call.method)), false)
@@ -185,6 +189,10 @@ test('holding editing records a single trade in the listing currency', async t =
   const ui = await launch(t, { route: '/accounts/source/holdings/holding-1/edit', authenticated: true, accountsResponse: [sampleAccount], holdingsResponse: [{ ...sampleHolding, buy_currency: 'TRY', quote_currency: 'USD' }] })
   await ui.until(() => ui.find('holding-edit-page'))
   assert.ok(ui.find('holding-edit-currency-corrected')); assert.equal(ui.find('holding-edit-currency').disabled, true)
+  assert.match(ui.find('holding-edit-asset').textContent, /QQQM/)
+  assert.equal(ui.find('holding-edit-cancel'), null, 'back to account is the only way back')
+  assert.equal(ui.find('account-detail-header'), null, 'action pages do not repeat the account header')
+  assert.equal(ui.find('holding-edit-locked'), null)
   submitForm(ui, 'holding-edit-form')
   await ui.until(() => ui.calls.find(call => call.method === 'PUT'))
   assert.equal(ui.calls.find(call => call.method === 'PUT').body.buy_currency, 'USD')
@@ -195,6 +203,7 @@ test('holding editing preserves restrictions and missing records cannot open a f
   const ui = await launch(t, { route: '/accounts/source/holdings/holding-1/edit', authenticated: true, accountsResponse: [sampleAccount], holdingsResponse: [{ ...sampleHolding, can_edit_position: false }] })
   await ui.until(() => ui.find('holding-edit-page'))
   assert.equal(ui.find('holding-edit-quantity').disabled, true); assert.equal(ui.find('holding-edit-price').disabled, true)
+  assert.ok(ui.find('holding-edit-locked')); assert.match(ui.find('holding-edit-activities').getAttribute('href'), /\/accounts\/source\?tab=activities$/)
   input(ui, 'holding-edit-notes', 'Updated notes'); setField(ui, 'holding-sector', 'Technology'); await pause()
   submitForm(ui, 'holding-edit-form')
   await ui.until(() => ui.find('holding-row-holding-1'))

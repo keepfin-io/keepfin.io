@@ -1,9 +1,15 @@
 <template>
   <div data-testid="holding-add-page" class="space-y-6" :aria-busy="submitting">
-      <ol class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b pb-5 text-xs font-medium" :aria-label="$t('holdings.addSteps')">
-        <li class="flex items-center gap-2 text-primary" :aria-current="!selectedAsset ? 'step' : undefined"><span class="inline-flex size-6 items-center justify-center rounded-full bg-primary/10">1</span>{{ $t('holdings.chooseAsset') }}</li>
-        <li aria-hidden="true"><ArrowRight class="size-3 text-muted-foreground" /></li>
-        <li class="flex items-center gap-2" :class="selectedAsset ? 'text-primary' : 'text-muted-foreground'" :aria-current="selectedAsset ? 'step' : undefined"><span class="inline-flex size-6 items-center justify-center rounded-full bg-muted">2</span>{{ $t('holdings.purchaseDetails') }}</li>
+      <ol class="flex flex-wrap items-center gap-2 border-b pb-5 text-sm" :aria-label="$t('holdings.addSteps')">
+        <li class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3" :class="!selectedAsset ? 'bg-primary/10 font-medium text-primary' : 'text-muted-foreground'" :aria-current="!selectedAsset ? 'step' : undefined">
+          <span class="flex size-6 items-center justify-center rounded-full" :class="!selectedAsset ? 'bg-primary text-primary-foreground' : 'bg-primary/15 text-primary'"><LuCheck v-if="selectedAsset" class="size-3.5" aria-hidden="true" /><LuSearch v-else class="size-3.5" aria-hidden="true" /></span>
+          <span><span class="sr-only">1. </span>{{ $t('holdings.chooseAsset') }}</span>
+        </li>
+        <li class="h-px w-6 bg-border" aria-hidden="true"></li>
+        <li class="flex items-center gap-2 rounded-full py-1 pl-1 pr-3" :class="selectedAsset ? 'bg-primary/10 font-medium text-primary' : 'text-muted-foreground'" :aria-current="selectedAsset ? 'step' : undefined">
+          <span class="flex size-6 items-center justify-center rounded-full" :class="selectedAsset ? 'bg-primary text-primary-foreground' : 'bg-muted'"><LuReceipt class="size-3.5" aria-hidden="true" /></span>
+          <span><span class="sr-only">2. </span>{{ $t('holdings.purchaseDetails') }}</span>
+        </li>
       </ol>
       <Alert
         data-testid="holding-add-error"
@@ -11,8 +17,19 @@
         variant="error"
         :description="formError"
       />
-      <div v-if="!selectedAsset" class="space-y-4">
-        <details @toggle="loadManualAssets($event.target.open)"><summary class="cursor-pointer text-sm text-primary">{{ $t('wealth.manualAssets') }}</summary><p v-if="manualError" role="alert" class="mt-3 text-sm text-destructive">{{ manualError }}</p><div class="mt-3 grid gap-2 sm:grid-cols-2"><Button v-for="a in manualAssets" :key="a.id" type="button" variant="outline" class="justify-start" @click="selectAsset({Code:a.symbol,Exchange:'',Name:a.name,Currency:a.currency,Type:a.asset_class,Country:a.country})">{{ a.name }} · {{ a.currency }}</Button></div><Button as-child variant="link" class="px-0"><router-link to="/wealth/assets">{{ $t('wealth.createAsset') }}</router-link></Button></details>
+      <div v-if="!selectedAsset" class="space-y-6">
+        <!-- What to expect before adding: where prices and currencies come from. -->
+        <section data-testid="holding-add-guide" class="grid gap-3 sm:grid-cols-3" :aria-label="$t('holdings.guideTitle')">
+          <div v-for="item in guide" :key="item.key" class="flex gap-3 rounded-xl border bg-muted/30 p-3">
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><component :is="item.icon" class="size-4" aria-hidden="true" /></span>
+            <div class="min-w-0">
+              <p class="text-sm font-medium">{{ $t(`holdings.guide.${item.key}.title`) }}</p>
+              <p class="mt-0.5 text-xs leading-relaxed text-muted-foreground">{{ $t(`holdings.guide.${item.key}.text`) }}</p>
+            </div>
+          </div>
+        </section>
+        <div class="space-y-4">
+        <div class="space-y-2">
         <Label for="assetSearch">{{ $t('holdings.searchAsset') }}</Label>
         <div class="relative">
         <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -39,8 +56,9 @@
         <Button v-if="searchQuery" data-testid="holding-add-clear-search" type="button" variant="ghost" size="icon" class="absolute right-1 top-1/2 size-9 -translate-y-1/2" :aria-label="$t('holdings.clearSearch')" @click="clearSearch"><X class="size-4" /></Button>
         </div>
         <p id="asset-search-hint" class="text-xs text-muted-foreground">{{ $t('holdings.searchHint') }}</p>
+        </div>
         <div class="flex flex-wrap gap-2" role="group" :aria-label="$t('holdings.filterType')">
-          <Button v-for="filter in ['all', 'stock', 'fund', 'crypto', 'forex']" :key="filter" :data-testid="`holding-add-filter-${filter}`" type="button" :variant="assetFilter === filter ? 'secondary' : 'ghost'" size="sm" class="rounded-full" :aria-pressed="assetFilter === filter" @click="assetFilter = filter">{{ $t(`holdings.assetTypes.${filter}`) }}</Button>
+          <Button v-for="filter in ['all', 'stock', 'fund', 'crypto', 'forex']" :key="filter" :data-testid="`holding-add-filter-${filter}`" type="button" :variant="assetFilter === filter ? 'secondary' : 'ghost'" size="sm" class="rounded-full" :aria-pressed="assetFilter === filter" @click="assetFilter = filter"><component :is="filterIcons[filter]" class="size-3.5" aria-hidden="true" />{{ $t(`holdings.assetTypes.${filter}`) }}</Button>
         </div>
         <p
           data-testid="holding-add-search-loading"
@@ -91,8 +109,31 @@
               <AssetIdentity :asset="asset" />
             </Button>
           </div>
-          <p v-else data-testid="holding-add-recents-empty" class="py-3 text-sm text-muted-foreground">{{ $t('holdings.recentEmpty') }}</p>
+          <p v-else data-testid="holding-add-recents-empty" class="flex items-center gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground"><History class="size-4 shrink-0" aria-hidden="true" />{{ $t('holdings.recentEmpty') }}</p>
         </section>
+        </div>
+        <details data-testid="holding-add-manual" class="group rounded-xl border" @toggle="loadManualAssets($event.target.open)">
+          <summary class="flex cursor-pointer list-none items-center gap-3 rounded-xl p-4 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted"><LuPackagePlus class="size-4" aria-hidden="true" /></span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm font-medium">{{ $t('holdings.manualTitle') }}</span>
+              <span class="block text-xs text-muted-foreground">{{ $t('holdings.manualHint') }}</span>
+            </span>
+            <LuChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <div class="space-y-3 border-t p-4">
+            <p v-if="manualError" role="alert" class="text-sm text-destructive">{{ manualError }}</p>
+            <div v-if="manualAssets.length" class="grid gap-2 sm:grid-cols-2">
+              <Button v-for="a in manualAssets" :key="a.id" type="button" variant="outline" class="h-auto min-w-0 justify-between gap-3 rounded-xl p-3" @click="selectAsset({Code:a.symbol,Exchange:'',Name:a.name,Currency:a.currency,Type:a.asset_class,Country:a.country})">
+                <span class="truncate">{{ a.name }}</span><span class="shrink-0 text-xs text-muted-foreground">{{ a.currency }}</span>
+              </Button>
+            </div>
+            <p v-else-if="manualLoaded && !manualError" class="text-sm text-muted-foreground">{{ $t('holdings.manualEmpty') }}</p>
+            <Button as-child variant="link" class="h-auto px-0">
+              <router-link to="/wealth/assets"><LuPlus class="size-4" aria-hidden="true" />{{ $t('wealth.createAsset') }}</router-link>
+            </Button>
+          </div>
+        </details>
       </div>
       <form
         data-testid="holding-add-form"
@@ -233,19 +274,11 @@
           </strong>
         </div>
       </form>
-      <div class="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-end">
+      <!-- Leaving the page is the page's own "Back to account" control. -->
+      <div v-if="selectedAsset" class="flex border-t pt-5 sm:justify-end">
         <Button
-          type="button"
-          variant="outline"
-          :disabled="submitting"
-          data-testid="holding-add-cancel"
-          @click="close"
-        >
-          {{ $t('common.cancel') }}
-        </Button>
-        <Button
-          v-if="selectedAsset"
           data-testid="holding-add-submit"
+          class="w-full sm:w-auto"
           type="submit"
           form="add-holding-form"
           :disabled="!canSubmit"
@@ -267,12 +300,19 @@ import {
   Textarea,
 } from '@/components/ui'
 import { ArrowRight, History, LoaderCircle, Search, X } from 'lucide-vue-next'
-import { LuArrowRightLeft, LuBanknote, LuCalculator, LuCalendar, LuCircleDollarSign, LuHash, LuNotebookPen, LuReceipt } from '@kalimahapps/vue-icons/lu'
+import { LuArrowRightLeft, LuBanknote, LuBitcoin, LuBuilding2, LuCalculator, LuCalendar, LuCalendarClock, LuChartPie, LuCheck, LuChevronDown, LuCircleDollarSign, LuHash, LuLayoutGrid, LuNotebookPen, LuPackagePlus, LuPlus, LuReceipt, LuSearch } from '@kalimahapps/vue-icons/lu'
 import AssetIdentity from './AssetIdentity.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useRecentAssets } from '@/composables/useRecentAssets'
 import { assetCategory } from '@/lib/asset-search'
 import { tradeCurrency } from '@/lib/portfolio-format'
+
+const GUIDE = [
+  { key: 'find', icon: LuSearch },
+  { key: 'currency', icon: LuArrowRightLeft },
+  { key: 'prices', icon: LuCalendarClock },
+]
+const FILTER_ICONS = { all: LuLayoutGrid, stock: LuBuilding2, fund: LuChartPie, crypto: LuBitcoin, forex: LuArrowRightLeft }
 import { wealthAPI } from '@/services/wealthApi'
 import { marketAPI } from '@/services/marketApi'
 import { holdingAPI } from '@/services/holdingApi'
@@ -292,6 +332,7 @@ export default {
     X,
     Textarea,
     LuArrowRightLeft, LuBanknote, LuCalculator, LuCalendar, LuCircleDollarSign, LuHash, LuNotebookPen, LuReceipt,
+    LuCheck, LuChevronDown, LuPackagePlus, LuPlus, LuSearch,
   },
   name: 'AddHoldingForm',
   props: {
@@ -300,15 +341,16 @@ export default {
       required: true,
     },
   },
-  emits: ['close', 'success', 'busy'],
+  emits: ['success', 'busy'],
   setup() {
     const { user } = useAuth()
-    return useRecentAssets(user)
+    // Icon components stay out of reactive state.
+    return { ...useRecentAssets(user), guide: GUIDE, filterIcons: FILTER_ICONS }
   },
   data() {
     return {
       active: true,
-      manualAssets: [], manualError: '',
+      manualAssets: [], manualError: '', manualLoaded: false,
       searchQuery: '',
       searchResults: [],
       searchLoading: false,
@@ -364,7 +406,7 @@ export default {
     clearTimeout(this.searchTimeout)
   },
   methods: {
-    async loadManualAssets(open) { if (!open) return; this.manualError = ''; try { const r = await wealthAPI.get('/assets/manual');if (this.active) this.manualAssets=r.data } catch(e) { if (this.active) this.manualError=e.message } },
+    async loadManualAssets(open) { if (!open) return; this.manualError = ''; try { const r = await wealthAPI.get('/assets/manual');if (this.active) this.manualAssets=r.data } catch(e) { if (this.active) this.manualError=e.message } finally { if (this.active) this.manualLoaded = true } },
     moveHighlight(direction) {
       if (!this.filteredResults.length) return
       this.highlightedIndex = this.highlightedIndex < 0 ? (direction > 0 ? 0 : this.filteredResults.length - 1) : (this.highlightedIndex + direction + this.filteredResults.length) % this.filteredResults.length
@@ -485,11 +527,6 @@ export default {
         this.formError = err.message || 'Failed to add holding'
         this.submitting = false
       }
-    },
-
-    close() {
-      if (this.submitting) return
-      this.$emit('close')
     },
 
     formatCurrency(amount, currency) {

@@ -59,6 +59,8 @@ type Tag struct {
 	ID     uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	UserID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:tag_owner_name" json:"-"`
 	Name   string    `gorm:"size:40;not null;uniqueIndex:tag_owner_name" json:"name"`
+	// Color is a palette key, never raw CSS, so the client maps it to theme-safe styles.
+	Color string `gorm:"size:16;not null;default:'gray'" json:"color"`
 }
 type TagAssignment struct {
 	UserID   uuid.UUID `gorm:"type:uuid;primaryKey" json:"-"`

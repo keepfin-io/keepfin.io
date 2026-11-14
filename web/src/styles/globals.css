@@ -119,3 +119,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Theme switches reveal the new theme with a clip-path animation started in
+   useTheme.js; disable the default cross-fade so both layers stay opaque. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  z-index: 1;
+}

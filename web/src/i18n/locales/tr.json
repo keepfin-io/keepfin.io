@@ -20,6 +20,7 @@
     "actions": "İşlemler",
     "view": "Görüntüle",
     "viewDetails": "Detayları Görüntüle",
+    "details": "Detay",
     "toggleMenu": "Menüyü aç/kapat",
     "closeMenu": "Menüyü kapat",
     "dismiss": "Kapat",
@@ -201,6 +202,8 @@
     "activating": "Etkinleştiriliyor...",
     "account": "Hesap",
     "accounts_count": "hesap",
+    "summaryActive": "{count} aktif",
+    "summaryCashHint": "Toplamlara dahil aktif hesaplar, para birimine göre",
     "general": "Genel",
     "selectPlatform": "Platform seçin",
     "searchPlatform": "Platform ara..."
@@ -218,6 +221,11 @@
     "comingSoon": "Çok Yakında"
   },
   "accountDetail": {
+    "profitLossHint": "Alış maliyetine göre gerçekleşmemiş kâr veya zarar",
+    "returnOnCost": "Maliyete göre {percent}",
+    "pricesAsOf": "Fiyatlar {date} kapanışına göre · günlük güncellenir",
+    "pricesUnavailable": "Piyasa fiyatlarına ulaşılamıyor",
+    "lastRefreshed": "{time} itibarıyla yüklendi",
     "institution": "Kurum",
     "loadingDetails": "Hesap detayları yükleniyor...",
     "backToAccounts": "Hesaplara Dön",
@@ -293,6 +301,24 @@
     "searchPlaceholder": "Sembol veya ada göre arayın",
     "searchHint": "Sembol veya varlık adıyla aramak için en az 2 karakter yazın.",
     "addHint": "Varlığı bulun, işlem gördüğü borsayı seçin ve alış bilgilerinizi ekleyin.",
+    "guideTitle": "Eklemeden önce",
+    "manualTitle": "Listede yok mu?",
+    "manualHint": "Gayrimenkul, altın veya borsada işlem görmeyen varlıklar için manuel varlık kullanın.",
+    "manualEmpty": "Henüz manuel varlığınız yok.",
+    "guide": {
+      "find": {
+        "title": "Varlığı bulun",
+        "text": "Sembol ya da adla arayın. Hisse, ETF, kripto ve döviz desteklenir."
+      },
+      "currency": {
+        "title": "Para birimi otomatik",
+        "text": "Fiyatı varlığın işlem gördüğü para biriminde girin; hesap para birimine kurla çevrilir."
+      },
+      "prices": {
+        "title": "Günlük fiyatlar",
+        "text": "Değer ve kâr/zarar, piyasanın günlük kapanış fiyatlarıyla hesaplanır."
+      }
+    },
     "addSteps": "Varlık ekleme adımları",
     "chooseAsset": "Varlık seçimi",
     "purchaseDetails": "Alış bilgileri",
@@ -323,7 +349,6 @@
     },
     "priceUnavailable": "Güncel fiyat alınamadı. Alış fiyatını elle girebilirsiniz.",
     "editHolding": "Varlığı düzenle",
-    "formHint": "Varlığınızın miktarını ve alış bilgilerini yönetin.",
     "notes": "Notlar",
     "notesPlaceholder": "İsteğe bağlı: aracı kurum, strateji veya hatırlatma",
     "quantityPlaceholder": "Örn. 10",
@@ -333,7 +358,22 @@
     "exchangeRatePlaceholder": "Boş bırakılırsa tarihsel kur kullanılır",
     "currencyLocked": "{symbol} {currency} ile işlem görüyor. Fiyatı {currency} olarak girin; hesap para birimine kurla çevrilir.",
     "currencyCorrected": "{symbol} {currency} ile işlem görüyor ama {from} olarak kaydedilmiş. Kaydettiğinizde fiyat {currency} olarak düzeltilir.",
-    "totalCost": "Toplam maliyet"
+    "totalCost": "Toplam maliyet",
+    "saveChanges": "Değişiklikleri kaydet",
+    "goToActivities": "İşlemlere git",
+    "editHint": "Pozisyon bilgilerini, sınıflandırmayı ve notlarınızı güncelleyin.",
+    "editSections": {
+      "position": "Pozisyon",
+      "positionHint": "Elinizdeki miktar ve ortalama alış fiyatı.",
+      "classification": "Sınıflandırma",
+      "classificationHint": "Dağılım grafiklerinde ve filtrelerde kullanılır. Boş bırakılabilir.",
+      "notesHint": "Yalnızca sizin görebileceğiniz kısa notlar."
+    },
+    "classificationPlaceholders": {
+      "asset_class": "Örn. ETF",
+      "sector": "Örn. Teknoloji",
+      "country": "Örn. ABD"
+    }
   },
   "portfolio": {
     "accountAnalysis": "Hesap analizi",
@@ -524,7 +564,25 @@
     "addLiability": "Borç ekle",
     "liabilityHint": "Borç değiştikçe tarihli bakiye ekle. Geçmişi koruyarak kapatmak için sıfır bakiye gir.",
     "tags": "Etiketler",
-    "saveTags": "Etiketleri kaydet",
+    "tagSearch": "Etiket ara veya oluştur",
+    "noTagsYet": "Henüz etiket yok. Oluşturmak için bir ad yazın.",
+    "newTag": "Yeni etiket",
+    "existingTags": "Etiketleriniz",
+    "manageTagsHint": "Etiket oluşturun ya da adını ve rengini değiştirin. Yeni etiket bu kayda eklenir.",
+    "tagPreview": "Önizleme:",
+    "createTag": "“{name}” oluştur",
+    "tagColor": "Etiket rengi",
+    "tagColors": {
+      "gray": "Gri",
+      "red": "Kırmızı",
+      "orange": "Turuncu",
+      "amber": "Kehribar",
+      "green": "Yeşil",
+      "teal": "Camgöbeği",
+      "blue": "Mavi",
+      "violet": "Mor",
+      "pink": "Pembe"
+    },
     "manageTags": "Etiketleri yönet",
     "activitySearchHint": "Sembol, ad, hesap veya notlar",
     "allAccounts": "Tüm hesaplar",
@@ -611,6 +669,8 @@
     "useProviderPrice": "Sağlayıcı fiyatına dön",
     "display": "Görünüm ve kurulum",
     "zen": "Finansal değerleri gizle veya göster",
+    "hideValues": "Değerleri gizle",
+    "showValues": "Değerleri göster",
     "zenHint": "Zen modu gösterilen finansal değerleri gizler. Bu bir görünüm tercihidir, erişim kısıtlaması değildir.",
     "hiddenValues": "Finansal değerler gizli.",
     "install": "Keepfin'i yükle",
@@ -637,6 +697,127 @@
     "paymentDate": "Ödeme tarihi",
     "splitNew": "Yeni pay sayısı",
     "splitOld": "Eski pay sayısı",
-    "splitHint": "2'ye 1 bölünmede yeni paya 2, eski paya 1 gir. 10'a 1 ters bölünmede 1 ve 10 gir. Maliyet ve nakit değişmez; küsuratlı paylar korunur."
+    "splitHint": "2'ye 1 bölünmede yeni paya 2, eski paya 1 gir. 10'a 1 ters bölünmede 1 ve 10 gir. Maliyet ve nakit değişmez; küsuratlı paylar korunur.",
+    "watchlistHint": "Henüz sahip olmadığın varlıkları takip et. Varlık ara, listeye ekle ve fiyatlarını tek yerden gör.",
+    "watchSearchPlaceholder": "Sembol veya ad yazın, örn. AAPL veya Bitcoin",
+    "watching": "İzleniyor",
+    "asset": "Varlık",
+    "lastPrice": "Son fiyat",
+    "dailyChange": "Günlük değişim",
+    "notRefreshed": "Fiyat için yenileyin",
+    "unwatch": "Kaldır",
+    "emptyWatchlistTitle": "İzleme listen boş",
+    "latestValuation": "Son değer",
+    "noValuation": "Değer girilmedi",
+    "enterValuation": "Değer gir",
+    "emptyManualTitle": "Henüz manuel varlık yok",
+    "editAsset": "Varlığı düzenle",
+    "assetFormHint": "Borsada işlem görmeyen bir varlığı tanımlayın. Değerini sonraki adımda tarihli olarak girersiniz.",
+    "manualNamePlaceholder": "Örn. Kadıköy daire, Gram altın",
+    "currencyFixed": "Para birimi oluşturulduktan sonra değiştirilemez.",
+    "manualClassPlaceholder": "Örn. Gayrimenkul",
+    "valuationTitle": "{name} değeri",
+    "valuationHint": "Varlığın bir birimlik değerini tarihiyle girin. Aynı tarih için yeni değer eskisinin yerine geçer.",
+    "deleteAssetTitle": "Varlığı sil",
+    "deleteAssetMessage": "{name} varlığını silmek istediğinize emin misiniz?",
+    "manualSteps": {
+      "create": {
+        "title": "Varlığı tanımla",
+        "text": "Adını, para birimini ve türünü girin."
+      },
+      "value": {
+        "title": "Değerini gir",
+        "text": "Ev, altın veya özel yatırımın güncel birim değerini tarihli olarak kaydedin."
+      },
+      "position": {
+        "title": "Hesaba ekle",
+        "text": "Bir hesaptan alış veya açılış pozisyonu ekleyerek portföye dahil edin."
+      }
+    },
+    "summaryHints": {
+      "value": "Toplamlara dahil hesapların değeri",
+      "liabilities": "Kalan borçların toplamı",
+      "net_worth": "Varlıklar eksi borçlar"
+    },
+    "netWorthHistory": "Net değer geçmişi",
+    "liability": "Borç",
+    "paidOff": "Kapandı",
+    "updateBalance": "Bakiye güncelle",
+    "emptyLiabilitiesTitle": "Kayıtlı borç yok",
+    "emptyLiabilities": "Kredi, kredi kartı veya diğer borçlarını ekleyerek net değerini doğru hesapla.",
+    "liabilityFormHint": "Borcun adını, para birimini ve bugünkü kalan tutarını girin.",
+    "liabilityNamePlaceholder": "Örn. Konut kredisi",
+    "balanceTitle": "{name} bakiyesi",
+    "balanceHint": "Borcun belirli bir tarihteki kalan tutarını girin. Kapatmak için 0 girin; geçmiş korunur.",
+    "activitiesHint": "Tüm hesaplarındaki alış, satış, temettü ve nakit hareketleri tek listede. Filtreleyip etiketleyebilirsin.",
+    "noActivities": "Hesaplarına işlem eklediğinde burada görünür.",
+    "noActivitiesFiltered": "Bu filtrelerle eşleşen işlem yok. Filtreleri temizlemeyi deneyin.",
+    "ruleHints": {
+      "asset": "Tek bir varlığın portföydeki en yüksek payı",
+      "account": "Tek bir hesabın portföydeki en yüksek payı",
+      "currency": "Tek bir para biriminin en yüksek payı",
+      "fees": "Son bir yılın ücretlerinin net katkıya oranı",
+      "emergency": "Acil durum fonunun kaç aylık gideri karşıladığı",
+      "liquidity": "Hesaplardaki toplam nakit"
+    },
+    "maximum": "Üst sınır",
+    "minimum": "Alt sınır",
+    "highest": "En yüksek",
+    "fireHints": {
+      "investable": "Bugünkü net değerden acil durum fonu düşülür",
+      "target": "Yıllık gider ÷ çekim oranı",
+      "years_to_target": "Varsayımlarla hedefe ulaşma süresi"
+    },
+    "yearsValue": "{years} yıl",
+    "monthsValue": "{months} ay",
+    "projection": "Projeksiyon",
+    "riskSettings": "Sınırlar",
+    "fireSettings": "Varsayımlar",
+    "settingsHint": "Değerleri değiştirip “Kaydet ve hesapla”ya basın; sonuçlar yukarıda güncellenir.",
+    "settingGroups": {
+      "concentration": "Yoğunlaşma",
+      "costs": "Maliyet",
+      "safety": "Güvenlik",
+      "spending": "Harcama",
+      "growth": "Birikim ve getiri"
+    },
+    "sharePoints": {
+      "readonly": {
+        "title": "Salt okunur",
+        "text": "Alıcı yalnızca raporu görür, hiçbir şeyi değiştiremez."
+      },
+      "expiry": {
+        "title": "Süreli",
+        "text": "Bağlantı seçtiğin tarihte kendiliğinden kapanır; istediğin an iptal edebilirsin."
+      },
+      "access": {
+        "title": "Herkese açık veya özel",
+        "text": "E-posta girersen yalnızca o kişi oturum açarak görebilir."
+      }
+    },
+    "copied": "Kopyalandı",
+    "newShare": "Yeni paylaşım bağlantısı",
+    "shareNamePlaceholder": "Örn. Danışmanım için",
+    "privateExplained": "Özel bağlantı: yalnızca bu e-postayla oturum açan kişi görebilir.",
+    "publicExplained": "Herkese açık bağlantı: bağlantıya sahip herkes görebilir.",
+    "selectedAccounts": "{count} hesap seçildi",
+    "shares": "Paylaşımların",
+    "accountCount": "{count} hesap",
+    "expiresOn": "{date} tarihine kadar",
+    "emptySharesTitle": "Henüz paylaşım yok",
+    "emptyShares": "Yukarıdan bir bağlantı oluşturduğunda burada listelenir.",
+    "revokeTitle": "Paylaşımı iptal et",
+    "revokeMessage": "{name} bağlantısı hemen çalışmayı durduracak. Bu işlem geri alınamaz.",
+    "marketDataHint": "Fiyatların hangi sağlayıcıdan geldiğini gör ve eksik fiyat geçmişini yeniden yükle.",
+    "inUse": "Kullanılıyor",
+    "useProvider": "Bunu kullan",
+    "jobStatus": {
+      "queued": "Sırada",
+      "running": "Çalışıyor",
+      "complete": "Tamamlandı",
+      "failed": "Başarısız"
+    },
+    "emptyJobsTitle": "Henüz yenileme işi yok",
+    "emptyJobs": "Bir varlığın fiyat geçmişi eksikse yukarıdan yenileme başlatın."
   }
 }

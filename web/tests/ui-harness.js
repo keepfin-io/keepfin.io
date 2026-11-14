@@ -13,7 +13,7 @@ function apiResponse(data, status = 200, pagination) {
   return new global.Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'X-Request-ID': meta.request_id } })
 }
 
-async function launch(t, { route = '/login', authenticated = false, outage = false, conflict = false, width = 320, internalTesting = false, google = true, sessionGate, profileGate, authSessions = [], sessionsGate, sessionsFailure = '', onBoot, locale = 'en-US', portfolioResponse, portfolioGate, measuredChartWidth, accountsResponse = [], holdingsResponse = [], activitiesResponse = [], marketHistoryResponse = [], marketHistoryFailure = '', holdingsFailure = false, activitiesFailure = false, userId = 'app-uuid', storage = {}, wealthHandler = null, zen = false } = {}) {
+async function launch(t, { route = '/login', authenticated = false, outage = false, conflict = false, width = 320, internalTesting = false, google = true, sessionGate, profileGate, authSessions = [], sessionsGate, sessionsFailure = '', onBoot, locale = 'en-US', portfolioResponse, portfolioGate, measuredChartWidth, accountsResponse = [], holdingsResponse = [], activitiesResponse = [], marketHistoryResponse = [], marketHistoryFailure = '', holdingsFailure = false, activitiesFailure = false, userId = 'app-uuid', storage = {}, wealthHandler = null, zen = false, tagsResponse = [], tagAssignments = {} } = {}) {
   const errors = [], calls = []
   const vc = new VirtualConsole()
   vc.on('jsdomError', error => errors.push(error.message))
@@ -50,6 +50,8 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
   Object.assign(state, { marketResults: [{ Code: 'QQQM', Exchange: 'US', Name: 'Invesco NASDAQ 100 ETF', Currency: 'USD', Type: 'ETF' }], searchHandler: null, quoteHandler: null, marketHistory: marketHistoryResponse, marketHistoryFailure, historyHandler: null, portfolioHandler: null, holdingsFailure, activitiesFailure })
   state.preferences = { zen, max_asset_weight:25,max_account_weight:70,max_currency_weight:80,max_fee_ratio:1,emergency_months:6,emergency_fund:0,monthly_expenses:0,monthly_contribution:0,annual_expenses:0,annual_return:5,withdrawal_rate:4,horizon_years:30,disabled_rules:[] }
   state.wealthHandler = wealthHandler
+  state.tags = tagsResponse.map(tag => ({ ...tag }))
+  state.tagAssignments = structuredClone(tagAssignments)
   Object.assign(state, { authSessions, sessionsGate, sessionsFailure })
   w.fetch = async (input, options = {}) => {
     const requestURL = new URL(input.url || String(input), w.location.origin)
@@ -175,7 +177,26 @@ async function launch(t, { route = '/login', authenticated = false, outage = fal
       if (options.method === 'PUT') Object.assign(state.preferences, body)
       data = { ...state.preferences }
     }
-    else if (endpoint === '/api/v1/tags' || endpoint === '/api/v1/assets/manual') data = []
+    else if (endpoint === '/api/v1/tags') {
+      if (options.method === 'POST') { data = { id: `tag-${state.tags.length + 1}`, name: body.name, color: body.color || 'gray' }; state.tags.push(data) }
+      else data = state.tags
+    }
+    else if (/^\/api\/v1\/tags\/(account|activity)$/.test(endpoint)) {
+      const assigned = state.tagAssignments[endpoint.split('/')[4]] || {}
+      data = Object.fromEntries(Object.entries(assigned).filter(([, ids]) => ids.length).map(([id, ids]) => [id, ids.map(tagId => state.tags.find(tag => tag.id === tagId))]))
+    }
+    else if (/^\/api\/v1\/tags\/(account|activity)\/[^/]+$/.test(endpoint)) {
+      const [, , , , kind, id] = endpoint.split('/')
+      state.tagAssignments[kind] ||= {}
+      if (options.method === 'PUT') { state.tagAssignments[kind][id] = body.tag_ids; data = true }
+      else data = (state.tagAssignments[kind][id] || []).map(tagId => state.tags.find(tag => tag.id === tagId))
+    }
+    else if (/^\/api\/v1\/tags\/[^/]+$/.test(endpoint)) {
+      const tag = state.tags.find(item => item.id === endpoint.split('/')[4])
+      if (options.method === 'DELETE') { state.tags = state.tags.filter(item => item !== tag); data = true }
+      else { Object.assign(tag, body); data = tag }
+    }
+    else if (endpoint === '/api/v1/assets/manual') data = []
     else throw new Error(`Unexpected request: ${endpoint}`)
     if (endpoint.startsWith('/api/v1/') || endpoint.startsWith('/api/public/')) return apiResponse(data, status, pagination)
     return new global.Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })

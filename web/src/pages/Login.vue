@@ -1,8 +1,8 @@
 <template>
   <main data-testid="login-page" class="login-page">
     <div class="login-topbar">
-      <Button data-testid="login-theme" variant="ghost" size="icon" class="rounded-full" :aria-label="$t(isDark ? 'profile.switchToLight' : 'profile.switchToDark')" @click="applyTheme(isDark ? 'light' : 'dark')">
-        <Sun v-if="isDark" class="size-4" /><Moon v-else class="size-4" />
+      <Button data-testid="login-theme" variant="ghost" size="icon" class="rounded-full" :aria-label="$t(isDark ? 'profile.switchToLight' : 'profile.switchToDark')" @click="applyTheme(isDark ? 'light' : 'dark', themeOrigin($event))">
+        <Transition mode="out-in" enter-active-class="transition duration-300 ease-out motion-reduce:transition-none" enter-from-class="-rotate-90 scale-50 opacity-0" leave-active-class="transition duration-150 ease-in motion-reduce:transition-none" leave-to-class="rotate-90 scale-50 opacity-0"><Sun v-if="isDark" key="sun" class="size-4" /><Moon v-else key="moon" class="size-4" /></Transition>
       </Button>
     </div>
 
@@ -101,7 +101,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { FeedbackAlert as Alert, Button, Input, Label } from '@/components/ui'
 import BrandLogo from '@/components/BrandLogo.vue'
 import { ArrowRight, ChartNoAxesCombined, ChevronDown, CircleCheck, Code2, Eye, EyeOff, FlaskConical, Layers3, LockKeyhole, Mail, Moon, Sun, WalletCards } from 'lucide-vue-next'
-import { applyTheme, useTheme } from '@/composables/useTheme'
+import { applyTheme, themeOrigin, useTheme } from '@/composables/useTheme'
 import { authClient } from '@/lib/auth-client'
 import { useAuth, refreshSession } from '@/composables/useAuth'
 

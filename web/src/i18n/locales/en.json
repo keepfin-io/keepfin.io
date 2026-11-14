@@ -20,6 +20,7 @@
     "actions": "Actions",
     "view": "View",
     "viewDetails": "View Details",
+    "details": "Details",
     "toggleMenu": "Toggle menu",
     "closeMenu": "Close menu",
     "dismiss": "Dismiss",
@@ -201,6 +202,8 @@
     "activating": "Activating...",
     "account": "Account",
     "accounts_count": "account | accounts",
+    "summaryActive": "{count} active",
+    "summaryCashHint": "Active accounts included in totals, by currency",
     "general": "General",
     "selectPlatform": "Select a platform",
     "searchPlatform": "Search platforms..."
@@ -218,6 +221,11 @@
     "comingSoon": "Coming Soon"
   },
   "accountDetail": {
+    "profitLossHint": "Unrealized gain or loss against the purchase cost",
+    "returnOnCost": "{percent} on cost",
+    "pricesAsOf": "Prices from the {date} close · updated daily",
+    "pricesUnavailable": "Market prices are unavailable",
+    "lastRefreshed": "Loaded at {time}",
     "institution": "Institution",
     "loadingDetails": "Loading account details...",
     "backToAccounts": "Back to Accounts",
@@ -293,6 +301,24 @@
     "searchPlaceholder": "Search by symbol or name",
     "searchHint": "Enter at least 2 characters to search by symbol or asset name.",
     "addHint": "Find the asset, choose its exchange and enter your purchase details.",
+    "guideTitle": "Before you add",
+    "manualTitle": "Not in the list?",
+    "manualHint": "Use a manual asset for property, gold or anything not traded on an exchange.",
+    "manualEmpty": "You have no manual assets yet.",
+    "guide": {
+      "find": {
+        "title": "Find the asset",
+        "text": "Search by symbol or name. Stocks, ETFs, crypto and currencies are supported."
+      },
+      "currency": {
+        "title": "Currency is automatic",
+        "text": "Enter the price in the currency the asset trades in; it is converted to the account currency."
+      },
+      "prices": {
+        "title": "Daily prices",
+        "text": "Value and profit or loss use the market's daily closing prices."
+      }
+    },
     "addSteps": "Add holding steps",
     "chooseAsset": "Choose an asset",
     "purchaseDetails": "Purchase details",
@@ -323,7 +349,6 @@
     },
     "priceUnavailable": "The current price is unavailable. You can enter the purchase price manually.",
     "editHolding": "Edit holding",
-    "formHint": "Manage the quantity and purchase details of your holding.",
     "notes": "Notes",
     "notesPlaceholder": "Optional: broker, strategy, or a reminder",
     "quantityPlaceholder": "e.g., 10",
@@ -333,7 +358,22 @@
     "exchangeRatePlaceholder": "Leave empty to use the historical rate",
     "currencyLocked": "{symbol} trades in {currency}. Enter the price in {currency}; it is converted to the account currency.",
     "currencyCorrected": "{symbol} trades in {currency} but was recorded in {from}. Saving records the price in {currency}.",
-    "totalCost": "Total cost"
+    "totalCost": "Total cost",
+    "saveChanges": "Save changes",
+    "goToActivities": "Go to activities",
+    "editHint": "Update the position, classification and your notes.",
+    "editSections": {
+      "position": "Position",
+      "positionHint": "The quantity you hold and your average purchase price.",
+      "classification": "Classification",
+      "classificationHint": "Used in allocation charts and filters. Optional.",
+      "notesHint": "Short notes only you can see."
+    },
+    "classificationPlaceholders": {
+      "asset_class": "e.g. ETF",
+      "sector": "e.g. Technology",
+      "country": "e.g. United States"
+    }
   },
   "portfolio": {
     "accountAnalysis": "Account analysis",
@@ -524,7 +564,25 @@
     "addLiability": "Add liability",
     "liabilityHint": "Record a new dated balance as the debt changes. Use a zero balance to close a liability while retaining its history.",
     "tags": "Tags",
-    "saveTags": "Save tags",
+    "tagSearch": "Search or create a tag",
+    "noTagsYet": "No tags yet. Type a name to create one.",
+    "newTag": "New tag",
+    "existingTags": "Your tags",
+    "manageTagsHint": "Create tags, or change their name and color. New tags are added to this record.",
+    "tagPreview": "Preview:",
+    "createTag": "Create “{name}”",
+    "tagColor": "Tag color",
+    "tagColors": {
+      "gray": "Gray",
+      "red": "Red",
+      "orange": "Orange",
+      "amber": "Amber",
+      "green": "Green",
+      "teal": "Teal",
+      "blue": "Blue",
+      "violet": "Violet",
+      "pink": "Pink"
+    },
     "manageTags": "Manage tags",
     "activitySearchHint": "Symbol, name, account, or notes",
     "allAccounts": "All accounts",
@@ -611,6 +669,8 @@
     "useProviderPrice": "Restore provider price",
     "display": "Display and installation",
     "zen": "Hide or show financial values",
+    "hideValues": "Hide values",
+    "showValues": "Show values",
     "zenHint": "Zen mode masks displayed financial values. It is a display preference, not an access restriction.",
     "hiddenValues": "Financial values are hidden.",
     "install": "Install Keepfin",
@@ -637,6 +697,127 @@
     "paymentDate": "Payment date",
     "splitNew": "New shares",
     "splitOld": "Old shares",
-    "splitHint": "For a 2-for-1 split enter 2 new and 1 old share. For a 1-for-10 reverse split enter 1 and 10. Cost and cash remain unchanged; fractional shares are retained."
+    "splitHint": "For a 2-for-1 split enter 2 new and 1 old share. For a 1-for-10 reverse split enter 1 and 10. Cost and cash remain unchanged; fractional shares are retained.",
+    "watchlistHint": "Follow assets you do not own yet. Search, add them to the list and see their prices in one place.",
+    "watchSearchPlaceholder": "Type a symbol or name, e.g. AAPL or Bitcoin",
+    "watching": "Watching",
+    "asset": "Asset",
+    "lastPrice": "Last price",
+    "dailyChange": "Daily change",
+    "notRefreshed": "Refresh to load",
+    "unwatch": "Remove",
+    "emptyWatchlistTitle": "Your watchlist is empty",
+    "latestValuation": "Latest value",
+    "noValuation": "No value yet",
+    "enterValuation": "Enter value",
+    "emptyManualTitle": "No manual assets yet",
+    "editAsset": "Edit asset",
+    "assetFormHint": "Describe an asset that does not trade on an exchange. You enter its dated value in the next step.",
+    "manualNamePlaceholder": "e.g. City apartment, Gold bars",
+    "currencyFixed": "The currency cannot change after creation.",
+    "manualClassPlaceholder": "e.g. Real estate",
+    "valuationTitle": "Value of {name}",
+    "valuationHint": "Enter the value of one unit with its date. A new value for the same date replaces the old one.",
+    "deleteAssetTitle": "Delete asset",
+    "deleteAssetMessage": "Are you sure you want to delete {name}?",
+    "manualSteps": {
+      "create": {
+        "title": "Describe the asset",
+        "text": "Enter its name, currency and type."
+      },
+      "value": {
+        "title": "Enter its value",
+        "text": "Record the current unit value of a home, gold or private investment with a date."
+      },
+      "position": {
+        "title": "Add it to an account",
+        "text": "Add a buy or opening position from an account to include it in your portfolio."
+      }
+    },
+    "summaryHints": {
+      "value": "Value of accounts included in totals",
+      "liabilities": "Sum of outstanding debts",
+      "net_worth": "Assets minus liabilities"
+    },
+    "netWorthHistory": "Net worth history",
+    "liability": "Liability",
+    "paidOff": "Paid off",
+    "updateBalance": "Update balance",
+    "emptyLiabilitiesTitle": "No liabilities recorded",
+    "emptyLiabilities": "Add loans, credit cards or other debts so your net worth is accurate.",
+    "liabilityFormHint": "Enter the name, currency and current outstanding amount of the debt.",
+    "liabilityNamePlaceholder": "e.g. Mortgage",
+    "balanceTitle": "Balance of {name}",
+    "balanceHint": "Enter the outstanding amount on a given date. Enter 0 to close it; history is kept.",
+    "activitiesHint": "Buys, sells, dividends and cash movements from all your accounts in one list. Filter and tag them here.",
+    "noActivities": "Activities you add to your accounts appear here.",
+    "noActivitiesFiltered": "No activities match these filters. Try clearing them.",
+    "ruleHints": {
+      "asset": "Largest share of a single asset in the portfolio",
+      "account": "Largest share of a single account",
+      "currency": "Largest share of a single currency",
+      "fees": "Last year's fees compared with net contributions",
+      "emergency": "How many months of expenses the emergency fund covers",
+      "liquidity": "Total cash across accounts"
+    },
+    "maximum": "Maximum",
+    "minimum": "Minimum",
+    "highest": "Highest",
+    "fireHints": {
+      "investable": "Net worth today minus the emergency fund",
+      "target": "Annual expenses ÷ withdrawal rate",
+      "years_to_target": "Time to reach the target with these assumptions"
+    },
+    "yearsValue": "{years} yrs",
+    "monthsValue": "{months} mo",
+    "projection": "Projection",
+    "riskSettings": "Limits",
+    "fireSettings": "Assumptions",
+    "settingsHint": "Change the values and press “Save and calculate”; the results above update.",
+    "settingGroups": {
+      "concentration": "Concentration",
+      "costs": "Costs",
+      "safety": "Safety",
+      "spending": "Spending",
+      "growth": "Saving and return"
+    },
+    "sharePoints": {
+      "readonly": {
+        "title": "Read-only",
+        "text": "Recipients only see the report and cannot change anything."
+      },
+      "expiry": {
+        "title": "Expiring",
+        "text": "The link closes on the date you choose; you can revoke it at any time."
+      },
+      "access": {
+        "title": "Public or private",
+        "text": "Enter an email and only that person can view it after signing in."
+      }
+    },
+    "copied": "Copied",
+    "newShare": "New share link",
+    "shareNamePlaceholder": "e.g. For my advisor",
+    "privateExplained": "Private link: only someone signed in with this email can view it.",
+    "publicExplained": "Public link: anyone with the link can view it.",
+    "selectedAccounts": "Accounts selected: {count}",
+    "shares": "Your shares",
+    "accountCount": "Accounts: {count}",
+    "expiresOn": "until {date}",
+    "emptySharesTitle": "No shares yet",
+    "emptyShares": "Links you create above are listed here.",
+    "revokeTitle": "Revoke share",
+    "revokeMessage": "The {name} link stops working immediately. This cannot be undone.",
+    "marketDataHint": "See where prices come from and reload missing price history.",
+    "inUse": "In use",
+    "useProvider": "Use this",
+    "jobStatus": {
+      "queued": "Queued",
+      "running": "Running",
+      "complete": "Complete",
+      "failed": "Failed"
+    },
+    "emptyJobsTitle": "No refresh jobs yet",
+    "emptyJobs": "If an asset is missing price history, start a refresh above."
   }
 }

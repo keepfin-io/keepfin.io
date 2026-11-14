@@ -142,7 +142,7 @@ func TestWealthOwnershipValuationAndHistory(t *testing.T) {
 	if err != nil || len(debts) != 1 || len(debts[0].Balances) != 2 {
 		t.Fatalf("liability history: %+v %v", debts, err)
 	}
-	tag, err := service.SaveTag(owner.ID, nil, "Long term")
+	tag, err := service.SaveTag(owner.ID, nil, "Long term", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,6 +151,29 @@ func TestWealthOwnershipValuationAndHistory(t *testing.T) {
 	}
 	if err = service.AssignTags(other.ID, buy.ID, "activity", []uuid.UUID{tag.ID}); err == nil {
 		t.Fatal("foreign tag target")
+	}
+	if tag.Color != "gray" {
+		t.Fatalf("default tag color %q", tag.Color)
+	}
+	if _, err = service.SaveTag(owner.ID, nil, "Styled", "#ff0000"); err == nil {
+		t.Fatal("raw CSS tag color accepted")
+	}
+	if recolored, e := service.SaveTag(owner.ID, &tag.ID, "Long term", "green"); e != nil || recolored.Color != "green" {
+		t.Fatalf("recolor: %+v %v", recolored, e)
+	}
+	// Renaming without a color keeps the chosen color.
+	if renamed, e := service.SaveTag(owner.ID, &tag.ID, "Long hold", ""); e != nil || renamed.Color != "green" || renamed.Name != "Long hold" {
+		t.Fatalf("rename: %+v %v", renamed, e)
+	}
+	byAccount, err := service.TagsByEntity(owner.ID, "account")
+	if err != nil || len(byAccount[account.ID]) != 1 || byAccount[account.ID][0].Color != "green" {
+		t.Fatalf("account tags: %+v %v", byAccount, err)
+	}
+	if leaked, e := service.TagsByEntity(other.ID, "account"); e != nil || len(leaked) != 0 {
+		t.Fatalf("foreign account tags leaked %+v %v", leaked, e)
+	}
+	if _, err = service.TagsByEntity(owner.ID, "holding"); err == nil {
+		t.Fatal("unsupported tag target accepted")
 	}
 	page, err := service.AllActivities(owner.ID, ActivityFilter{TagID: &tag.ID, PerPage: 1, Query: "Private"})
 	if err != nil || page.Total != 1 {

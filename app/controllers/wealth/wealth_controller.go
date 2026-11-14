@@ -80,6 +80,7 @@ func (ctrl *Controller) Register(api fiber.Router) {
 	api.Post("/tags", authhandler.WithUser(ctrl.SaveTag))
 	api.Put("/tags/:id", authhandler.WithUser(ctrl.SaveTag))
 	api.Delete("/tags/:id", authhandler.WithUser(ctrl.DeleteTag))
+	api.Get("/tags/:kind", authhandler.WithUser(ctrl.TagsByEntity))
 	api.Get("/tags/:kind/:id", authhandler.WithUser(ctrl.EntityTags))
 	api.Put("/tags/:kind/:id", authhandler.WithUser(ctrl.AssignTags))
 	api.Get("/activities", authhandler.WithUser(ctrl.Activities))
@@ -198,12 +199,17 @@ func (ctrl *Controller) SaveTag(c *fiber.Ctx, userID uuid.UUID) error {
 		return e
 	}
 	var b struct {
-		Name string `json:"name"`
+		Name  string `json:"name"`
+		Color string `json:"color"`
 	}
 	if e := parse(c, &b); e != nil {
 		return e
 	}
-	v, e := ctrl.Service.SaveTag(userID, id, b.Name)
+	v, e := ctrl.Service.SaveTag(userID, id, b.Name, b.Color)
+	return result(c, v, e)
+}
+func (ctrl *Controller) TagsByEntity(c *fiber.Ctx, userID uuid.UUID) error {
+	v, e := ctrl.Service.TagsByEntity(userID, c.Params("kind"))
 	return result(c, v, e)
 }
 func (ctrl *Controller) DeleteTag(c *fiber.Ctx, userID uuid.UUID) error {

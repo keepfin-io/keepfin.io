@@ -31,7 +31,6 @@
         >
           {{ pageTitle }}
         </span>
-        <ZenToggle />
         <ThemeToggle data-testid="header-theme" class="workspace-theme" compact />
       </header>
       <div
@@ -59,7 +58,6 @@ import {
 } from '@/components/ui'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import ZenToggle from '@/components/wealth/ZenToggle.vue'
 import { loadZen } from '@/composables/useZen'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'

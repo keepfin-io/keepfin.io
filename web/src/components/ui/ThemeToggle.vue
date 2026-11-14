@@ -8,10 +8,18 @@
       :disabled="isSavingTheme"
       :aria-label="toggleLabel"
       :title="toggleLabel"
-      @click="saveTheme(isDark ? 'light' : 'dark')"
+      @click="saveTheme(isDark ? 'light' : 'dark', $event)"
     >
-      <Sun v-if="isDark" class="size-4" />
-      <Moon v-else class="size-4" />
+      <Transition
+        mode="out-in"
+        enter-active-class="transition duration-300 ease-out motion-reduce:transition-none"
+        enter-from-class="-rotate-90 scale-50 opacity-0"
+        leave-active-class="transition duration-150 ease-in motion-reduce:transition-none"
+        leave-to-class="rotate-90 scale-50 opacity-0"
+      >
+        <Sun v-if="isDark" key="sun" class="size-4" />
+        <Moon v-else key="moon" class="size-4" />
+      </Transition>
     </Button>
     <div
       v-else
@@ -28,7 +36,7 @@
         :variant="theme === option ? 'default' : 'outline'"
         :aria-pressed="theme === option"
         :disabled="isSavingTheme"
-        @click="saveTheme(option)"
+        @click="saveTheme(option, $event)"
       >
         <Sun v-if="option === 'light'" class="size-4" />
         <Moon v-else class="size-4" />
@@ -55,7 +63,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Sun, Moon } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
-import { useTheme } from '@/composables/useTheme'
+import { applyTheme, themeOrigin, useTheme } from '@/composables/useTheme'
 import Alert from './FeedbackAlert.vue'
 import { Button } from '@/components/ui/button'
 
@@ -72,11 +80,16 @@ export default {
       t(isDark.value ? 'profile.switchToLight' : 'profile.switchToDark')
     )
 
-    async function saveTheme(value) {
+    // Apply at once so the switch animates from the button; restore the
+    // previous theme if the preference cannot be saved.
+    async function saveTheme(value, event) {
       saveFailed.value = false
+      const previous = theme.value
+      applyTheme(value, themeOrigin(event))
       try {
         await setTheme(value)
       } catch {
+        applyTheme(previous)
         saveFailed.value = true
       }
     }

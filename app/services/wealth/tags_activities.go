@@ -2,13 +2,15 @@ package wealth
 
 import (
 	"errors"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	accountmodel "keepnode/app/models/account"
 	activitymodel "keepnode/app/models/activity"
 	model "keepnode/app/models/wealth"
 	"strings"
+	"unicode/utf8"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (s *Service) Tags(user uuid.UUID) ([]model.Tag, error) {
@@ -16,25 +18,74 @@ func (s *Service) Tags(user uuid.UUID) ([]model.Tag, error) {
 	err := s.DB.Where("user_id = ?", user).Order("name,id").Find(&rows).Error
 	return rows, err
 }
-func (s *Service) SaveTag(user uuid.UUID, id *uuid.UUID, name string) (*model.Tag, error) {
+
+// TagColors are the palette keys a tag may use; the client owns the styles.
+var TagColors = []string{"gray", "red", "orange", "amber", "green", "teal", "blue", "violet", "pink"}
+
+func validTagColor(color string) bool {
+	for _, c := range TagColors {
+		if c == color {
+			return true
+		}
+	}
+	return false
+}
+
+// SaveTag creates or updates a tag. An empty color keeps the current color,
+// or uses gray for a new tag.
+func (s *Service) SaveTag(user uuid.UUID, id *uuid.UUID, name, color string) (*model.Tag, error) {
 	name = strings.TrimSpace(name)
-	if name == "" || len(name) > 40 {
+	if name == "" || utf8.RuneCountInString(name) > 40 {
 		return nil, errors.New("tag name must contain 1 to 40 characters")
 	}
-	tag := model.Tag{UserID: user, Name: name}
+	if color != "" && !validTagColor(color) {
+		return nil, errors.New("invalid tag color")
+	}
 	if id == nil {
+		if color == "" {
+			color = "gray"
+		}
+		tag := model.Tag{UserID: user, Name: name, Color: color}
 		err := s.DB.Create(&tag).Error
 		return &tag, err
 	}
-	tag.ID = *id
-	r := s.DB.Model(&model.Tag{}).Where("id = ? AND user_id = ?", *id, user).Update("name", name)
+	values := map[string]any{"name": name}
+	if color != "" {
+		values["color"] = color
+	}
+	r := s.DB.Model(&model.Tag{}).Where("id = ? AND user_id = ?", *id, user).Updates(values)
 	if r.Error != nil {
 		return nil, r.Error
 	}
 	if r.RowsAffected == 0 {
 		return nil, ErrNotFound
 	}
+	tag := model.Tag{}
+	if err := s.DB.Where("id = ? AND user_id = ?", *id, user).First(&tag).Error; err != nil {
+		return nil, err
+	}
 	return &tag, nil
+}
+
+// TagsByEntity returns every tagged entity of kind with its tags, so lists can
+// show tags without one request per row.
+func (s *Service) TagsByEntity(user uuid.UUID, kind string) (map[uuid.UUID][]model.Tag, error) {
+	if kind != "account" && kind != "activity" {
+		return nil, errors.New("invalid tag target")
+	}
+	rows := []struct {
+		model.Tag
+		EntityID uuid.UUID
+	}{}
+	err := s.DB.Model(&model.Tag{}).Select("tags.*, a.entity_id").
+		Joins("JOIN tag_assignments a ON a.tag_id = tags.id").
+		Where("a.user_id = ? AND a.kind = ? AND tags.user_id = ?", user, kind, user).
+		Order("tags.name").Scan(&rows).Error
+	out := map[uuid.UUID][]model.Tag{}
+	for _, row := range rows {
+		out[row.EntityID] = append(out[row.EntityID], row.Tag)
+	}
+	return out, err
 }
 func (s *Service) DeleteTag(user, id uuid.UUID) error {
 	r := s.DB.Where("id = ? AND user_id = ?", id, user).Delete(&model.Tag{})

@@ -31,18 +31,18 @@
     <template v-else>
       <div data-testid="holdings-cards" class="grid gap-3 md:hidden">
         <Card v-for="holding in rows" :key="holding.id" :data-testid="`holding-card-${holding.id}`" class="gap-4 rounded-2xl p-4">
-          <div class="flex items-start gap-2"><router-link :data-testid="`holding-card-${holding.id}-link`" class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-ring" :to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }"><AssetIdentity :asset="identity(holding)" compact /></router-link><RecordActions :data-testid="`holding-card-${holding.id}-actions`" @edit="$emit('edit', holding)" @delete="$emit('delete', holding)" /></div>
+          <div class="flex items-start gap-2"><router-link :data-testid="`holding-card-${holding.id}-link`" class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-ring" :to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }"><AssetIdentity :asset="identity(holding)" compact /></router-link><RecordActions icon-only :data-testid="`holding-card-${holding.id}-actions`" @edit="$emit('edit', holding)" @delete="$emit('delete', holding)" /></div>
           <div class="grid grid-cols-2 gap-4 text-sm">
-            <div v-for="field in metricFields" :key="field"><p class="text-xs text-muted-foreground">{{ t(`accountDetail.${field}`) }}</p><p class="mt-1 break-all font-medium tabular-nums" :class="field === 'profitLoss' && profitClass(holding)">{{ metric(holding, field) }}</p></div>
+            <div v-for="field in metricFields" :key="field"><p class="flex items-center gap-1.5 text-xs text-muted-foreground"><component :is="fieldIcons[field]" class="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden="true" />{{ t(`accountDetail.${field}`) }}</p><p class="mt-1 flex items-center gap-1 break-all font-medium tabular-nums" :class="trendFields.includes(field) && profitClass(holding)"><component :is="trendIcon(holding)" v-if="trendFields.includes(field) && trendIcon(holding)" class="size-3.5 shrink-0" aria-hidden="true" />{{ metric(holding, field) }}</p></div>
           </div>
         </Card>
       </div>
       <div class="hidden min-w-0 overflow-hidden rounded-2xl border bg-card md:block">
         <Table data-testid="holdings-table">
-          <TableHeader><TableRow class="hover:bg-transparent"><TableHead class="px-4">{{ t('accountDetail.name') }}</TableHead><TableHead v-for="field in metricFields" :key="field" class="text-right">{{ t(`accountDetail.${field}`) }}</TableHead><TableHead class="px-4 text-right">{{ t('accountDetail.actions') }}</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow class="hover:bg-transparent"><TableHead class="px-4"><span class="inline-flex items-center gap-1.5"><LuBriefcase class="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden="true" />{{ t('accountDetail.name') }}</span></TableHead><TableHead v-for="field in metricFields" :key="field" class="text-right" :title="trendFields.includes(field) ? t('accountDetail.profitLossHint') : undefined"><span class="inline-flex items-center justify-end gap-1.5"><component :is="fieldIcons[field]" class="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden="true" />{{ t(`accountDetail.${field}`) }}</span></TableHead><TableHead class="px-4 text-right"><span class="inline-flex items-center justify-end gap-1.5"><LuSettings2 class="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden="true" />{{ t('accountDetail.actions') }}</span></TableHead></TableRow></TableHeader>
           <TableBody><TableRow v-for="holding in rows" :key="holding.id" :data-testid="`holding-row-${holding.id}`" class="hover:bg-muted/30">
             <TableCell class="w-[28%] min-w-48 max-w-80 px-4 py-4"><router-link :data-testid="`holding-row-${holding.id}-link`" class="min-w-0 flex-1 rounded-md focus-visible:outline-2 focus-visible:outline-ring" :to="{ name: 'HoldingDetail', params: { id: account.id, holdingId: holding.id } }"><AssetIdentity :asset="identity(holding)" compact /></router-link></TableCell>
-            <TableCell v-for="field in metricFields" :key="field" class="text-right tabular-nums" :class="field === 'profitLoss' && profitClass(holding)">{{ metric(holding, field) }}</TableCell>
+            <TableCell v-for="field in metricFields" :key="field" class="text-right tabular-nums" :class="trendFields.includes(field) && profitClass(holding)"><span class="inline-flex items-center justify-end gap-1"><component :is="trendIcon(holding)" v-if="trendFields.includes(field) && trendIcon(holding)" class="size-3.5 shrink-0" aria-hidden="true" />{{ metric(holding, field) }}</span></TableCell>
             <TableCell class="px-4"><div class="flex justify-end"><RecordActions :data-testid="`holding-row-${holding.id}-actions`" @edit="$emit('edit', holding)" @delete="$emit('delete', holding)" /></div></TableCell>
           </TableRow></TableBody>
         </Table>
@@ -66,16 +66,19 @@
 <script setup>
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { LuSearch, LuSlidersHorizontal, LuPlus, LuX, LuLoaderCircle, LuChevronLeft, LuChevronRight, LuChevronsLeft, LuChevronsRight } from '@kalimahapps/vue-icons/lu'
+import { LuSearch, LuSlidersHorizontal, LuPlus, LuX, LuLoaderCircle, LuChevronLeft, LuChevronRight, LuChevronsLeft, LuChevronsRight, LuTrendingDown, LuTrendingUp, LuBriefcase, LuHash, LuCircleDollarSign, LuWallet, LuTrendingUpDown, LuPercent, LuSettings2 } from '@kalimahapps/vue-icons/lu'
 import { Button, Card, FeedbackAlert as Alert, FormSelect, Input, Label, RecordActions, Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui'
 import AssetIdentity from './AssetIdentity.vue'
 import { holdingAPI } from '@/services/holdingApi'
+import { zen } from '@/composables/useZen'
 
-const props = defineProps({ account: { type: Object, required: true }, hasHoldings: Boolean })
+// refreshKey changes when the parent refreshes prices, so the visible page reloads too.
+const props = defineProps({ account: { type: Object, required: true }, hasHoldings: Boolean, refreshKey: { type: Number, default: 0 } })
 defineEmits(['add', 'edit', 'delete'])
 const { t, locale } = useI18n()
 const filterKeys = ['currency', 'exchange', 'asset_class', 'sector', 'country']
 const metricFields = ['quantity', 'currentPrice', 'value', 'profitLoss', 'performance']
+const fieldIcons = { quantity: LuHash, currentPrice: LuCircleDollarSign, value: LuWallet, profitLoss: LuTrendingUpDown, performance: LuPercent }
 const params = reactive({ q: '', page: 1, per_page: 10, sort: 'created_at', direction: 'desc', currency: '', exchange: '', asset_class: '', sector: '', country: '' })
 const rows = ref([]), total = ref(0), pages = ref(1), facets = ref({}), source = ref(''), error = ref(''), loading = ref(true), showFilters = ref(false)
 let timer, recoveryTimer, revision = 0, active = true
@@ -90,15 +93,21 @@ function identity(holding) {
   return { Code: at < 0 ? holding.symbol : holding.symbol.slice(0, at), Exchange: at < 0 ? '' : holding.symbol.slice(at + 1), Currency: holding.buy_currency, Type: holding.asset_class, Name: holding.name && holding.name !== holding.symbol ? holding.name : '' }
 }
 function number(value, options = {}) { return new Intl.NumberFormat(locale.value, options).format(value) }
+// Gains and losses carry an explicit sign, arrow and color, so the direction
+// is clear without relying on color alone.
+const trendFields = ['profitLoss', 'performance']
 function metric(holding, field) {
   if (field === 'quantity') return number(holding.quantity, { maximumFractionDigits: 8 })
   if (!holding.price_available) return '—'
-  if (field === 'performance') return Number.isFinite(holding.performance) ? `${number(Math.abs(holding.performance) < 0.005 ? 0 : holding.performance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : '—'
+  if (field === 'performance') return Number.isFinite(holding.performance) ? `${number(Math.abs(holding.performance) < 0.005 ? 0 : holding.performance, { minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: 'exceptZero' })}%` : '—'
   const value = holding[{ currentPrice: 'current_price', value: 'value', profitLoss: 'profit_loss' }[field]]
   if (!Number.isFinite(value)) return '—'
-  return number(Math.abs(value) < 0.005 ? 0 : value, { style: 'currency', currency: holding.buy_currency || props.account.currency })
+  if (zen.value) return '••••'
+  return number(Math.abs(value) < 0.005 ? 0 : value, { style: 'currency', currency: holding.buy_currency || props.account.currency, signDisplay: field === 'profitLoss' ? 'exceptZero' : 'auto' })
 }
-function profitClass(holding) { return !holding.price_available || Math.abs(holding.profit_loss) < 0.005 ? 'text-muted-foreground' : holding.profit_loss < 0 ? 'text-destructive' : 'text-primary' }
+function trend(holding) { return !holding.price_available || !Number.isFinite(holding.profit_loss) || Math.abs(holding.profit_loss) < 0.005 ? 0 : Math.sign(holding.profit_loss) }
+function trendIcon(holding) { return { 1: LuTrendingUp, '-1': LuTrendingDown }[trend(holding)] }
+function profitClass(holding) { return { 1: 'text-emerald-600 dark:text-emerald-400', '-1': 'text-destructive' }[trend(holding)] || 'text-muted-foreground' }
 function scheduleFetch() {
   clearTimeout(timer); clearTimeout(recoveryTimer)
   const request = ++revision
@@ -118,6 +127,6 @@ async function fetchPage(request) {
     if (active && request === revision) { error.value = e.message; rows.value = []; total.value = 0 }
   } finally { if (active && request === revision) loading.value = false }
 }
-watch([() => props.account.id, params], scheduleFetch, { deep: true, immediate: true })
+watch([() => props.account.id, () => props.refreshKey, params], scheduleFetch, { deep: true, immediate: true })
 onBeforeUnmount(() => { active = false; revision++; clearTimeout(timer); clearTimeout(recoveryTimer) })
 </script>

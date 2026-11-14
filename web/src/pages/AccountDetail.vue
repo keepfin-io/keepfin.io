@@ -5,7 +5,9 @@
     :message="spinnerMessage"
   />
   <section data-testid="account-detail-page" class="min-w-0 space-y-6">
-    <div class="flex flex-wrap items-center gap-3">
+    <!-- Action pages (add or edit a holding, activities, transfers) have their
+         own title and "Back to account" control, so the account header is hidden. -->
+    <div v-if="!$route.meta.accountAction" data-testid="account-detail-header" class="flex flex-wrap items-center gap-3">
       <Button variant="outline" size="icon" as-child>
         <router-link
           data-testid="account-detail-back"
@@ -36,10 +38,13 @@
               <span><span class="text-muted-foreground">{{ $t('accounts.currency') }}:</span> <span data-testid="account-detail-currency" class="font-medium">{{ account.currency }}</span></span>
             </template>
           </p>
+          <div v-if="accountTags.length" data-testid="account-detail-tags" class="mt-2 flex flex-wrap gap-1.5">
+            <TagBadge v-for="tag in accountTags" :key="tag.id" :tag="tag" />
+          </div>
         </div>
       </div>
-      <div v-if="account && !$route.meta.accountAction" class="ml-auto flex flex-wrap gap-2">
-        <Button data-testid="account-tags-toggle" variant="ghost" :aria-expanded="showTags" @click="showTags = !showTags"><LuTag class="size-4" />{{ $t('wealth.tags') }}</Button>
+      <div v-if="account" class="ml-auto flex flex-wrap gap-2">
+        <TagPicker v-model="accountTags" kind="account" :id="account.id" testid="account-tags" />
         <Button variant="outline" as-child>
           <router-link data-testid="account-analysis-link" :to="{ name: 'AccountAnalysis', params: { id: account.id } }"><LuChartNoAxesCombined class="size-4" />{{ $t('portfolio.accountAnalysis') }}</router-link>
         </Button>
@@ -63,7 +68,6 @@
         <component :is="Component" :key="$route.path" :account="account" :holdings="holdings" :activities="activities" :holdings-error="holdingsError" :activities-error="activitiesError" @retry="fetchAccountDetails" @saved="onActionSaved" />
       </router-view>
       <template v-else>
-      <EntityTags v-if="showTags" kind="account" :id="account.id" />
       <div class="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
         <Card
           :data-testid="`account-summary-${stat.label}`"
@@ -72,13 +76,25 @@
           class="min-w-0 gap-2 py-4"
         >
           <CardHeader class="px-4">
-            <CardDescription class="flex min-w-0 items-center gap-2"><component :is="stat.icon" class="size-4 shrink-0 text-primary/80" aria-hidden="true" /><span class="min-w-0 break-words">{{ $t('accountDetail.' + stat.label) }}</span></CardDescription>
+            <CardDescription class="flex min-w-0 items-center gap-2"><component :is="stat.icon" class="size-4 shrink-0 text-primary/80" aria-hidden="true" /><span class="min-w-0 break-words">{{ $t('accountDetail.' + stat.label) }}</span>
+              <Button v-if="stat.label === 'totalValue'" data-testid="account-zen-toggle" variant="ghost" size="icon" class="-my-1.5 ml-auto size-7 shrink-0 text-muted-foreground" :disabled="zenBusy" :aria-pressed="zen" :aria-label="$t(zen ? 'wealth.showValues' : 'wealth.hideValues')" :title="$t(zen ? 'wealth.showValues' : 'wealth.hideValues')" @click="toggleValues"><LuEyeOff v-if="zen" class="size-4" /><LuEye v-else class="size-4" /></Button>
+            </CardDescription>
           </CardHeader>
           <CardContent class="space-y-1 px-4">
             <p class="break-all text-lg font-semibold tabular-nums" :class="stat.tone">{{ stat.value }}</p>
+            <p v-if="stat.detail" :data-testid="`account-summary-${stat.label}-detail`" class="text-xs font-medium tabular-nums" :class="stat.tone">{{ stat.detail }}</p>
             <p v-if="stat.caption" :data-testid="`account-summary-${stat.label}-caption`" class="flex items-center gap-1.5 break-words text-xs text-muted-foreground tabular-nums"><LuCoins class="size-3.5 shrink-0" aria-hidden="true" />{{ stat.caption }}</p>
           </CardContent>
         </Card>
+      </div>
+      <!-- Prices are daily closes; say which close they are and when the page last loaded. -->
+      <div v-if="holdings.length" data-testid="account-prices-status" class="-mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <span class="inline-flex items-center gap-1.5"><LuClock class="size-3.5 shrink-0" aria-hidden="true" /><span data-testid="account-prices-as-of">{{ latestPriceDate ? $t('accountDetail.pricesAsOf', { date: formatDay(latestPriceDate) }) : $t('accountDetail.pricesUnavailable') }}</span></span>
+        <template v-if="lastRefreshed">
+          <span aria-hidden="true">·</span>
+          <span data-testid="account-last-refreshed">{{ $t('accountDetail.lastRefreshed', { time: formatTime(lastRefreshed) }) }}</span>
+        </template>
+        <Button data-testid="account-refresh" variant="ghost" size="sm" class="h-7 gap-1.5 px-2 text-xs" :disabled="refreshing" @click="refreshPrices"><LuRefreshCw class="size-3.5" :class="refreshing && 'animate-spin motion-reduce:animate-none'" aria-hidden="true" />{{ $t('portfolio.refresh') }}</Button>
       </div>
       <Alert v-if="holdingsSummary && !holdingsSummary.complete" variant="warning" :description="holdingsSummary.warnings.join('; ')" />
       <Tabs v-model="activeTab" class="min-w-0 space-y-4">
@@ -99,7 +115,7 @@
           value="holdings"
           class="min-w-0 space-y-4"
         >
-          <HoldingsList :account="account" :has-holdings="holdings.length > 0"
+          <HoldingsList :account="account" :has-holdings="holdings.length > 0" :refresh-key="refreshKey"
             @add="$router.push({ name: 'HoldingCreate', params: { id: account.id } })"
             @edit="openEditHolding" @delete="confirmDeleteHolding" />
         </TabsContent>
@@ -113,7 +129,7 @@
       </Tabs>
       </template>
     </template>
-    <InlineConfirmation
+    <ConfirmModal
       data-testid="holding-delete-confirmation"
       :visible="showDeleteConfirm && !$route.meta.accountAction"
       variant="danger"
@@ -141,36 +157,42 @@ import {
   CardDescription,
   CardHeader,
   Favicon,
-  InlineConfirmation,
+  ConfirmModal,
   FullPageSpinner,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import EntityTags from '@/components/wealth/EntityTags.vue'
-import { zen } from '@/composables/useZen'
+import TagBadge from '@/components/wealth/TagBadge.vue'
+import TagPicker from '@/components/wealth/TagPicker.vue'
+import { zen, toggleZen } from '@/composables/useZen'
 import TransactionsPanel from '@/components/portfolio/TransactionsPanel.vue'
 import HoldingsList from '@/components/holdings/HoldingsList.vue'
-import { LuArrowLeft, LuBriefcase, LuChartNoAxesCombined, LuChartPie, LuCoins, LuHistory, LuLandmark, LuTag, LuTrendingDown, LuTrendingUp, LuWallet } from '@kalimahapps/vue-icons/lu'
+import { LuArrowLeft, LuBriefcase, LuChartNoAxesCombined, LuChartPie, LuClock, LuCoins, LuEye, LuEyeOff, LuRefreshCw, LuHistory, LuLandmark, LuTrendingDown, LuTrendingUp, LuWallet } from '@kalimahapps/vue-icons/lu'
 import { accountAPI } from '@/services/accountApi'
 import { platformDomain } from '@/lib/platforms'
 import { holdingAPI } from '@/services/holdingApi'
 import { activityAPI } from '@/services/activityApi'
+import { wealthAPI } from '@/services/wealthApi'
 
 export default {
   name: 'AccountDetailPage',
   components: {
     TransactionsPanel,
-    EntityTags,
+    TagBadge,
+    TagPicker,
     HoldingsList,
     Alert,
     LuArrowLeft,
     LuBriefcase,
     LuChartNoAxesCombined,
+    LuClock,
     LuCoins,
+    LuRefreshCw,
+    LuEye,
+    LuEyeOff,
     LuHistory,
-    LuTag,
     LuWallet,
     Favicon,
     Button,
@@ -178,7 +200,7 @@ export default {
     CardContent,
     CardDescription,
       CardHeader,
-      InlineConfirmation,
+      ConfirmModal,
       FullPageSpinner,
                 Tabs,
     TabsContent,
@@ -187,7 +209,11 @@ export default {
   },
   data() {
     return {
-      showTags: false,
+      accountTags: [],
+      zenBusy: false,
+      lastRefreshed: null,
+      refreshing: false,
+      refreshKey: 0,
       account: null,
       holdings: [],
       holdingsError: '',
@@ -214,7 +240,7 @@ export default {
       const summary = this.holdingsSummary
       const profit = summary?.complete ? summary.total_profit_loss : null
       const income = (summary?.dividend || 0) + (summary?.interest || 0)
-      const tone = profit == null || zen.value || Math.abs(profit) < 0.005 ? '' : profit < 0 ? 'text-destructive' : 'text-primary'
+      const tone = profit == null || zen.value || Math.abs(profit) < 0.005 ? '' : profit < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'
       return [
         { label: 'totalValue', icon: LuLandmark, value: this.formatCurrency(this.totalEquity == null ? null : this.totalEquity + (this.account?.cash_balance || 0), currency) },
         { label: 'cashBalance', icon: LuWallet, value: this.formatCurrency(this.account?.cash_balance, currency) },
@@ -223,7 +249,9 @@ export default {
           label: 'profitLoss',
           icon: profit < 0 ? LuTrendingDown : LuTrendingUp,
           tone,
-          value: profit == null ? '—' : `${this.formatCurrency(profit, currency)}${zen.value ? '' : ` (${this.formatPercent(summary.total_performance)})`}`,
+          value: profit == null ? '—' : this.formatCurrency(profit, currency, true),
+          // Return on cost, with an explicit sign so gains and losses read without color.
+          detail: profit == null || zen.value ? '' : this.$t('accountDetail.returnOnCost', { percent: this.formatPercent(summary.total_performance) }),
           // Income is rare for most accounts; show it only when there is some.
           caption: Math.abs(income) >= 0.005 ? this.$t('accountDetail.incomeCaption', { amount: this.formatCurrency(income, currency) }) : '',
         },
@@ -231,6 +259,13 @@ export default {
     },
     logoDomain() {
       return platformDomain(this.account?.platform)
+    },
+    zen() {
+      return zen.value
+    },
+    // Newest close among priced holdings; older closes stay visible per row.
+    latestPriceDate() {
+      return this.holdings.filter(row => row.price_available && row.price_date).map(row => row.price_date).sort().at(-1) || ''
     },
     totalEquity() {
       return this.holdingsSummary?.complete ? this.holdingsSummary.total_value : null
@@ -255,11 +290,19 @@ export default {
         const response = await accountAPI.getAccount(this.$route.params.id)
         this.account = response.data
         // Fetch holdings and activities after account is loaded
-        await Promise.all([this.fetchHoldings(), this.fetchActivities()])
+        await Promise.all([this.fetchHoldings(), this.fetchActivities(), this.fetchAccountTags()])
       } catch (err) {
         this.error = err.message || 'Failed to load account details'
       } finally {
         this.loading = false
+      }
+    },
+    async fetchAccountTags() {
+      try {
+        this.accountTags = (await wealthAPI.get(`/tags/account/${this.$route.params.id}`)).data || []
+      } catch {
+        // Tags are optional context; the account stays usable without them.
+        this.accountTags = []
       }
     },
     async fetchHoldings() {
@@ -268,6 +311,7 @@ export default {
         const response = await holdingAPI.getHoldings(this.$route.params.id)
         this.holdings = response.data.holdings || []
         this.holdingsSummary = response.data.summary || null
+        this.lastRefreshed = new Date()
       } catch (err) {
         this.holdingsError = err.message || this.$t('holdingDetail.loadError')
         this.holdings = []
@@ -325,6 +369,18 @@ export default {
         this.deleting = false
       }
     },
+    // Hides money amounts everywhere; the toggle sits beside this account's values.
+    async toggleValues() {
+      if (this.zenBusy) return
+      this.zenBusy = true
+      try {
+        await toggleZen()
+      } catch (err) {
+        this.showAlert('error', this.$t('common.error'), err.message)
+      } finally {
+        this.zenBusy = false
+      }
+    },
     showAlert(variant, title, description) {
       this.alert = {
         show: true,
@@ -338,13 +394,30 @@ export default {
         }, 3000)
       }
     },
-    formatCurrency(amount, currency) {
+    formatCurrency(amount, currency, signed = false) {
       if (amount == null) return '—'
       if (zen.value) return '••••'
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency || 'USD',
-      }).format(amount || 0)
+        signDisplay: signed ? 'exceptZero' : 'auto',
+      }).format(Math.abs(amount || 0) < 0.005 ? 0 : amount || 0)
+    },
+    formatDay(day) {
+      return new Date(`${day}T00:00:00Z`).toLocaleDateString(this.$i18n.locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+    },
+    formatTime(date) {
+      return date.toLocaleTimeString(this.$i18n.locale, { hour: '2-digit', minute: '2-digit' })
+    },
+    async refreshPrices() {
+      if (this.refreshing) return
+      this.refreshing = true
+      try {
+        await this.fetchHoldings()
+        this.refreshKey += 1
+      } finally {
+        this.refreshing = false
+      }
     },
     formatPercent(value) {
       if (!Number.isFinite(value)) return '—'
