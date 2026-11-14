@@ -71,8 +71,8 @@
                 size="lg"
               >
                 <Avatar class="size-8 rounded-lg">
-                  <AvatarFallback class="rounded-lg">
-                    {{ user?.email?.slice(0, 2).toUpperCase() }}
+                  <AvatarFallback data-testid="sidebar-avatar" class="rounded-lg text-lg" :aria-label="$t('profile.chooseAvatar')">
+                    {{ avatar }}
                   </AvatarFallback>
                 </Avatar>
                 <span class="min-w-0 flex-1 truncate">{{ user?.email }}</span>
@@ -94,6 +94,11 @@
                   <User />
                   {{ $t('nav.profile') }}
                 </router-link>
+              </DropdownMenuItem>
+              <!-- Shown only when the browser offers to install the app. -->
+              <DropdownMenuItem v-if="installPrompt" data-testid="sidebar-install" @select="installApp">
+                <Download />
+                {{ $t('wealth.install') }}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem data-testid="sidebar-sign-out" @select="logout">
@@ -137,13 +142,15 @@ import {
   LayoutDashboard,
   CreditCard,
   Folder,
-  Settings,
+  Download,
   User,
   LogOut,
   ChevronsUpDown,
   X,
 } from 'lucide-vue-next'
 import { useAuth } from '@/composables/useAuth'
+import { installPrompt, installApp } from '@/composables/useInstall'
+import { avatar } from '@/composables/useAvatar'
 import BrandLogo from '@/components/BrandLogo.vue'
 const route = useRoute()
 const { user, logout, error } = useAuth()
@@ -157,6 +164,5 @@ const navigation = [
   { path: '/accounts', label: 'nav.accounts', icon: CreditCard },
   { path: '/wealth', label: 'wealth.title', icon: Folder },
   { path: '/projects', label: 'nav.projects', icon: Folder },
-  { path: '/settings', label: 'nav.settings', icon: Settings },
 ]
 </script>

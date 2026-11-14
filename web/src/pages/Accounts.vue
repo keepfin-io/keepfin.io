@@ -86,7 +86,7 @@
         </Card>
         <Card class="gap-0 py-4">
           <CardContent class="space-y-1 px-4">
-            <p class="flex items-center gap-2 text-sm text-muted-foreground"><LuBanknote class="size-4 text-primary/80" aria-hidden="true" />{{ $t('accounts.cashBalance') }}</p>
+            <p class="flex items-center gap-2 text-sm text-muted-foreground"><LuBanknote class="size-4 text-primary/80" aria-hidden="true" />{{ $t('accounts.cashBalance') }}<ZenToggle data-testid="accounts-zen-toggle" class="-my-1.5 ml-auto" /></p>
             <div data-testid="accounts-cash-totals" class="flex flex-wrap gap-x-4 gap-y-1">
               <p v-for="[currency, amount] in cashTotals" :key="currency" class="text-2xl font-semibold tabular-nums" :class="amount < 0 && 'text-destructive'">{{ formatCurrency(amount, currency) }}</p>
               <p v-if="!cashTotals.length" class="text-2xl font-semibold">—</p>
@@ -197,6 +197,7 @@
 </template>
 <script>
 import { zen } from '@/composables/useZen'
+import ZenToggle from '@/components/wealth/ZenToggle.vue'
 import {
   RecordActions,
   FeedbackAlert as Alert,
@@ -223,6 +224,7 @@ export default {
   name: 'AccountsPage',
   components: {
     TagBadge,
+    ZenToggle,
     LuBanknote,
     LuLayers,
     LuWallet,

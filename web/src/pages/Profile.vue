@@ -252,6 +252,7 @@ import { useAuth } from '@/composables/useAuth'
 import { authClient } from '@/lib/auth-client'
 import { userAPI } from '@/services/userApi'
 import { setLanguage } from '@/i18n'
+import { avatar, setAvatar } from '@/composables/useAvatar'
 import { LuMonitor, LuSmartphone, LuTablet, LuCircleHelp } from '@kalimahapps/vue-icons/lu'
 import { FaBandsApple, FaBandsWindows, FaBandsLinux, FaBandsAndroid, FaBandsChrome } from '@kalimahapps/vue-icons/fa'
 
@@ -290,6 +291,9 @@ export default {
     return { user, isLoading, currentSessionId, logout, authError }
   },
   computed: {
+    selectedEmoji() {
+      return avatar.value
+    },
     loading() {
       return this.isLoading || !this.user
     },
@@ -302,7 +306,6 @@ export default {
   data() {
     return {
       showEmojiPicker: false,
-      selectedEmoji: localStorage.getItem('user_avatar') || '😊',
       baseCurrency: 'USD',
       language: localStorage.getItem('language') || 'en',
       locale: localStorage.getItem('locale') || 'en-US',
@@ -474,8 +477,7 @@ export default {
       return new Date(value).toLocaleString(this.locale, { dateStyle: 'medium', timeStyle: 'short' })
     },
     async selectEmoji(emoji) {
-      this.selectedEmoji = emoji
-      localStorage.setItem('user_avatar', emoji)
+      setAvatar(emoji)
       this.showEmojiPicker = false
     },
     async saveCurrency() {

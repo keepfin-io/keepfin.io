@@ -77,7 +77,7 @@
         >
           <CardHeader class="px-4">
             <CardDescription class="flex min-w-0 items-center gap-2"><component :is="stat.icon" class="size-4 shrink-0 text-primary/80" aria-hidden="true" /><span class="min-w-0 break-words">{{ $t('accountDetail.' + stat.label) }}</span>
-              <Button v-if="stat.label === 'totalValue'" data-testid="account-zen-toggle" variant="ghost" size="icon" class="-my-1.5 ml-auto size-7 shrink-0 text-muted-foreground" :disabled="zenBusy" :aria-pressed="zen" :aria-label="$t(zen ? 'wealth.showValues' : 'wealth.hideValues')" :title="$t(zen ? 'wealth.showValues' : 'wealth.hideValues')" @click="toggleValues"><LuEyeOff v-if="zen" class="size-4" /><LuEye v-else class="size-4" /></Button>
+              <ZenToggle v-if="stat.label === 'totalValue'" data-testid="account-zen-toggle" class="-my-1.5 ml-auto" />
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-1 px-4">
@@ -166,10 +166,11 @@ import {
 } from '@/components/ui'
 import TagBadge from '@/components/wealth/TagBadge.vue'
 import TagPicker from '@/components/wealth/TagPicker.vue'
-import { zen, toggleZen } from '@/composables/useZen'
+import { zen } from '@/composables/useZen'
+import ZenToggle from '@/components/wealth/ZenToggle.vue'
 import TransactionsPanel from '@/components/portfolio/TransactionsPanel.vue'
 import HoldingsList from '@/components/holdings/HoldingsList.vue'
-import { LuArrowLeft, LuBriefcase, LuChartNoAxesCombined, LuChartPie, LuClock, LuCoins, LuEye, LuEyeOff, LuRefreshCw, LuHistory, LuLandmark, LuTrendingDown, LuTrendingUp, LuWallet } from '@kalimahapps/vue-icons/lu'
+import { LuArrowLeft, LuBriefcase, LuChartNoAxesCombined, LuChartPie, LuClock, LuCoins, LuRefreshCw, LuHistory, LuLandmark, LuTrendingDown, LuTrendingUp, LuWallet } from '@kalimahapps/vue-icons/lu'
 import { accountAPI } from '@/services/accountApi'
 import { platformDomain } from '@/lib/platforms'
 import { holdingAPI } from '@/services/holdingApi'
@@ -190,8 +191,7 @@ export default {
     LuClock,
     LuCoins,
     LuRefreshCw,
-    LuEye,
-    LuEyeOff,
+    ZenToggle,
     LuHistory,
     LuWallet,
     Favicon,
@@ -210,7 +210,6 @@ export default {
   data() {
     return {
       accountTags: [],
-      zenBusy: false,
       lastRefreshed: null,
       refreshing: false,
       refreshKey: 0,
@@ -367,18 +366,6 @@ export default {
         )
       } finally {
         this.deleting = false
-      }
-    },
-    // Hides money amounts everywhere; the toggle sits beside this account's values.
-    async toggleValues() {
-      if (this.zenBusy) return
-      this.zenBusy = true
-      try {
-        await toggleZen()
-      } catch (err) {
-        this.showAlert('error', this.$t('common.error'), err.message)
-      } finally {
-        this.zenBusy = false
       }
     },
     showAlert(variant, title, description) {

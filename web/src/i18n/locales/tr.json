@@ -58,10 +58,9 @@
     }
   },
   "nav": {
-    "dashboard": "Kontrol Paneli",
+    "dashboard": "Portföyüm",
     "accounts": "Hesaplar",
     "projects": "Projeler",
-    "settings": "Ayarlar",
     "profile": "Profil",
     "logout": "Çıkış Yap"
   },
@@ -209,15 +208,11 @@
     "searchPlatform": "Platform ara..."
   },
   "dashboard": {
-    "title": "Kontrol Paneli",
+    "title": "Portföyüm",
     "welcome": "Tekrar hoşgeldiniz"
   },
   "projects": {
     "title": "Projeler",
-    "comingSoon": "Çok Yakında"
-  },
-  "settings": {
-    "title": "Ayarlar",
     "comingSoon": "Çok Yakında"
   },
   "accountDetail": {
@@ -667,14 +662,10 @@
     "reason": "Gerekçe",
     "saveCorrection": "Düzeltmeyi kaydet",
     "useProviderPrice": "Sağlayıcı fiyatına dön",
-    "display": "Görünüm ve kurulum",
-    "zen": "Finansal değerleri gizle veya göster",
     "hideValues": "Değerleri gizle",
     "showValues": "Değerleri göster",
-    "zenHint": "Zen modu gösterilen finansal değerleri gizler. Bu bir görünüm tercihidir, erişim kısıtlaması değildir.",
     "hiddenValues": "Finansal değerler gizli.",
     "install": "Keepfin'i yükle",
-    "installHint": "Tarayıcında varsa yükle veya Ana Ekrana Ekle seçeneğini kullan. Finansal veriler için internet bağlantısı gerekir.",
     "tagName": "Etiket adı",
     "addTag": "Etiket ekle",
     "deleteTagHint": "Etiket ve atamalarını kaldır. Finansal kayıtlar korunur.",

@@ -10,7 +10,6 @@ import AccountDetail from './pages/AccountDetail.vue'
 import AccountAnalysis from './pages/AccountAnalysis.vue'
 import HoldingDetail from './pages/HoldingDetail.vue'
 import Projects from './pages/Projects.vue'
-import Settings from './pages/Settings.vue'
 import Profile from './pages/Profile.vue'
 
 import WealthLayout from './pages/wealth/WealthLayout.vue'
@@ -87,12 +86,8 @@ const routes = [
     component: Projects,
     meta: { requiresAuth: true }
   },
-  {
-    path: '/settings',
-    name: 'Settings',
-    component: Settings,
-    meta: { requiresAuth: true }
-  },
+  // Settings moved next to what they change; old links land on the dashboard.
+  { path: '/settings', redirect: '/' },
   {
     path: '/profile',
     name: 'Profile',

@@ -58,10 +58,9 @@
     }
   },
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "My portfolio",
     "accounts": "Accounts",
     "projects": "Projects",
-    "settings": "Settings",
     "profile": "Profile",
     "logout": "Logout"
   },
@@ -209,15 +208,11 @@
     "searchPlatform": "Search platforms..."
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "My portfolio",
     "welcome": "Welcome back"
   },
   "projects": {
     "title": "Projects",
-    "comingSoon": "Coming Soon"
-  },
-  "settings": {
-    "title": "Settings",
     "comingSoon": "Coming Soon"
   },
   "accountDetail": {
@@ -667,14 +662,10 @@
     "reason": "Reason",
     "saveCorrection": "Save correction",
     "useProviderPrice": "Restore provider price",
-    "display": "Display and installation",
-    "zen": "Hide or show financial values",
     "hideValues": "Hide values",
     "showValues": "Show values",
-    "zenHint": "Zen mode masks displayed financial values. It is a display preference, not an access restriction.",
     "hiddenValues": "Financial values are hidden.",
     "install": "Install Keepfin",
-    "installHint": "Use your browser's install or Add to Home Screen action when available. Financial data requires an online connection.",
     "tagName": "Tag name",
     "addTag": "Add tag",
     "deleteTagHint": "Remove this tag and its assignments. Financial records are preserved.",

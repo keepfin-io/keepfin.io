@@ -30,7 +30,7 @@
       <section class="portfolio-summary" aria-labelledby="portfolio-value-heading">
         <div class="summary-main">
           <div class="balance-overview">
-            <div data-testid="portfolio-stat-value" class="balance-total"><h2 id="portfolio-value-heading">{{ $t('portfolio.value') }}</h2><p>{{ amount('value') }}</p></div>
+            <div data-testid="portfolio-stat-value" class="balance-total"><div class="flex items-center gap-1"><h2 id="portfolio-value-heading">{{ $t('portfolio.value') }}</h2><ZenToggle v-if="!readonly" data-testid="portfolio-zen-toggle" class="-my-1" /></div><p>{{ amount('value') }}</p></div>
             <dl class="balance-split">
               <div data-testid="portfolio-stat-cash"><dt>{{ $t('portfolio.cash') }}</dt><dd>{{ amount('cash') }}</dd></div>
               <div data-testid="portfolio-stat-equity"><dt>{{ $t('portfolio.investedValue') }}</dt><dd>{{ amount('equity') }}</dd></div>
@@ -93,6 +93,7 @@ import { wealthAPI } from '@/services/wealthApi'
 import { portfolioAPI } from '@/services/portfolioApi'
 import PortfolioChart from '@/components/portfolio/PortfolioChart.vue'
 import PortfolioDetails from '@/components/portfolio/PortfolioDetails.vue'
+import ZenToggle from '@/components/wealth/ZenToggle.vue'
 import { Button, FormSelect, Label, FeedbackAlert as Alert, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui'
 import { formatMoney, formatPercent } from '@/lib/portfolio-format'
 const props = defineProps({ accountId: { type: String, default: '' }, accountName: { type: String, default: '' }, readonly: Boolean, reportLoader: { type: Function, default: null } })

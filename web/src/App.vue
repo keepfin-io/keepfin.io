@@ -96,7 +96,6 @@ const pageTitle = computed(() =>
         HoldingDetail: 'accounts',
         Profile: 'profile',
         Projects: 'projects',
-        Settings: 'settings',
       }[route.name] || 'dashboard')
   )
 )
